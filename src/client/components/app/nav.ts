@@ -1,4 +1,4 @@
-import type { RoleId } from "@/client/data/mock";
+export type RoleId = "student" | "teacher" | "school" | "s2c";
 
 export interface NavItem {
   label: string;

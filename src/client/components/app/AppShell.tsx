@@ -110,7 +110,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
             </div>
           </div>
           <nav className="h-[calc(100vh-4rem)] space-y-6 overflow-y-auto px-3 py-5">
-            {groups.map((g) => (
+            {groups?.map((g) => (
               <div key={g.group}>
                 <p className="px-3 pb-2 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
                   {g.group}
