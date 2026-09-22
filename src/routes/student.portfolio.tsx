@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Eye, Globe, Lock, Share2, ShieldCheck } from "lucide-react";

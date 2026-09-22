@@ -28,7 +28,9 @@ export const Route = createFileRoute("/student/clubs")({
 
 function ClubsPage() {
   const clubs = Route.useLoaderData() as any[];
-  const [joined, setJoined] = useState<string[]>(clubs.filter((c: any) => c.joined).map((c: any) => c.id));
+  const [joined, setJoined] = useState<string[]>(
+    clubs.filter((c: any) => c.joined).map((c: any) => c.id),
+  );
   const [activeId, setActiveId] = useState(clubs[0]!.id);
   const active = clubs.find((c: any) => c.id === activeId)!;
 

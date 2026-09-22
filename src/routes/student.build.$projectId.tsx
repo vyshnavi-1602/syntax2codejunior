@@ -7,7 +7,7 @@ import { Bar, PageHeader, Panel, Pill, type Tone } from "@/client/components/app
 const statusTone: Record<string, Tone> = {
   "Not Started": "slate",
   "In Progress": "sky",
-  Submitted: "indigo",
+  Submitted: "violet",
   "Needs Changes": "amber",
   Approved: "emerald",
   Showcased: "teal",

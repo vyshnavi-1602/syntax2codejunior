@@ -7,7 +7,9 @@ Syntax2Code Junior is a comprehensive, gamified learning platform designed to te
 The platform is split into three main portals:
 
 ### 1. Student Portal
+
 The core of the experience for learners:
+
 - **Learning Paths:** Structured curriculums (Python, Web Dev, Game Logic, AI Explorer).
 - **Project Builder:** A hands-on environment for tracking milestones, submitting code or demos, and receiving teacher feedback.
 - **Leaderboards & Gamification:** Earn XP, badges, and compete globally or within your school.
@@ -15,13 +17,17 @@ The core of the experience for learners:
 - **Practice & Labs:** Test your skills with sandbox challenges.
 
 ### 2. Teacher Portal
+
 Tools for educators to manage their classrooms:
+
 - **Class Dashboard:** Monitor student progress, attendance, and performance.
 - **Reviews & Grading:** Provide structured feedback and grade project submissions.
 - **Assignments:** Deploy curriculum modules and set deadlines.
 
 ### 3. Admin Portal
+
 For school administrators and curriculum directors:
+
 - **Analytics:** View top-level engagement and completion metrics.
 - **Curriculum Management:** Edit learning paths and update course materials.
 - **School Roster:** Manage teacher and student accounts.
@@ -29,6 +35,7 @@ For school administrators and curriculum directors:
 ## Tech Stack
 
 This project is built using modern full-stack web technologies:
+
 - **Framework:** [TanStack Start](https://tanstack.com/start) (React + Vite)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/)
 - **Authentication:** [Better-Auth](https://better-auth.com/)
