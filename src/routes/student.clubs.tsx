@@ -4,7 +4,7 @@ import { CalendarDays, Users } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Panel, Pill } from "@/client/components/app/primitives";
 import { cn } from "@/client/lib/utils";
-import { getStudentClubsFn } from "@/server/api/student";
+import { getStudentClubsFn } from "@/api/student.server";
 
 export const Route = createFileRoute("/student/clubs")({
   head: () => ({
@@ -29,10 +29,19 @@ export const Route = createFileRoute("/student/clubs")({
 function ClubsPage() {
   const clubs = Route.useLoaderData() as any[];
   const [joined, setJoined] = useState<string[]>(
-    clubs.filter((c: any) => c.joined).map((c: any) => c.id),
+    clubs.filter((c: any) => c?.joined).map((c: any) => c.id),
   );
-  const [activeId, setActiveId] = useState(clubs[0]!.id);
-  const active = clubs.find((c: any) => c.id === activeId)!;
+  const [activeId, setActiveId] = useState(clubs[0]?.id || "");
+  const active = clubs.find((c: any) => c.id === activeId);
+
+  if (clubs.length === 0) {
+    return (
+      <>
+        <PageHeader title="Clubs" subtitle="Where the school's builders hang out after class." />
+        <Panel title="No clubs yet" description="Your school hasn't created any clubs yet." className="py-12 text-center" />
+      </>
+    );
+  }
 
   return (
     <>

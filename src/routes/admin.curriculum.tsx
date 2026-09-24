@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 import { cn } from "@/client/lib/utils";
 
-import { getAdminCurriculumFn } from "@/server/api/admin";
+import { getAdminCurriculumFn } from "@/api/admin.server";
 
 export const Route = createFileRoute("/admin/curriculum")({
   head: () => ({

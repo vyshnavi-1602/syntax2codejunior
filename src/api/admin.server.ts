@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { eq, count, avg, and } from "drizzle-orm";
-import { db } from "../db";
-import * as schema from "../db/schema";
-import { roleMiddleware } from "../middleware/auth";
+import { db } from "../server/db";
+import * as schema from "../server/db/schema";
+import { roleMiddleware } from "./auth.server";
 
 export const getSchoolAnalyticsFn = createServerFn({ method: "GET" })
   .middleware([roleMiddleware(["school", "s2c"])])

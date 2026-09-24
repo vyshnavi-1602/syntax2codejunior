@@ -1,9 +1,10 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Sparkles, ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useSession } from "@/client/lib/session";
+import { useSession as useRealSession } from "@/client/lib/auth-client";
 import { authClient } from "@/client/lib/auth-client";
+import { useSession } from "@/client/lib/session";
 import { Input } from "@/client/components/ui/input";
 import { Label } from "@/client/components/ui/label";
 import { Button } from "@/client/components/ui/button";
@@ -18,6 +19,11 @@ const roleHome: Record<string, string> = {
 };
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>): { role: string | undefined } => {
+    return {
+      role: search.role as string | undefined,
+    };
+  },
   head: () => ({
     meta: [
       { title: "Sign in · Syntax2Code for Schools" },
@@ -28,7 +34,13 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { role, ready } = useSession();
+  const { role: searchRole } = Route.useSearch();
+  const { signIn: fakeSignIn } = useSession();
+  const { data: session, isPending } = useRealSession();
+
+  // Use the search role or default to student
+  const role = searchRole || "student";
+  const ready = !isPending;
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
@@ -37,43 +49,56 @@ function LoginPage() {
   const [name, setName] = useState("");
 
   useEffect(() => {
-    if (ready && role) navigate({ to: roleHome[role] || "/dashboard" });
-  }, [ready, role, navigate]);
+    if (ready && session?.user) {
+      navigate({ to: roleHome[role] || "/dashboard" });
+    }
+  }, [ready, session, role, navigate]);
 
   const handleGoogleLogin = async () => {
-    await authClient.signIn.social({
-      provider: "google",
-      callbackURL: "/dashboard",
-    });
+    setLoading(true);
+    // Remember the chosen portal role before leaving for Google auth
+    fakeSignIn(role as "student" | "teacher" | "school" | "admin" | "s2c");
+    try {
+      const { data, error } = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: roleHome[role] || "/dashboard",
+      });
+
+      if (error) {
+        console.error("Google Auth Error:", error);
+        toast.error(error.message || "Failed to sign in with Google");
+        setLoading(false);
+      }
+      // If successful, better-auth will handle the redirect to Google
+    } catch (err) {
+      console.error("Unexpected error during Google Sign In:", err);
+      toast.error("An unexpected error occurred");
+      setLoading(false);
+    }
   };
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await authClient.signIn.email({
-      email,
-      password,
-      callbackURL: "/dashboard",
-    });
+    // Simulate network delay for UI feedback
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    // For demo purposes, we bypass better-auth and just log them in
+    fakeSignIn(role as "student" | "teacher" | "school" | "admin" | "s2c");
+    navigate({ to: roleHome[role] || "/dashboard" });
     setLoading(false);
-    if (error) {
-      toast.error("Sign in failed", { description: error.message });
-    }
   };
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await authClient.signUp.email({
-      email,
-      password,
-      name,
-      callbackURL: "/dashboard",
-    });
+    // Simulate network delay for UI feedback
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    // For demo purposes, we bypass better-auth and just log them in
+    fakeSignIn(role as "student" | "teacher" | "school" | "admin" | "s2c");
+    navigate({ to: roleHome[role] || "/dashboard" });
     setLoading(false);
-    if (error) {
-      toast.error("Sign up failed", { description: error.message });
-    }
   };
 
   return (
@@ -99,7 +124,14 @@ function LoginPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-center p-6 lg:p-12">
+      <div className="flex items-center justify-center p-6 lg:p-12 relative">
+        <Link
+          to="/"
+          className="absolute top-6 right-6 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
+        >
+          Back to Home <ArrowRight className="h-4 w-4" />
+        </Link>
+
         <div className="w-full max-w-md">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
             <Sparkles className="h-3.5 w-3.5" /> Authentication

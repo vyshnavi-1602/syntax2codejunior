@@ -21,7 +21,7 @@ export const user = pgTable("user", {
 
   role: text("role").default("student").notNull(),
   active: boolean("active").default(true).notNull(),
-  schoolId: serial("school_id").references(() => schools.id),
+  schoolId: integer("school_id").references(() => schools.id),
 });
 
 export const session = pgTable("session", {
@@ -96,6 +96,7 @@ export const lessons = pgTable("lessons", {
   orderIdx: integer("order_idx").default(0).notNull(),
 });
 
+// Quiz table definition
 export const quizzes = pgTable("quizzes", {
   id: serial("id").primaryKey(),
   lessonId: integer("lesson_id")
@@ -148,6 +149,7 @@ export const earnedBadges = pgTable("earned_badges", {
     .references(() => user.id)
     .notNull(),
   badgeId: text("badge_id").notNull(),
+  fileUrl: text("file_url"),
   earnedAt: timestamp("earned_at").defaultNow().notNull(),
 });
 
@@ -159,5 +161,42 @@ export const announcements = pgTable("announcements", {
   targetAudience: text("target_audience").notNull(),
   title: text("title").notNull(),
   body: text("body").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const assignments = pgTable("assignments", {
+  id: serial("id").primaryKey(),
+  classId: integer("class_id")
+    .references(() => classes.id)
+    .notNull(),
+  teacherId: text("teacher_id")
+    .references(() => user.id)
+    .notNull(),
+  title: text("title").notNull(),
+  type: text("type").notNull(),
+  instructions: text("instructions"),
+  dueDate: timestamp("due_date"),
+  status: text("status").default("Active").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const clubs = pgTable("clubs", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  meetingTime: text("meeting_time"),
+  teacherId: text("teacher_id")
+    .references(() => user.id)
+    .notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const competitions = pgTable("competitions", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  type: text("type").notNull(), // e.g., "Hackathon", "Coding Challenge"
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

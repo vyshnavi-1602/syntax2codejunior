@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import * as Icons from "lucide-react";
 import { Bar, FilterChips, PageHeader, Panel, Pill } from "@/client/components/app/primitives";
-import { getLearningPathsFn } from "@/server/api/student";
+import { getLearningPathsFn } from "@/api/student.server";
 
 export const Route = createFileRoute("/student/learn/")({
   head: () => ({
@@ -113,12 +113,17 @@ function LearnPage() {
               d: "Unlocks the Web Creator project track.",
               tone: "sky" as const,
             },
-          ].map((r) => (
-            <div key={r.t} className="rounded-xl border border-slate-200 p-4">
+          ].map((r, i) => (
+            <Link
+              key={r.t}
+              to="/student/learn/$pathId"
+              params={{ pathId: String(i + 1) }}
+              className="block rounded-xl border border-slate-200 p-4 transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
+            >
               <Pill tone={r.tone}>Recommended</Pill>
               <p className="mt-2 text-sm font-medium text-slate-900">{r.t}</p>
               <p className="mt-1 text-xs text-slate-500">{r.d}</p>
-            </div>
+            </Link>
           ))}
         </div>
       </Panel>

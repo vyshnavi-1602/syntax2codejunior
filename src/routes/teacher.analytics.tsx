@@ -15,10 +15,7 @@ import {
   YAxis,
 } from "recharts";
 import { FilterChips, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
-
-const classes: any = [];
-const skillHeatmap: any = [];
-const weeklyActivity: any = [];
+import { getTeacherAnalyticsFn } from "@/api/teacher.server";
 
 export const Route = createFileRoute("/teacher/analytics")({
   head: () => ({
@@ -35,14 +32,18 @@ export const Route = createFileRoute("/teacher/analytics")({
       },
     ],
   }),
+  loader: async () => {
+    return await getTeacherAnalyticsFn();
+  },
   component: AnalyticsPage,
 });
 
 const ranges = ["Last 6 weeks", "This term", "This year"] as const;
 
 function AnalyticsPage() {
+  const data = Route.useLoaderData();
   const [range, setRange] = useState<(typeof ranges)[number]>("Last 6 weeks");
-  const myClasses = classes.filter((c) => c.teacher === "Ms. Priya Raman");
+  const myClasses = data?.classes || [];
 
   return (
     <>
@@ -86,7 +87,7 @@ function AnalyticsPage() {
         <Panel title="Completion & engagement" description={range}>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={weeklyActivity}>
+              <AreaChart data={data?.weeklyActivity || []}>
                 <CartesianGrid stroke="#f1f5f9" vertical={false} />
                 <XAxis
                   dataKey="week"
@@ -121,7 +122,7 @@ function AnalyticsPage() {
         <Panel title="Skill comparison across classes">
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={skillHeatmap}>
+              <BarChart data={data?.skillHeatmap || []}>
                 <CartesianGrid stroke="#f1f5f9" vertical={false} />
                 <XAxis
                   dataKey="skill"

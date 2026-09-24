@@ -12,7 +12,7 @@ import {
 } from "@/client/components/app/primitives";
 import { cn } from "@/client/lib/utils";
 
-import { getGlobalUsersFn, manageUserRoleFn } from "@/server/api/admin";
+import { getGlobalUsersFn, manageUserRoleFn } from "@/api/admin.server";
 
 export const Route = createFileRoute("/admin/users")({
   head: () => ({

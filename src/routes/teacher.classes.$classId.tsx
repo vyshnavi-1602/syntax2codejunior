@@ -2,11 +2,6 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Bar, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
-
-const classes: any = [];
-const skillHeatmap: any = [];
-const students: any = [];
-const weeklyActivity: any = [];
 import {
   Area,
   AreaChart,
@@ -16,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { getTeacherClassesFn, getClassRosterFn, getTeacherAnalyticsFn } from "@/api/teacher.server";
 
 export const Route = createFileRoute("/teacher/classes/$classId")({
   head: () => ({
@@ -29,13 +25,22 @@ export const Route = createFileRoute("/teacher/classes/$classId")({
       { property: "og:description", content: "A deep-dive into one class's performance." },
     ],
   }),
+  loader: async ({ params }) => {
+    const classIdNum = parseInt(params.classId, 10);
+    const [classes, roster, analytics] = await Promise.all([
+      getTeacherClassesFn(),
+      getClassRosterFn({ data: classIdNum }),
+      getTeacherAnalyticsFn(),
+    ]);
+    return { classes, roster, analytics, classId: params.classId };
+  },
   component: ClassDetail,
 });
 
 function ClassDetail() {
-  const { classId } = useParams({ from: "/teacher/classes/$classId" });
-  const cls = classes.find((c) => c.id === classId) ?? classes[2]!;
-  const roster = students.filter((s) => s.classId === cls.id);
+  const data = Route.useLoaderData();
+  const { classes, roster, analytics, classId } = data;
+  const cls = classes.find((c) => c.id.toString() === classId) ?? classes[0]!;
 
   return (
     <>
@@ -85,7 +90,7 @@ function ClassDetail() {
         >
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={weeklyActivity}>
+              <AreaChart data={analytics.weeklyActivity}>
                 <CartesianGrid stroke="#f1f5f9" vertical={false} />
                 <XAxis
                   dataKey="week"
@@ -118,7 +123,7 @@ function ClassDetail() {
 
         <Panel title="Skill mastery" description="Class averages">
           <div className="space-y-3">
-            {skillHeatmap.map((row) => {
+            {analytics.skillHeatmap.map((row) => {
               const v = (row as unknown as Record<string, number>)[cls.name] ?? row["Grade 8A"];
               return (
                 <div key={row.skill}>

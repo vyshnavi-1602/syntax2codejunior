@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import {
   Flame,
   Star,
@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Bar, Pill, Panel, PageHeader, Stat } from "@/client/components/app/primitives";
-import { getStudentDashboard } from "@/server/api/student";
+import { getStudentDashboard } from "@/api/student.server";
 import { useSession } from "@/client/lib/auth-client";
 
 export const Route = createFileRoute("/student/")({
@@ -25,8 +25,16 @@ export const Route = createFileRoute("/student/")({
       },
     ],
   }),
-  loader: async () => {
-    return await getStudentDashboard();
+  loader: async ({ location }) => {
+    try {
+      return await getStudentDashboard();
+    } catch (e) {
+      console.error(e);
+      if (e instanceof Error && (e.message === "Unauthorized" || e.message.includes("Forbidden"))) {
+        throw redirect({ to: "/login", search: { role: "student" } });
+      }
+      throw e;
+    }
   },
   component: StudentHome,
 });
@@ -44,7 +52,7 @@ function StudentHome() {
     id: 1,
     title: "Python Basics",
     tagline: "Start your journey",
-    progress: 0,
+    progress: 45,
     xp: 1000,
   };
 
@@ -69,7 +77,8 @@ function StudentHome() {
             >
               Continue learning <ArrowRight className="h-4 w-4" />
             </Link>
-            <button
+            <Link
+              to="/student/practice"
               onClick={() =>
                 toast.success("Daily challenge started", {
                   description: "Loop Sprint · 3 problems · 60 XP",
@@ -78,7 +87,7 @@ function StudentHome() {
               className="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               Start daily challenge
-            </button>
+            </Link>
           </>
         }
       />
@@ -86,28 +95,28 @@ function StudentHome() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
           label="Level"
-          value={`Level ${profile.level}`}
+          value={`Level ${profile.level || 1}`}
           sub="Keep going!"
           tone="violet"
           icon={<Star className="h-4 w-4" />}
         />
         <Stat
           label="Total XP"
-          value={profile.xpTotal.toLocaleString()}
+          value={(profile.xpTotal || 0).toLocaleString()}
           sub="XP Earned"
           tone="sky"
           icon={<Zap className="h-4 w-4" />}
         />
         <Stat
           label="Syntax2Code Score"
-          value={95}
-          sub="Top 4% in school"
+          value={profile.score || 0}
+          sub="Keep practicing to rank up!"
           tone="emerald"
           icon={<Trophy className="h-4 w-4" />}
         />
         <Stat
           label="Streak"
-          value={`${profile.currentStreak} days`}
+          value={`${profile.currentStreak || 0} days`}
           sub="Current active streak"
           tone="amber"
           icon={<Flame className="h-4 w-4" />}

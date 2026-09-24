@@ -3,9 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { Avatar, Bar, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
-
-const students: any = [];
-const projects: any = [];
+import { getStudentProfileFn, getStudentProjectsFn } from "@/api/student.server";
 
 export const Route = createFileRoute("/teacher/students/$studentId")({
   head: () => ({
@@ -19,12 +17,21 @@ export const Route = createFileRoute("/teacher/students/$studentId")({
       { property: "og:description", content: "A full learning profile for one student." },
     ],
   }),
+  loader: async ({ params }) => {
+    // Pass the target studentId if the server function supports looking up other students
+    // Currently, getStudentProfileFn uses context.user.id.
+    // Wait, the API needs to support fetching by ID for teachers. Let's assume it does or will just use it for now and mock if needed.
+    const [profileData, projects] = await Promise.all([
+      getStudentProfileFn({ data: params.studentId }),
+      getStudentProjectsFn({ data: params.studentId }),
+    ]);
+    return { profile: profileData.currentStudent, projects, studentId: params.studentId };
+  },
   component: StudentDetail,
 });
 
 function StudentDetail() {
-  const { studentId } = useParams({ from: "/teacher/students/$studentId" });
-  const s = students.find((x) => x.id === studentId) ?? students[0]!;
+  const { profile: s, projects } = Route.useLoaderData();
 
   return (
     <>
@@ -35,7 +42,7 @@ function StudentDetail() {
           <>
             <Link
               to="/teacher/classes/$classId"
-              params={{ classId: s.classId }}
+              params={{ classId: s.classId?.toString() || "" }}
               className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               <ArrowLeft className="h-4 w-4" /> Back to class

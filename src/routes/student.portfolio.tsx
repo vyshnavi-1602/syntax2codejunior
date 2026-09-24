@@ -7,7 +7,7 @@ import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } fro
 import { PageHeader, Panel, Pill, Avatar, Bar } from "@/client/components/app/primitives";
 
 import { cn } from "@/client/lib/utils";
-import { getStudentProfileFn, getStudentProjectsFn } from "@/server/api/student";
+import { getStudentProfileFn, getStudentProjectsFn } from "@/api/student.server";
 
 export const Route = createFileRoute("/student/portfolio")({
   head: () => ({
@@ -32,13 +32,6 @@ export const Route = createFileRoute("/student/portfolio")({
 
 function PortfolioPage() {
   const { currentStudent: s, achievements, certificates, projects } = Route.useLoaderData();
-  const [publicView, setPublicView] = useState(false);
-  const [privacy, setPrivacy] = useState({
-    showScore: true,
-    showClass: true,
-    showCerts: true,
-    showClubs: false,
-  });
   const featured = projects.filter((p: any) => p.student === s.name || p.featured).slice(0, 3);
 
   return (
@@ -49,20 +42,9 @@ function PortfolioPage() {
         actions={
           <>
             <button
-              onClick={() => setPublicView((v) => !v)}
-              className={cn(
-                "inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-sm font-medium transition-colors",
-                publicView
-                  ? "border-indigo-200 bg-indigo-50 text-indigo-700"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-              )}
-            >
-              <Eye className="h-4 w-4" /> {publicView ? "Public view" : "Private view"}
-            </button>
-            <button
               onClick={() =>
                 toast.success("Share link copied", {
-                  description: "s2cjunior.com/p/aarav-sharma-8a",
+                  description: `s2cjunior.com/p/${s.name.toLowerCase().replace(/\s+/g, "-")}-8a`,
                 })
               }
               className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
@@ -75,17 +57,16 @@ function PortfolioPage() {
 
       <Panel bodyClassName="p-6">
         <div className="flex flex-wrap items-center gap-5">
-          <Avatar initials="AS" size="lg" />
+          <Avatar initials={s.name.substring(0, 2).toUpperCase()} size="lg" />
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-semibold tracking-tight text-slate-900">Aarav Sharma</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900">{s.name}</h2>
             <p className="text-sm text-slate-500">
-              {privacy.showClass
-                ? "Grade 8A · Greenfield International School"
-                : "Student · Greenfield International School"}
+              {s.gradeName ? `Grade ${s.gradeName} · ` : ""}
+              {s.schoolName}
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <Pill tone="violet">Level {s.level}</Pill>
-              {privacy.showScore && <Pill tone="emerald">S2C Score {s.score}</Pill>}
+              <Pill tone="emerald">S2C Score {s.score}</Pill>
               <Pill tone="amber">{s.badges} badges</Pill>
               <Pill tone="sky">{s.streak}-day streak</Pill>
             </div>
@@ -156,18 +137,12 @@ function PortfolioPage() {
               Verified credentials
             </p>
             <div className="mt-3 grid gap-2 md:grid-cols-3">
-              {privacy.showCerts &&
-                certificates.map((c: any) => (
-                  <div key={c.id} className="rounded-xl border border-slate-200 p-3">
-                    <p className="text-xs font-semibold text-slate-900">{c.title}</p>
-                    <p className="mt-1 text-[11px] text-slate-500">ID {c.credential}</p>
-                  </div>
-                ))}
-              {!privacy.showCerts && (
-                <p className="text-xs text-slate-500">
-                  Certificates are hidden on your public profile.
-                </p>
-              )}
+              {certificates.map((c: any) => (
+                <div key={c.id} className="rounded-xl border border-slate-200 p-3">
+                  <p className="text-xs font-semibold text-slate-900">{c.title}</p>
+                  <p className="mt-1 text-[11px] text-slate-500">ID {c.credential}</p>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -187,49 +162,6 @@ function PortfolioPage() {
           </div>
         </Panel>
       </div>
-
-      <Panel
-        title="Privacy controls"
-        description="You decide what the public version of your portfolio shows"
-      >
-        <div className="grid gap-3 md:grid-cols-4">
-          {(
-            [
-              ["showScore", "Show S2C Score"],
-              ["showClass", "Show class & section"],
-              ["showCerts", "Show certificates"],
-              ["showClubs", "Show club memberships"],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => {
-                setPrivacy((p) => ({ ...p, [key]: !p[key] }));
-                toast(`${label}: ${privacy[key] ? "hidden" : "visible"}`);
-              }}
-              className={cn(
-                "flex items-center justify-between rounded-xl border px-4 py-3 text-sm transition-colors",
-                privacy[key]
-                  ? "border-emerald-200 bg-emerald-50/60 text-slate-800"
-                  : "border-slate-200 text-slate-500",
-              )}
-            >
-              {label}
-              {privacy[key] ? (
-                <Globe className="h-4 w-4 text-emerald-600" />
-              ) : (
-                <Lock className="h-4 w-4 text-slate-400" />
-              )}
-            </button>
-          ))}
-        </div>
-        {publicView && (
-          <p className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 text-xs text-slate-600">
-            You are previewing the public version. Hidden items are removed and only school-verified
-            credentials appear.
-          </p>
-        )}
-      </Panel>
     </>
   );
 }

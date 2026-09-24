@@ -2,8 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Bar, FilterChips, PageHeader, Panel, Pill } from "@/client/components/app/primitives";
-
-const classes: any = [];
+import { getTeacherClassesFn } from "@/api/teacher.server";
 
 export const Route = createFileRoute("/teacher/classes/")({
   head: () => ({
@@ -18,17 +17,27 @@ export const Route = createFileRoute("/teacher/classes/")({
       { property: "og:description", content: "Deep-dive into each class's performance." },
     ],
   }),
+  loader: async () => {
+    return await getTeacherClassesFn();
+  },
   component: ClassesPage,
 });
 
 const filters = ["My classes", "All classes", "Grade 6-7", "Grade 8-10"] as const;
 
 function ClassesPage() {
+  const classes = Route.useLoaderData();
   const [filter, setFilter] = useState<(typeof filters)[number]>("My classes");
   const list = classes.filter((c) => {
-    if (filter === "My classes") return c.teacher === "Ms. Priya Raman";
-    if (filter === "Grade 6-7") return c.grade <= 7;
-    if (filter === "Grade 8-10") return c.grade >= 8;
+    // In our simplified mock, all returned classes belong to this teacher, so we don't strictly need teacher check
+    if (filter === "Grade 6-7" && c.grade) {
+      const match = c.grade.match(/\d+/);
+      return match ? parseInt(match[0]) <= 7 : true;
+    }
+    if (filter === "Grade 8-10" && c.grade) {
+      const match = c.grade.match(/\d+/);
+      return match ? parseInt(match[0]) >= 8 : true;
+    }
     return true;
   });
 
@@ -57,7 +66,7 @@ function ClassesPage() {
           <Link
             key={c.id}
             to="/teacher/classes/$classId"
-            params={{ classId: c.id }}
+            params={{ classId: c.id.toString() }}
             className="rounded-2xl border border-slate-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
           >
             <div className="flex items-center justify-between">

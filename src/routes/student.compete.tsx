@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { PageHeader, Panel, Pill, Stat, type Tone } from "@/client/components/app/primitives";
 import { cn } from "@/client/lib/utils";
 
-import { getStudentAnnouncementsFn } from "@/server/api/student";
+import { useSession } from "@/client/lib/auth-client";
+import { getStudentAnnouncementsFn } from "@/api/student.server";
 
 export const Route = createFileRoute("/student/compete")({
   head: () => ({
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/student/compete")({
 });
 
 function CompetePage() {
+  const { data: session } = useSession();
   const { competitions, leaderboard: compLeaderboard } = Route.useLoaderData();
   const [activeId, setActiveId] = useState(competitions[0]?.id || null);
   const [registered, setRegistered] = useState<string[]>(
@@ -47,15 +49,15 @@ function CompetePage() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
           label="Your best rank"
-          value="#3"
-          sub="Genesis 2026 · Round 1"
+          value="Unranked"
+          sub="Join a tournament!"
           tone="amber"
           icon={<Medal className="h-4 w-4" />}
         />
         <Stat
           label="Competition points"
-          value="2,745"
-          sub="+310 last round"
+          value="0"
+          sub="Earn points to rank up"
           tone="violet"
           icon={<Trophy className="h-4 w-4" />}
         />
@@ -198,7 +200,7 @@ function CompetePage() {
                 key={e.rank}
                 className={cn(
                   "flex items-center gap-3 rounded-xl border px-3 py-2.5",
-                  e.name === "Aarav Sharma"
+                  e.name === session?.user?.name
                     ? "border-indigo-200 bg-indigo-50/60"
                     : "border-slate-100",
                 )}

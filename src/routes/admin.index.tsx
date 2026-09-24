@@ -15,7 +15,7 @@ import {
 } from "recharts";
 import { Bar, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 
-import { getGlobalOverviewFn } from "@/server/api/admin";
+import { getGlobalOverviewFn } from "@/api/admin.server";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({

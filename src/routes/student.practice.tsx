@@ -5,8 +5,9 @@ import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 import { cn } from "@/client/lib/utils";
 
-import { getPracticeItemsFn } from "@/server/api/student";
-
+import { getPracticeItemsFn } from "@/api/student.server";
+import { CodeEditor } from "@/client/components/app/CodeEditor";
+import { runJavaScript, type ExecutionResult, type TestCase } from "@/client/lib/sandbox";
 export const Route = createFileRoute("/student/practice")({
   head: () => ({
     meta: [
@@ -33,8 +34,23 @@ const types = ["All", "Quiz", "Coding", "Debugging", "Logic"] as const;
 const levels = ["Any level", "Easy", "Medium", "Hard"] as const;
 
 function PracticePage() {
-  const practiceItems = Route.useLoaderData();
-  type PracticeItem = (typeof practiceItems)[0];
+  type PracticeItem = {
+    id: string;
+    title: string;
+    type: string;
+    difficulty: string;
+    topic: string;
+    minutes: number;
+    xp: number;
+    solved?: boolean;
+    prompt?: string;
+    starterCode?: string;
+    testCases?: TestCase[];
+    options?: string[];
+    answer?: number;
+    explain?: string;
+  };
+  const practiceItems = Route.useLoaderData() as PracticeItem[];
   const [type, setType] = useState<(typeof types)[number]>("All");
   const [level, setLevel] = useState<(typeof levels)[number]>("Any level");
   const [open, setOpen] = useState<PracticeItem | null>(null);
@@ -53,7 +69,41 @@ function PracticePage() {
       setSolvedIds((s) => (s.includes(item.id) ? s : [...s, item.id]));
       toast.success(`Correct! +${item.xp} XP 🎉`, { description: item.explain });
     } else {
-      toast("Keep going — review the hint", { description: item.explain });
+      toast.error("Incorrect. Review the hint below!");
+    }
+  };
+
+  const [codeContent, setCodeContent] = useState("");
+  const [execResult, setExecResult] = useState<ExecutionResult[] | null>(null);
+  const [execLogs, setExecLogs] = useState<string[]>([]);
+  const [isExecuting, setIsExecuting] = useState(false);
+
+  const openModal = (item: PracticeItem) => {
+    setOpen(item);
+    setPicked(null);
+    if (item.type === "Coding") {
+      setCodeContent(item.starterCode || "");
+      setExecResult(null);
+      setExecLogs([]);
+    }
+  };
+
+  const submitCode = async (item: PracticeItem) => {
+    setIsExecuting(true);
+    setExecResult(null);
+    setExecLogs([]);
+    try {
+      const { success, results, logs } = await runJavaScript(codeContent, item.testCases || []);
+      setExecResult(results);
+      setExecLogs(logs);
+      if (success) {
+        setSolvedIds((s) => (s.includes(item.id) ? s : [...s, item.id]));
+        toast.success(`All tests passed! +${item.xp} XP 🎉`);
+      } else {
+        toast.error("Some tests failed. Check the output.");
+      }
+    } finally {
+      setIsExecuting(false);
     }
   };
 
@@ -116,10 +166,7 @@ function PracticePage() {
             return (
               <button
                 key={p.id}
-                onClick={() => {
-                  setOpen(p);
-                  setPicked(null);
-                }}
+                onClick={() => openModal(p)}
                 className="rounded-2xl border border-slate-200 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
               >
                 <div className="flex items-center justify-between gap-2">
@@ -167,7 +214,7 @@ function PracticePage() {
           onClick={() => setOpen(null)}
         >
           <div
-            className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            className="w-full max-w-4xl rounded-2xl border border-slate-200 bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
@@ -186,34 +233,81 @@ function PracticePage() {
             </div>
             <div className="px-5 py-4">
               <p className="text-sm text-slate-700">{open.prompt}</p>
-              <div className="mt-4 space-y-2">
-                {open.options.map((o, i) => {
-                  const state =
-                    picked === null
-                      ? "idle"
-                      : i === open.answer
-                        ? "right"
-                        : picked === i
-                          ? "wrong"
-                          : "idle";
-                  return (
-                    <button
-                      key={o}
-                      onClick={() => submit(open, i)}
-                      className={cn(
-                        "w-full rounded-xl border px-4 py-2.5 text-left text-sm transition-colors",
-                        state === "right" && "border-emerald-300 bg-emerald-50 text-emerald-800",
-                        state === "wrong" && "border-amber-300 bg-amber-50 text-amber-800",
-                        state === "idle" &&
-                          "border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/40",
-                      )}
-                    >
-                      {o}
-                    </button>
-                  );
-                })}
-              </div>
-              {picked !== null && (
+              {open.type === "Coding" ? (
+                <div className="mt-4 space-y-4">
+                  <CodeEditor
+                    value={codeContent}
+                    onChange={(v) => setCodeContent(v || "")}
+                    height="400px"
+                  />
+                  <button
+                    onClick={() => submitCode(open)}
+                    disabled={isExecuting}
+                    className="w-full rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {isExecuting ? "Running..." : "Run & Submit"}
+                  </button>
+
+                  {execLogs && execLogs.length > 0 && (
+                    <div className="space-y-1 rounded-xl bg-slate-900 p-4 font-mono text-xs text-slate-100 max-h-48 overflow-y-auto">
+                      <div className="mb-2 border-b border-slate-700 pb-2 font-semibold text-slate-400">
+                        Console Output
+                      </div>
+                      {execLogs.map((log, i) => (
+                        <div key={i}>{log}</div>
+                      ))}
+                    </div>
+                  )}
+
+                  {execResult && (
+                    <div className="mt-4 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <h4 className="text-xs font-semibold text-slate-700">Test Results</h4>
+                      {execResult.map((res, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-xs">
+                          {res.passed ? (
+                            <Check className="h-4 w-4 text-emerald-500" />
+                          ) : (
+                            <span className="text-rose-500">❌</span>
+                          )}
+                          <span className="text-slate-600">
+                            Test {idx + 1}:{" "}
+                            {res.passed ? "Passed" : `Failed (Got: ${res.actual || res.error})`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-4 space-y-2">
+                  {open.options?.map((o: string, i: number) => {
+                    const state =
+                      picked === null
+                        ? "idle"
+                        : i === open.answer
+                          ? "right"
+                          : picked === i
+                            ? "wrong"
+                            : "idle";
+                    return (
+                      <button
+                        key={o}
+                        onClick={() => submit(open, i)}
+                        className={cn(
+                          "w-full rounded-xl border px-4 py-2.5 text-left text-sm transition-colors",
+                          state === "right" && "border-emerald-300 bg-emerald-50 text-emerald-800",
+                          state === "wrong" && "border-amber-300 bg-amber-50 text-amber-800",
+                          state === "idle" &&
+                            "border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/40",
+                        )}
+                      >
+                        {o}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {picked !== null && open.type !== "Coding" && (
                 <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
                   {open.explain}
                 </div>

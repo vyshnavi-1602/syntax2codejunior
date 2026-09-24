@@ -1,11 +1,11 @@
 import { createFileRoute, Link, useParams, useRouter } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2, Circle, Lock, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
 import { Bar, PageHeader, Panel, Pill } from "@/client/components/app/primitives";
 import { cn } from "@/client/lib/utils";
 import { CompanionPanel } from "@/client/components/app/AiCompanion";
-import { getPathContent, submitQuizAnswer, getLessonContent } from "@/server/api/student";
+import { getPathContent, submitQuizAnswer, getLessonContent } from "@/api/student.server";
 import Markdown from "react-markdown";
 
 export const Route = createFileRoute("/student/learn/$pathId")({
@@ -48,7 +48,7 @@ function PathPage() {
   const lesson = allLessons[index];
 
   // Fetch lesson details when selecting a lesson
-  useMemo(() => {
+  useEffect(() => {
     if (lesson) {
       getLessonContent({ data: lesson.id }).then((content) => {
         setMarkdown(content.lesson?.contentMarkdown || "");
@@ -102,6 +102,10 @@ function PathPage() {
   if (!data || !path) return <div>Path not found in database. Make sure you seeded the DB!</div>;
   if (!lesson) return <div>No lessons found for this path.</div>;
 
+  const completedCount = allLessons.filter((l: any) => l.status === "completed").length;
+  const progress =
+    allLessons.length > 0 ? Math.round((completedCount / allLessons.length) * 100) : 0;
+
   return (
     <>
       <PageHeader
@@ -120,8 +124,8 @@ function PathPage() {
       <div className="grid gap-6 lg:grid-cols-[18rem_1fr]">
         <div className="space-y-4">
           <Panel title="Path progress">
-            <Bar value={0} tone="emerald" />
-            <p className="mt-2 text-xs text-slate-500">Keep going!</p>
+            <Bar value={progress} tone="emerald" />
+            <p className="mt-2 text-xs text-slate-500">{progress}% complete. Keep going!</p>
           </Panel>
           <Panel title="Lessons" bodyClassName="p-2">
             {allLessons.map((l, i) => {

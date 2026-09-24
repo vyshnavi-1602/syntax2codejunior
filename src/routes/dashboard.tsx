@@ -23,6 +23,7 @@ export const Route = createFileRoute("/dashboard")({
     } else {
       throw redirect({
         to: "/login",
+        search: { role: undefined },
       });
     }
   },

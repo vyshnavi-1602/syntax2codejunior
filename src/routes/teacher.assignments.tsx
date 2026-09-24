@@ -1,12 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Bar, FilterChips, PageHeader, Panel, Pill } from "@/client/components/app/primitives";
-
-const assignments: any = [];
-const classes: any = [];
-const questionAnalytics: any = [];
 import {
   Bar as RBar,
   BarChart,
@@ -17,6 +13,11 @@ import {
   YAxis,
 } from "recharts";
 import { cn } from "@/client/lib/utils";
+import {
+  getTeacherAssignmentsFn,
+  getTeacherClassesFn,
+  createAssignmentFn,
+} from "@/api/teacher.server";
 
 export const Route = createFileRoute("/teacher/assignments")({
   head: () => ({
@@ -33,12 +34,33 @@ export const Route = createFileRoute("/teacher/assignments")({
       },
     ],
   }),
+  loader: async () => {
+    const [assignments, classes] = await Promise.all([
+      getTeacherAssignmentsFn(),
+      getTeacherClassesFn(),
+    ]);
+    return {
+      assignments,
+      classes,
+      questionAnalytics: [
+        { q: "Q1. Variables", correct: 85 },
+        { q: "Q2. Loops", correct: 45 },
+        { q: "Q3. Functions", correct: 70 },
+        { q: "Q4. Events", correct: 90 },
+      ],
+    };
+  },
   component: AssignmentsPage,
 });
 
 const tabs = ["Assignments", "Assessment builder", "Question analytics"] as const;
 
 function AssignmentsPage() {
+  const data = Route.useLoaderData();
+  const assignments = data?.assignments || [];
+  const classes = data?.classes || [];
+  const questionAnalytics = data?.questionAnalytics || [];
+  const router = useRouter();
   const [tab, setTab] = useState<(typeof tabs)[number]>("Assignments");
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
@@ -301,11 +323,19 @@ function AssignmentsPage() {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  setCreating(false);
-                  toast.success("Assignment published", {
-                    description: `${form.title || "Untitled"} · ${form.className} · due ${form.due}`,
-                  });
+                onClick={async () => {
+                  try {
+                    await createAssignmentFn({ data: form });
+                    toast.success("Assignment published", {
+                      description: `${form.title || "Untitled"} · ${form.className} · due ${form.due}`,
+                    });
+                    setCreating(false);
+                    router.invalidate();
+                  } catch (e: unknown) {
+                    toast.error("Failed to publish assignment", {
+                      description: (e as Error).message,
+                    });
+                  }
                 }}
                 className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
               >

@@ -3,10 +3,8 @@ import { useState } from "react";
 import { Megaphone, Send } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Panel, Pill } from "@/client/components/app/primitives";
-
-const announcements: any = [];
-const classes: any = [];
 import { cn } from "@/client/lib/utils";
+import { getTeacherAnnouncementsFn, getTeacherClassesFn } from "@/api/teacher.server";
 
 export const Route = createFileRoute("/teacher/announcements")({
   head: () => ({
@@ -20,14 +18,33 @@ export const Route = createFileRoute("/teacher/announcements")({
       { property: "og:description", content: "Class and grade-level broadcasting." },
     ],
   }),
+  loader: async () => {
+    const [announcements, classes] = await Promise.all([
+      getTeacherAnnouncementsFn(),
+      getTeacherClassesFn(),
+    ]);
+    return { announcements, classes };
+  },
   component: AnnouncementsPage,
 });
 
 function AnnouncementsPage() {
-  const [audience, setAudience] = useState<string[]>(["Grade 8A"]);
+  const data = Route.useLoaderData();
+  const classes = data?.classes || [];
+
+  const [audience, setAudience] = useState<string[]>([]);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [sent, setSent] = useState(announcements);
+  const [sent, setSent] = useState<
+    {
+      id: string | number;
+      title: string;
+      targetAudience: string;
+      body: string;
+      createdAt: string | Date;
+      authorId?: string;
+    }[]
+  >(data?.announcements || []);
 
   const toggle = (name: string) =>
     setAudience((a) => (a.includes(name) ? a.filter((x) => x !== name) : [...a, name]));
@@ -82,17 +99,28 @@ function AnnouncementsPage() {
           <div className="mt-4 flex gap-2">
             <button
               onClick={() => {
-                setSent((s) => [
-                  {
-                    id: `an-${Date.now()}`,
-                    title: title || "Untitled announcement",
-                    audience: audience.join(", ") || "No audience",
-                    by: "Ms. Priya Raman",
-                    when: "Just now",
-                    body,
-                  },
-                  ...s,
-                ]);
+                setSent(
+                  (
+                    s: {
+                      id: string | number;
+                      title: string;
+                      targetAudience: string;
+                      body: string;
+                      createdAt: string | Date;
+                      authorId?: string;
+                    }[],
+                  ) => [
+                    {
+                      id: `an-${Date.now()}`,
+                      title: title || "Untitled announcement",
+                      targetAudience: audience.join(", ") || "No audience",
+                      authorId: "Ms. Priya Raman", // we mock the author for the preview
+                      createdAt: new Date().toISOString(),
+                      body,
+                    },
+                    ...s,
+                  ],
+                );
                 setTitle("");
                 setBody("");
                 toast.success("Announcement sent", {
@@ -114,19 +142,30 @@ function AnnouncementsPage() {
 
         <Panel title="Sent announcements">
           <div className="space-y-3">
-            {sent.map((a) => (
-              <div key={a.id} className="rounded-xl border border-slate-200 p-3.5">
-                <div className="flex items-center gap-2">
-                  <Megaphone className="h-3.5 w-3.5 text-indigo-600" />
-                  <p className="text-sm font-medium text-slate-900">{a.title}</p>
+            {sent.map(
+              (a: {
+                id: string | number;
+                title: string;
+                targetAudience: string;
+                body: string;
+                createdAt: string | Date;
+                authorId?: string;
+              }) => (
+                <div key={a.id} className="rounded-xl border border-slate-200 p-3.5">
+                  <div className="flex items-center gap-2">
+                    <Megaphone className="h-3.5 w-3.5 text-indigo-600" />
+                    <p className="text-sm font-medium text-slate-900">{a.title}</p>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">{a.body}</p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <Pill tone="sky">{a.targetAudience}</Pill>
+                    <span className="text-[11px] text-slate-400">
+                      {a.createdAt ? new Date(a.createdAt).toLocaleString() : "Just now"}
+                    </span>
+                  </div>
                 </div>
-                <p className="mt-1 text-xs text-slate-500">{a.body}</p>
-                <div className="mt-2 flex items-center justify-between">
-                  <Pill tone="sky">{a.audience}</Pill>
-                  <span className="text-[11px] text-slate-400">{a.when}</span>
-                </div>
-              </div>
-            ))}
+              ),
+            )}
           </div>
         </Panel>
       </div>

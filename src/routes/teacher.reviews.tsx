@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { PageHeader, Panel, Pill, type Tone } from "@/client/components/app/primitives";
 
 import { cn } from "@/client/lib/utils";
-import { getPendingProjectsFn, gradeProjectFn } from "@/server/api/teacher";
+import { getPendingProjectsFn, gradeProjectFn } from "@/api/teacher.server";
 
 export const Route = createFileRoute("/teacher/reviews")({
   head: () => ({

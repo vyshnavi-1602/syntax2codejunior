@@ -1,16 +1,35 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import * as Icons from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/client/lib/utils";
-import { useSession } from "@/client/lib/session";
+import { authClient } from "@/client/lib/auth-client";
+import { useSession, demoUsers, roleHome, type RoleId } from "@/client/lib/session";
 import { navByRole } from "./nav";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/client/components/ui/dialog";
+import { Button } from "@/client/components/ui/button";
 
-const demoUsers: any = [];
-const notifications: any = [];
-const roleHome: any = [];
-const roleLabels: any = [];
-export type RoleId = any;
+const initialNotifications: Record<string, any[]> = {
+  student: [{ title: "New Assignment", body: "Check your python lab.", when: "1h ago" }],
+  teacher: [{ title: "New Submission", body: "Aarav submitted project.", when: "2h ago" }],
+  school: [],
+  admin: [],
+  s2c: [],
+};
+const roleLabels: Record<string, string> = {
+  student: "Student",
+  teacher: "Teacher",
+  school: "School Admin",
+  admin: "Platform Admin",
+  s2c: "Platform Admin",
+};
 import { Avatar } from "./primitives";
 import { FloatingCompanion } from "./AiCompanion";
 
@@ -64,23 +83,43 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
   const [mobileNav, setMobileNav] = useState(false);
   const [search, setSearch] = useState("");
 
+  const [notes, setNotes] = useState(initialNotifications[allow] || []);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  useEffect(() => {
+    setNotes(initialNotifications[allow] || []);
+  }, [allow]);
+
   useEffect(() => {
     if (!ready) return;
-    if (!role) navigate({ to: "/login" });
-    else if (role !== allow) navigate({ to: roleHome[role] });
+    if (!role) navigate({ to: "/login", search: { role: allow } });
+    else if (role !== allow) navigate({ to: roleHome[role] || "/dashboard" });
   }, [ready, role, allow, navigate]);
 
   if (!ready || !user || role !== allow) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">
-        Loading your workspace…
+      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 text-sm text-slate-500 gap-4">
+        <div>Loading your workspace…</div>
+        <div className="text-xs opacity-50">
+          Debug: ready={ready ? "true" : "false"}, role={role || "null"}, allow={allow}, user=
+          {user ? "true" : "null"}
+        </div>
+        <button
+          onClick={() => {
+            window.localStorage.clear();
+            window.location.href = "/login";
+          }}
+          className="rounded bg-indigo-100 px-4 py-2 text-indigo-700 hover:bg-indigo-200"
+        >
+          Reset Session
+        </button>
       </div>
     );
   }
 
   const groups = navByRole[allow];
   const crumbs = pathname.split("/").filter(Boolean);
-  const notes = notifications[allow];
 
   const closeAll = () => {
     setNotifOpen(false);
@@ -180,56 +219,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
 
               <div className="ml-auto flex items-center gap-2">
                 {}
-                <div className="relative">
-                  <button
-                    onClick={() => {
-                      closeAll();
-                      setRoleOpen((o) => !o);
-                    }}
-                    className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 transition-colors hover:bg-indigo-100"
-                  >
-                    <Icons.Repeat className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Switch Demo Role ·</span> {roleLabels[allow]}
-                    <Icons.ChevronDown className="h-3.5 w-3.5" />
-                  </button>
-                  {roleOpen && (
-                    <div className="absolute right-0 z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-                      <p className="border-b border-slate-100 px-4 py-2.5 text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
-                        Demo personas
-                      </p>
-                      {demoUsers.map((u) => (
-                        <button
-                          key={u.id}
-                          onClick={() => {
-                            signIn(u.role);
-                            setRoleOpen(false);
-                            navigate({ to: roleHome[u.role] });
-                            toast.success(`Now viewing as ${u.name}`, {
-                              description: roleLabels[u.role],
-                            });
-                          }}
-                          className={cn(
-                            "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50",
-                            u.role === allow && "bg-indigo-50/60",
-                          )}
-                        >
-                          <Avatar initials={u.avatar} size="sm" />
-                          <span className="min-w-0">
-                            <span className="block truncate text-sm font-medium text-slate-900">
-                              {u.name}
-                            </span>
-                            <span className="block truncate text-xs text-slate-500">
-                              {u.subtitle}
-                            </span>
-                          </span>
-                          {u.role === allow && (
-                            <Icons.Check className="ml-auto h-4 w-4 text-indigo-600" />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {/* Demo Role Switcher Removed */}
 
                 {}
                 <div className="relative">
@@ -251,6 +241,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                           className="text-[11px] font-medium text-indigo-600 hover:underline"
                           onClick={() => {
                             setNotifOpen(false);
+                            setNotes([]);
                             toast.success("All notifications marked as read");
                           }}
                         >
@@ -285,7 +276,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                       <span className="block text-xs font-semibold text-slate-900">
                         {user.name}
                       </span>
-                      <span className="block text-[11px] text-slate-500">{roleLabels[allow]}</span>
+                      <span className="block text-[11px] text-slate-500">{roleLabels[role || allow]}</span>
                     </span>
                     <Icons.ChevronDown className="h-3.5 w-3.5 text-slate-400" />
                   </button>
@@ -299,9 +290,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                         className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
                         onClick={() => {
                           setMenuOpen(false);
-                          toast("Account settings", {
-                            description: "Profile preferences opened in demo mode.",
-                          });
+                          setSettingsOpen(true);
                         }}
                       >
                         <Icons.Settings className="h-4 w-4" /> Account settings
@@ -310,18 +299,22 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                         className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
                         onClick={() => {
                           setMenuOpen(false);
-                          toast("Help center", {
-                            description: "Guides, onboarding videos and support chat.",
-                          });
+                          setHelpOpen(true);
                         }}
                       >
                         <Icons.LifeBuoy className="h-4 w-4" /> Help & support
                       </button>
                       <button
                         className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50/60"
-                        onClick={() => {
-                          signOut();
-                          navigate({ to: "/login" });
+                        onClick={async () => {
+                          try {
+                            await authClient.signOut();
+                          } catch (error) {
+                            console.error("Sign out error", error);
+                          } finally {
+                            signOut();
+                            navigate({ to: "/login", search: { role: allow } });
+                          }
                         }}
                       >
                         <Icons.LogOut className="h-4 w-4" /> Sign out
@@ -334,7 +327,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
 
             {}
             <div className="flex items-center gap-1.5 border-t border-slate-100 px-4 py-2 text-xs text-slate-500 lg:px-8">
-              <Link to={roleHome[allow]} className="hover:text-indigo-600">
+              <Link to={roleHome[allow] || "/dashboard"} className="hover:text-indigo-600">
                 {user.school}
               </Link>
               {crumbs.map((c, i) => (
@@ -354,6 +347,64 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
         </div>
       </div>
       {allow === "student" && <FloatingCompanion />}
+
+      {/* Account Settings Modal */}
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Account Settings</DialogTitle>
+            <DialogDescription>Manage your preferences and profile details.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Email</p>
+              <p className="text-sm text-slate-500">{user.email}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">School</p>
+              <p className="text-sm text-slate-500">{user.school}</p>
+            </div>
+            <div className="space-y-1 border-t border-slate-100 pt-4">
+              <p className="text-sm font-medium">Theme Preference</p>
+              <p className="text-xs text-slate-500">Currently locked to System Default in demo.</p>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => setSettingsOpen(false)}>Save Changes</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Help & Support Modal */}
+      <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Help & Support</DialogTitle>
+            <DialogDescription>Need assistance? We're here to help.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <a href="#" className="flex items-center gap-3 rounded-lg border p-3 hover:bg-slate-50">
+              <Icons.BookOpen className="h-5 w-5 text-indigo-500" />
+              <div>
+                <p className="text-sm font-medium">Documentation</p>
+                <p className="text-xs text-slate-500">Read guides and tutorials.</p>
+              </div>
+            </a>
+            <a href="#" className="flex items-center gap-3 rounded-lg border p-3 hover:bg-slate-50">
+              <Icons.MessageCircle className="h-5 w-5 text-indigo-500" />
+              <div>
+                <p className="text-sm font-medium">Contact Support</p>
+                <p className="text-xs text-slate-500">Chat with our technical team.</p>
+              </div>
+            </a>
+          </div>
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setHelpOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

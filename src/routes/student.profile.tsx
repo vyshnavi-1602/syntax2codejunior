@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Avatar, Bar, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 import { CompanionPanel } from "@/client/components/app/AiCompanion";
 import { cn } from "@/client/lib/utils";
-import { getStudentProfileFn } from "@/server/api/student";
+import { getStudentProfileFn } from "@/api/student.server";
 
 export const Route = createFileRoute("/student/profile")({
   head: () => ({

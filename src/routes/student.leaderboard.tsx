@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Crown } from "lucide-react";
 import { FilterChips, PageHeader, Panel, Pill } from "@/client/components/app/primitives";
 import { cn } from "@/client/lib/utils";
-import { getStudentLeaderboardFn } from "@/server/api/student";
+import { getStudentLeaderboardFn } from "@/api/student.server";
 
 export const Route = createFileRoute("/student/leaderboard")({
   head: () => ({
@@ -101,7 +101,7 @@ function LeaderboardPage() {
                   key={r.rank}
                   className={cn(
                     "border-t border-slate-100",
-                    r.name === "Aarav Sharma" && "bg-indigo-50/50",
+                    r.isCurrentUser && "bg-indigo-50/50",
                   )}
                 >
                   <td className="px-4 py-3 font-semibold text-slate-500">#{r.rank}</td>

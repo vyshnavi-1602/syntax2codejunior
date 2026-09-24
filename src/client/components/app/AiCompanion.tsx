@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Bot, Send, Sparkles, X } from "lucide-react";
 import { cn } from "@/client/lib/utils";
 
+import { useSession } from "@/client/lib/auth-client";
+
 const starters = [
   "Explain loops like I'm in Grade 6",
   "Give me a hint",
@@ -42,10 +44,13 @@ function replyFor(q: string) {
 }
 
 export function CompanionPanel({ compact = false }: { compact?: boolean }) {
+  const { data: session } = useSession();
+  const userName = session?.user?.name || "Student";
+
   const [messages, setMessages] = useState<{ from: "ai" | "me"; text: string }[]>([
     {
       from: "ai",
-      text: "Hi Aarav! I'm your S2C Companion. Ask me anything about your lessons, code or projects — I explain, I never just hand over answers.",
+      text: `Hi ${userName}! I'm your S2C Companion. Ask me anything about your lessons, code or projects — I explain, I never just hand over answers.`,
     },
   ]);
   const [input, setInput] = useState("");

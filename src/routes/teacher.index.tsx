@@ -3,7 +3,11 @@ import { AlertTriangle, ClipboardCheck, GraduationCap, TrendingUp } from "lucide
 import { toast } from "sonner";
 import { Bar, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 import { cn } from "@/client/lib/utils";
-import { getTeacherClassesFn, getPendingProjectsFn } from "@/server/api/teacher";
+import {
+  getTeacherClassesFn,
+  getPendingProjectsFn,
+  getTeacherAnalyticsFn,
+} from "@/api/teacher.server";
 import { useSession } from "@/client/lib/auth-client";
 
 export const Route = createFileRoute("/teacher/")({
@@ -20,7 +24,8 @@ export const Route = createFileRoute("/teacher/")({
   loader: async () => {
     const classes = await getTeacherClassesFn();
     const pendingProjects = await getPendingProjectsFn();
-    return { classes, pendingProjects };
+    const analytics = await getTeacherAnalyticsFn();
+    return { classes, pendingProjects, analytics };
   },
   component: TeacherHome,
 });
@@ -33,7 +38,7 @@ function heat(v: number) {
 }
 
 function TeacherHome() {
-  const { classes, pendingProjects } = Route.useLoaderData();
+  const { classes, pendingProjects, analytics } = Route.useLoaderData();
   const { data: session } = useSession();
   const teacherName = session?.user?.name || "Teacher";
 
@@ -91,7 +96,7 @@ function TeacherHome() {
         />
         <Stat
           label="Avg. completion"
-          value="72%"
+          value={`${analytics.avgProgress}%`}
           sub="+6% vs last month"
           tone="emerald"
           icon={<TrendingUp className="h-4 w-4" />}

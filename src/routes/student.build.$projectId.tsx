@@ -14,7 +14,7 @@ const statusTone: Record<string, Tone> = {
 };
 export type ProjectStatus = keyof typeof statusTone;
 import { cn } from "@/client/lib/utils";
-import { submitProject, getStudentProjectsFn } from "@/server/api/student";
+import { submitProject, getStudentProjectsFn } from "@/api/student.server";
 
 export const Route = createFileRoute("/student/build/$projectId")({
   head: () => ({
@@ -142,7 +142,8 @@ function ProjectDetail() {
                   try {
                     await submitProject({
                       data: {
-                        lessonId: 1,
+                        projectId: project.id,
+                        lessonId: project.lessonId,
                         title: project.title,
                         submittedUrl: note,
                       },
@@ -215,7 +216,7 @@ function ProjectDetail() {
 
           <Panel title="Teacher feedback" description="Latest review notes">
             <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-3 text-xs leading-relaxed text-slate-700">
-              "Strong data model, Aarav. Add error handling when the class list file is missing, and
+              "Strong data model. Add error handling when the class list file is missing, and
               include a short demo video with your final submission." — Ms. Priya Raman
             </div>
             <button

@@ -1,8 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-
-const roleHome: any = [];
 import { useSession } from "@/client/lib/session";
+import { ChevronRight, GraduationCap, Users, School, LayoutDashboard } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -13,33 +12,89 @@ export const Route = createFileRoute("/")({
         content:
           "Syntax2Code gives schools a complete AI and coding curriculum with student portals, teacher analytics and institutional readiness scoring.",
       },
-      { property: "og:title", content: "Syntax2Code — AI & Coding Platform for Schools" },
-      {
-        property: "og:description",
-        content:
-          "Learning paths, coding labs, competitions, certificates and school-wide analytics for Grades 6-10.",
-      },
     ],
   }),
   component: Index,
 });
 
+const roles = [
+  {
+    id: "student",
+    title: "Sign in as Student",
+    desc: "Access your coding labs, projects, and portfolio",
+    icon: GraduationCap,
+    color: "text-indigo-600",
+    bg: "bg-indigo-50",
+  },
+  {
+    id: "teacher",
+    title: "Sign in as Teacher",
+    desc: "Grade assignments, view analytics, and manage classes",
+    icon: Users,
+    color: "text-teal-600",
+    bg: "bg-teal-50",
+  },
+  {
+    id: "school",
+    title: "Sign in as School Admin",
+    desc: "Monitor school readiness and teacher performance",
+    icon: School,
+    color: "text-amber-600",
+    bg: "bg-amber-50",
+  },
+  {
+    id: "admin",
+    title: "Sign in as S2C Admin",
+    desc: "Platform administration and curriculum management",
+    icon: LayoutDashboard,
+    color: "text-rose-600",
+    bg: "bg-rose-50",
+  },
+];
+
+
+
 function Index() {
-  const { role, ready } = useSession();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!ready) return;
-    navigate({ to: role ? roleHome[role] : "/login", replace: true });
-  }, [ready, role, navigate]);
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50">
-      <div className="text-center">
-        <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-teal-500 font-bold text-white">
-          S2
-        </span>
-        <p className="mt-4 text-sm text-slate-500">Loading Syntax2Code…</p>
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+      <div className="w-full max-w-lg">
+        <div className="mb-10 text-center">
+          <span className="inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-600 to-teal-500 text-xl font-bold text-white shadow-xl shadow-indigo-200">
+            S2
+          </span>
+          <h1 className="font-display mt-6 text-3xl font-bold tracking-tight text-slate-900">
+            Welcome to Syntax2Code
+          </h1>
+          <p className="mt-2 text-slate-500">Select your portal to continue to the login screen.</p>
+        </div>
+
+        <div className="grid gap-3">
+          {roles.map((r) => (
+            <button
+              key={r.id}
+              onClick={() => {
+                // Pass the selected role to the login page so it knows which portal to open
+                navigate({ to: "/login", search: { role: r.id } });
+              }}
+              className="group flex w-full items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left transition-all hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-100"
+            >
+              <div
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${r.bg} ${r.color}`}
+              >
+                <r.icon className="h-6 w-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                  {r.title}
+                </h3>
+                <p className="mt-0.5 text-xs text-slate-500">{r.desc}</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-slate-300 transition-transform group-hover:translate-x-1 group-hover:text-indigo-600" />
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

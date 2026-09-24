@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import { Bar, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
-import { getSchoolAnalyticsFn } from "@/server/api/admin";
+import { getSchoolAnalyticsFn } from "@/api/admin.server";
 
 export const Route = createFileRoute("/school/")({
   head: () => ({
