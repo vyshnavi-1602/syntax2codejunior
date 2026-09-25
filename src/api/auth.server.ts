@@ -1,7 +1,10 @@
 import { createMiddleware } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { auth } from "../server/auth/auth";
-
+import { createServerFn } from "@tanstack/react-start";
+import { db } from "../server/db";
+import * as schema from "../server/db/schema";
+import { eq } from "drizzle-orm";
 export const authMiddleware = createMiddleware().server(async ({ next }) => {
   const request = getRequest();
   if (!request) {
@@ -52,3 +55,14 @@ export const roleMiddleware = (allowedRoles: string[]) => {
     });
   });
 };
+
+export const syncUserRoleFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((role: string) => role)
+  .handler(async ({ data: role, context }) => {
+    if (!["student", "teacher", "school", "admin", "s2c"].includes(role)) {
+      throw new Error("Invalid role");
+    }
+    await db.update(schema.user).set({ role }).where(eq(schema.user.id, context.user.id));
+    return { success: true, role };
+  });

@@ -61,7 +61,7 @@ function LoginPage() {
     try {
       const { data, error } = await authClient.signIn.social({
         provider: "google",
-        callbackURL: roleHome[role] || "/dashboard",
+        callbackURL: `/sync-role?role=${role}`,
       });
 
       if (error) {
