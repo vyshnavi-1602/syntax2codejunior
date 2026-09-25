@@ -390,39 +390,10 @@ export const getStudentProjectsFn = createServerFn({ method: "GET" })
         }));
       }
     } catch (error) {
-      console.error("Failed to fetch projects, falling back to mock data:", error);
+      console.error("Failed to fetch projects:", error);
     }
 
-    return [
-      {
-        id: "mock-proj-1",
-        status: "Submitted" as const,
-        xp: 150,
-        title: "Personal Portfolio",
-        brief: "Build your first HTML/CSS portfolio to showcase your skills.",
-        skills: ["HTML", "CSS", "Design"],
-        track: "Frontend",
-        difficulty: "Easy",
-        updated: "Today",
-        featured: false,
-        student: "You",
-        className: "Your Class",
-      },
-      {
-        id: "mock-proj-2",
-        status: "Approved" as const,
-        xp: 200,
-        title: "Python Text Adventure",
-        brief: "Create an interactive story using Python loops and conditionals.",
-        skills: ["Python", "Logic"],
-        track: "Backend",
-        difficulty: "Medium",
-        updated: "Last Week",
-        featured: true,
-        student: "You",
-        className: "Your Class",
-      },
-    ];
+    return [];
   });
 
 export const getStudentBadgesFn = createServerFn({ method: "GET" })
@@ -448,21 +419,7 @@ export const getStudentBadgesFn = createServerFn({ method: "GET" })
       fileUrl: b.fileUrl,
     }));
 
-    return [
-      ...earned,
-      {
-        id: "locked-1",
-        title: "Code Master",
-        desc: "Complete all paths.",
-        issued: "Locked",
-        credential: "Locked",
-        grade: "N/A",
-        issuer: "Syntax2Code",
-        skills: ["Mastery"],
-        earned: false,
-        fileUrl: null,
-      },
-    ];
+    return earned;
   });
 
 export const addCertificateFn = createServerFn({ method: "POST" })
