@@ -50,7 +50,10 @@ function PracticePage() {
     answer?: number;
     explain?: string;
   };
-  const practiceItems = Route.useLoaderData() as PracticeItem[];
+  const data = Route.useLoaderData();
+  const practiceItems = (data.items || []) as PracticeItem[];
+  const stats = data.stats || { xpTotal: 1240, accuracy: "86%", avgTime: "4m 12s", weeklyXP: 180 };
+
   const [type, setType] = useState<(typeof types)[number]>("All");
   const [level, setLevel] = useState<(typeof levels)[number]>("Any level");
   const [open, setOpen] = useState<PracticeItem | null>(null);
@@ -124,21 +127,21 @@ function PracticePage() {
         />
         <Stat
           label="XP from practice"
-          value="1,240"
-          sub="+180 this week"
+          value={stats.xpTotal.toLocaleString()}
+          sub={`+${stats.weeklyXP} this week`}
           tone="sky"
           icon={<Zap className="h-4 w-4" />}
         />
         <Stat
           label="Accuracy"
-          value="86%"
-          sub="Across last 30 attempts"
+          value={stats.accuracy}
+          sub="Across all attempts"
           tone="violet"
           icon={<Sparkles className="h-4 w-4" />}
         />
         <Stat
           label="Avg. time"
-          value="4m 12s"
+          value={stats.avgTime}
           sub="Faster than class average"
           tone="amber"
           icon={<Timer className="h-4 w-4" />}

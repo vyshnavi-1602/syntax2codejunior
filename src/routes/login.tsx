@@ -80,25 +80,54 @@ function LoginPage() {
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate network delay for UI feedback
-    await new Promise((resolve) => setTimeout(resolve, 600));
 
-    // For demo purposes, we bypass better-auth and just log them in
-    fakeSignIn(role as "student" | "teacher" | "school" | "admin" | "s2c");
-    navigate({ to: roleHome[role] || "/dashboard" });
-    setLoading(false);
+    try {
+      const { error } = await authClient.signIn.email({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message || "Failed to sign in");
+        setLoading(false);
+        return;
+      }
+
+      fakeSignIn(role as "student" | "teacher" | "school" | "admin" | "s2c");
+      navigate({ to: roleHome[role] || "/dashboard" });
+    } catch (err) {
+      console.error("Unexpected error during Email Sign In:", err);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate network delay for UI feedback
-    await new Promise((resolve) => setTimeout(resolve, 600));
 
-    // For demo purposes, we bypass better-auth and just log them in
-    fakeSignIn(role as "student" | "teacher" | "school" | "admin" | "s2c");
-    navigate({ to: roleHome[role] || "/dashboard" });
-    setLoading(false);
+    try {
+      const { error } = await authClient.signUp.email({
+        email,
+        password,
+        name,
+      });
+
+      if (error) {
+        toast.error(error.message || "Failed to sign up");
+        setLoading(false);
+        return;
+      }
+
+      fakeSignIn(role as "student" | "teacher" | "school" | "admin" | "s2c");
+      navigate({ to: roleHome[role] || "/dashboard" });
+    } catch (err) {
+      console.error("Unexpected error during Email Sign Up:", err);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

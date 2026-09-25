@@ -78,9 +78,9 @@ export const getStudentDashboard = createServerFn({ method: "GET" })
   .middleware([roleMiddleware(["student", "s2c", "admin"])])
   .handler(async ({ context }) => {
     const userId = context.user.id;
-    let profileData: any[] = [];
-    let classes: any[] = [];
-    let recommendedLesson: any[] = [];
+    let profileData: Array<{ classId: number | null; xpTotal: number; currentStreak: number; level: number }> = [];
+    let classes: Array<{ id: number; name: string; grade: string | null }> = [];
+    let recommendedLesson: Array<{ id: number }> = [];
 
     try {
       profileData = await db
@@ -124,7 +124,7 @@ export const getLessonContent = createServerFn({ method: "GET" })
 
     return {
       lesson: lessonData[0],
-      quizzes: quizzesData as any[],
+      quizzes: quizzesData,
     };
   });
 
@@ -143,7 +143,7 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
       let isCorrect = true;
       if (quizzesData.length > 0) {
         for (const quiz of quizzesData) {
-          if (data.answers[quiz.id as any] !== quiz.correctAnswer) {
+          if (data.answers[quiz.id as unknown as number] !== quiz.correctAnswer) {
             isCorrect = false;
             break;
           }
@@ -200,7 +200,12 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
 export const submitProject = createServerFn({ method: "POST" })
   .middleware([roleMiddleware(["student"])])
   .validator(
-    (data: { projectId?: string | number; lessonId?: number; title: string; submittedUrl: string }) => data,
+    (data: {
+      projectId?: string | number;
+      lessonId?: number;
+      title: string;
+      submittedUrl: string;
+    }) => data,
   )
   .handler(async ({ data, context }) => {
     const userId = context.user.id;
@@ -236,10 +241,38 @@ export const submitProject = createServerFn({ method: "POST" })
 export const getPracticeItemsFn = createServerFn({ method: "GET" })
   .middleware([roleMiddleware(["student", "s2c"])])
   .handler(async ({ context }) => {
+    const userId = context.user.id;
+    let items: any[] = [];
+    let xpTotal = 0;
+    let weeklyXP = 0;
+    let accuracy = "0%";
+
     try {
-      const quizzes = (await db.select().from(schema.quizzes)) as any[];
+      const [quizzes, profile, completed] = await Promise.all([
+        db.select().from(schema.quizzes),
+        db.select().from(schema.studentProfiles).where(eq(schema.studentProfiles.userId, userId)).limit(1),
+        db.select().from(schema.completedLessons).where(eq(schema.completedLessons.studentId, userId))
+      ]);
+
+      if (profile.length > 0) {
+        xpTotal = profile[0].xpTotal;
+      }
+
+      if (completed.length > 0) {
+        let sumScore = 0;
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        for (const c of completed) {
+          sumScore += c.score || 0;
+          if (new Date(c.completedAt) > oneWeekAgo) {
+            weeklyXP += (c.score || 0);
+          }
+        }
+        accuracy = Math.round(sumScore / completed.length) + "%";
+      }
+
       if (quizzes.length > 0) {
-        return quizzes.map((q, i) => ({
+        items = quizzes.map((q, i) => ({
           id: q.id.toString(),
           type: i % 2 === 0 ? "Quiz" : "Logic",
           difficulty: i % 3 === 0 ? "Hard" : "Medium",
@@ -259,54 +292,65 @@ export const getPracticeItemsFn = createServerFn({ method: "GET" })
       console.error("Failed to fetch quizzes, falling back to mock data:", error);
     }
 
-    // Mock data fallback if DB fails or is empty
-    return [
-      {
-        id: "mock-code-1",
-        type: "Coding",
-        difficulty: "Medium",
-        title: "Hello JavaScript",
-        topic: "JavaScript",
-        minutes: 10,
-        xp: 50,
-        prompt:
-          "Write a function called `greet` that takes a name as a parameter and returns 'Hello ' + name.",
-        starterCode: "function greet(name) {\n  // Write your code here\n}",
-        testCases: [
-          { input: "greet('Alice')", expected: "'Hello Alice'" },
-          { input: "greet('Bob')", expected: "'Hello Bob'" },
-        ],
-        solved: false,
-      },
-      {
-        id: "mock-1",
-        type: "Quiz",
-        difficulty: "Easy",
-        title: "Python Basics Quick Check",
-        topic: "Python",
-        minutes: 3,
-        xp: 15,
-        prompt: "What is the output of print(2 + 3)?",
-        options: ["23", "5", "Error", "None"],
-        answer: 1,
-        explain: "The + operator adds two integers together in Python.",
-        solved: false,
-      },
-      {
-        id: "mock-2",
-        type: "Logic",
-        difficulty: "Medium",
-        title: "Loop Logic Puzzle",
-        topic: "Loops",
-        minutes: 5,
-        xp: 25,
-        prompt: "If a loop runs from i=0 to i<3, how many times does it execute?",
-        options: ["2", "3", "4", "Infinite"],
-        answer: 1,
-        explain: "It runs for i=0, i=1, and i=2. That is exactly 3 times.",
-        solved: false,
-      },
-    ];
+    if (items.length === 0) {
+      items = [
+        {
+          id: "mock-code-1",
+          type: "Coding",
+          difficulty: "Medium",
+          title: "Hello JavaScript",
+          topic: "JavaScript",
+          minutes: 10,
+          xp: 50,
+          prompt:
+            "Write a function called `greet` that takes a name as a parameter and returns 'Hello ' + name.",
+          starterCode: "function greet(name) {\n  // Write your code here\n}",
+          testCases: [
+            { input: "greet('Alice')", expected: "'Hello Alice'" },
+            { input: "greet('Bob')", expected: "'Hello Bob'" },
+          ],
+          solved: false,
+        },
+        {
+          id: "mock-1",
+          type: "Quiz",
+          difficulty: "Easy",
+          title: "Python Basics Quick Check",
+          topic: "Python",
+          minutes: 3,
+          xp: 15,
+          prompt: "What is the output of print(2 + 3)?",
+          options: ["23", "5", "Error", "None"],
+          answer: 1,
+          explain: "The + operator adds two integers together in Python.",
+          solved: false,
+        },
+        {
+          id: "mock-2",
+          type: "Logic",
+          difficulty: "Medium",
+          title: "Loop Logic Puzzle",
+          topic: "Loops",
+          minutes: 5,
+          xp: 25,
+          prompt: "If a loop runs from i=0 to i<3, how many times does it execute?",
+          options: ["2", "3", "4", "Infinite"],
+          answer: 1,
+          explain: "It runs for i=0, i=1, and i=2. That is exactly 3 times.",
+          solved: false,
+        },
+      ];
+    }
+
+    return {
+      items,
+      stats: {
+        xpTotal: xpTotal,
+        accuracy: accuracy,
+        avgTime: "4m 12s", // Keep this static for now, as we don't have duration in completedLessons
+        weeklyXP: weeklyXP,
+      }
+    };
   });
 
 export const getStudentProjectsFn = createServerFn({ method: "GET" })
@@ -616,7 +660,7 @@ export const getStudentClubsFn = createServerFn({ method: "GET" })
 export const getStudentLeaderboardFn = createServerFn({ method: "GET" })
   .middleware([roleMiddleware(["student", "s2c"])])
   .handler(async ({ context }) => {
-    let schoolLeaderboard: any[] = [];
+    let schoolLeaderboard: Array<{ rank: number; name: string; detail: string; xp: number; isCurrentUser: boolean }> = [];
     try {
       const allProfiles = await db
         .select({
@@ -662,8 +706,8 @@ export const getLearningPathsFn = createServerFn({ method: "GET" })
   .middleware([roleMiddleware(["student", "s2c"])])
   .handler(async ({ context }) => {
     const userId = context.user.id;
-    let pathsData: any[] = [];
-    let allLessons: any[] = [];
+    let pathsData: Array<{ id: number; title: string; description: string }> = [];
+    let allLessons: Array<{ id: number; pathId: number }> = [];
     let completedLessonIds = new Set<number>();
 
     try {
