@@ -179,12 +179,6 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                 </div>
               </div>
             ))}
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-indigo-50 to-teal-50 p-4">
-              <p className="text-xs font-semibold text-slate-900">Demo environment</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
-                All data shown is realistic sample data for {user.school}.
-              </p>
-            </div>
           </nav>
         </aside>
 
