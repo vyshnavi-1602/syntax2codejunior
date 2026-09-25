@@ -429,16 +429,9 @@ export const getStudentAnnouncementsFn = createServerFn({ method: "GET" })
         level: "National",
         participants: 1200,
         registered: true,
-        rounds: [
-          { name: "Round 1", date: "Oct 15", score: "80/100", state: "Completed" },
-          { name: "Round 2", date: "Oct 26", score: "--", state: "Live" },
-        ],
+        rounds: [],
       })),
-      leaderboard: [
-        { rank: 1, name: "Alice", school: "Springfield", score: 2500 },
-        { rank: 2, name: "Aarav Sharma", school: "Greenfield", score: 2100 },
-        { rank: 3, name: "Bob", school: "Central High", score: 1950 },
-      ],
+      leaderboard: [],
     };
   });
 
