@@ -78,7 +78,12 @@ export const getStudentDashboard = createServerFn({ method: "GET" })
   .middleware([roleMiddleware(["student", "s2c", "admin"])])
   .handler(async ({ context }) => {
     const userId = context.user.id;
-    let profileData: Array<{ classId: number | null; xpTotal: number; currentStreak: number; level: number }> = [];
+    let profileData: Array<{
+      classId: number | null;
+      xpTotal: number;
+      currentStreak: number;
+      level: number;
+    }> = [];
     let classes: Array<{ id: number; name: string; grade: string | null }> = [];
     let recommendedLesson: Array<{ id: number }> = [];
 
@@ -242,7 +247,22 @@ export const getPracticeItemsFn = createServerFn({ method: "GET" })
   .middleware([roleMiddleware(["student", "s2c"])])
   .handler(async ({ context }) => {
     const userId = context.user.id;
-    let items: any[] = [];
+    let items: Array<{
+      id: string;
+      type: string;
+      difficulty: string;
+      title: string;
+      topic: string;
+      minutes: number;
+      xp: number;
+      prompt: string;
+      options?: string[];
+      answer?: number;
+      explain?: string;
+      solved: boolean;
+      starterCode?: string;
+      testCases?: Array<{ input: string; expected: string }>;
+    }> = [];
     let xpTotal = 0;
     let weeklyXP = 0;
     let accuracy = "0%";
@@ -250,8 +270,15 @@ export const getPracticeItemsFn = createServerFn({ method: "GET" })
     try {
       const [quizzes, profile, completed] = await Promise.all([
         db.select().from(schema.quizzes),
-        db.select().from(schema.studentProfiles).where(eq(schema.studentProfiles.userId, userId)).limit(1),
-        db.select().from(schema.completedLessons).where(eq(schema.completedLessons.studentId, userId))
+        db
+          .select()
+          .from(schema.studentProfiles)
+          .where(eq(schema.studentProfiles.userId, userId))
+          .limit(1),
+        db
+          .select()
+          .from(schema.completedLessons)
+          .where(eq(schema.completedLessons.studentId, userId)),
       ]);
 
       if (profile.length > 0) {
@@ -265,7 +292,7 @@ export const getPracticeItemsFn = createServerFn({ method: "GET" })
         for (const c of completed) {
           sumScore += c.score || 0;
           if (new Date(c.completedAt) > oneWeekAgo) {
-            weeklyXP += (c.score || 0);
+            weeklyXP += c.score || 0;
           }
         }
         accuracy = Math.round(sumScore / completed.length) + "%";
@@ -292,55 +319,7 @@ export const getPracticeItemsFn = createServerFn({ method: "GET" })
       console.error("Failed to fetch quizzes, falling back to mock data:", error);
     }
 
-    if (items.length === 0) {
-      items = [
-        {
-          id: "mock-code-1",
-          type: "Coding",
-          difficulty: "Medium",
-          title: "Hello JavaScript",
-          topic: "JavaScript",
-          minutes: 10,
-          xp: 50,
-          prompt:
-            "Write a function called `greet` that takes a name as a parameter and returns 'Hello ' + name.",
-          starterCode: "function greet(name) {\n  // Write your code here\n}",
-          testCases: [
-            { input: "greet('Alice')", expected: "'Hello Alice'" },
-            { input: "greet('Bob')", expected: "'Hello Bob'" },
-          ],
-          solved: false,
-        },
-        {
-          id: "mock-1",
-          type: "Quiz",
-          difficulty: "Easy",
-          title: "Python Basics Quick Check",
-          topic: "Python",
-          minutes: 3,
-          xp: 15,
-          prompt: "What is the output of print(2 + 3)?",
-          options: ["23", "5", "Error", "None"],
-          answer: 1,
-          explain: "The + operator adds two integers together in Python.",
-          solved: false,
-        },
-        {
-          id: "mock-2",
-          type: "Logic",
-          difficulty: "Medium",
-          title: "Loop Logic Puzzle",
-          topic: "Loops",
-          minutes: 5,
-          xp: 25,
-          prompt: "If a loop runs from i=0 to i<3, how many times does it execute?",
-          options: ["2", "3", "4", "Infinite"],
-          answer: 1,
-          explain: "It runs for i=0, i=1, and i=2. That is exactly 3 times.",
-          solved: false,
-        },
-      ];
-    }
+    // No mock data fallback, return empty items array if none found
 
     return {
       items,
@@ -349,7 +328,7 @@ export const getPracticeItemsFn = createServerFn({ method: "GET" })
         accuracy: accuracy,
         avgTime: "4m 12s", // Keep this static for now, as we don't have duration in completedLessons
         weeklyXP: weeklyXP,
-      }
+      },
     };
   });
 
@@ -617,7 +596,13 @@ export const getStudentClubsFn = createServerFn({ method: "GET" })
 export const getStudentLeaderboardFn = createServerFn({ method: "GET" })
   .middleware([roleMiddleware(["student", "s2c"])])
   .handler(async ({ context }) => {
-    let schoolLeaderboard: Array<{ rank: number; name: string; detail: string; xp: number; isCurrentUser: boolean }> = [];
+    let schoolLeaderboard: Array<{
+      rank: number;
+      name: string;
+      detail: string;
+      xp: number;
+      isCurrentUser: boolean;
+    }> = [];
     try {
       const allProfiles = await db
         .select({
@@ -684,41 +669,7 @@ export const getLearningPathsFn = createServerFn({ method: "GET" })
     }
 
     if (pathsData.length === 0) {
-      // Mock data for demo purposes if DB is empty
-      return [
-        {
-          id: 1,
-          title: "AI Explorer",
-          tagline: "Learn the basics of Machine Learning.",
-          icon: "Sparkles",
-          progress: 45,
-          level: "Beginner",
-          modules: [
-            { lessons: [{ status: "completed" }, { status: "current" }, { status: "pending" }] },
-            { lessons: [{ status: "pending" }, { status: "pending" }] },
-          ],
-        },
-        {
-          id: 2,
-          title: "Python Basics",
-          tagline: "Start your coding journey here.",
-          icon: "Terminal",
-          progress: 100,
-          level: "Beginner",
-          modules: [{ lessons: [{ status: "completed" }, { status: "completed" }] }],
-        },
-        {
-          id: 3,
-          title: "Web Creator",
-          tagline: "Build your first website.",
-          icon: "Globe",
-          progress: 0,
-          level: "Intermediate",
-          modules: [
-            { lessons: [{ status: "pending" }, { status: "pending" }, { status: "pending" }] },
-          ],
-        },
-      ];
+      return [];
     }
 
     return pathsData.map((p) => {
@@ -730,7 +681,7 @@ export const getLearningPathsFn = createServerFn({ method: "GET" })
       return {
         id: p.id,
         title: p.title,
-        tagline: p.description,
+        tagline: p.description || "",
         icon: "BookOpen",
         progress,
         level: "Beginner",
