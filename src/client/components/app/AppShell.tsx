@@ -270,7 +270,9 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                       <span className="block text-xs font-semibold text-slate-900">
                         {user.name}
                       </span>
-                      <span className="block text-[11px] text-slate-500">{roleLabels[role || allow]}</span>
+                      <span className="block text-[11px] text-slate-500">
+                        {roleLabels[role || allow]}
+                      </span>
                     </span>
                     <Icons.ChevronDown className="h-3.5 w-3.5 text-slate-400" />
                   </button>
@@ -324,14 +326,24 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
               <Link to={roleHome[allow] || "/dashboard"} className="hover:text-indigo-600">
                 {user.school}
               </Link>
-              {crumbs.map((c, i) => (
-                <span key={`${c}-${i}`} className="flex items-center gap-1.5">
-                  <Icons.ChevronRight className="h-3 w-3 text-slate-300" />
-                  <span className={cn(i === crumbs.length - 1 && "font-medium text-slate-700")}>
-                    {labelFor[c] ?? c.replace(/-/g, " ")}
+              {crumbs.map((c, i) => {
+                const isLast = i === crumbs.length - 1;
+                const path = `/${crumbs.slice(0, i + 1).join("/")}`;
+                const content = labelFor[c] ?? c.replace(/-/g, " ");
+
+                return (
+                  <span key={`${c}-${i}`} className="flex items-center gap-1.5">
+                    <Icons.ChevronRight className="h-3 w-3 text-slate-300" />
+                    {isLast ? (
+                      <span className="font-medium text-slate-700">{content}</span>
+                    ) : (
+                      <Link to={path} className="hover:text-indigo-600 transition-colors">
+                        {content}
+                      </Link>
+                    )}
                   </span>
-                </span>
-              ))}
+                );
+              })}
             </div>
           </header>
 
