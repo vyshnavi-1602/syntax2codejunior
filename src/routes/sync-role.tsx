@@ -18,13 +18,15 @@ function SyncRolePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    syncUserRoleFn({ data: role }).then(() => {
-      // Force a full page reload to clear any cached session role states in the server/router
-      window.location.href = roleHome[role as string] || "/dashboard";
-    }).catch((err) => {
-      console.error("Failed to sync role", err);
-      window.location.href = "/login";
-    });
+    syncUserRoleFn({ data: role })
+      .then(() => {
+        // Force a full page reload to clear any cached session role states in the server/router
+        window.location.href = roleHome[role as string] || "/dashboard";
+      })
+      .catch((err) => {
+        console.error("Failed to sync role", err);
+        window.location.href = "/login";
+      });
   }, [role]);
 
   return (

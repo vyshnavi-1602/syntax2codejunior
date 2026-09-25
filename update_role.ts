@@ -24,17 +24,11 @@ async function updateUser() {
   }
   const schoolId = schools[0].id;
 
-  const targetUsers = await db
-    .select()
-    .from(schema.user)
-    .where(ilike(schema.user.email, "%vrush%"));
+  const targetUsers = await db.select().from(schema.user);
 
   for (const u of targetUsers) {
-    console.log(`Updating ${u.email} to schoolId ${schoolId}...`);
-    await db
-      .update(schema.user)
-      .set({ role: "school", schoolId })
-      .where(eq(schema.user.id, u.id));
+    console.log(`Updating ${u.email} to teacher role and schoolId ${schoolId}...`);
+    await db.update(schema.user).set({ role: "teacher", schoolId }).where(eq(schema.user.id, u.id));
   }
 
   console.log("Done!");

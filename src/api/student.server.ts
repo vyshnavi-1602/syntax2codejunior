@@ -281,8 +281,8 @@ export const getPracticeItemsFn = createServerFn({ method: "GET" })
           .where(eq(schema.completedLessons.studentId, userId)),
       ]);
 
-      if (profile.length > 0) {
-        xpTotal = profile[0].xpTotal;
+      if (profile.length > 0 && profile[0]) {
+        xpTotal = profile[0].xpTotal || 0;
       }
 
       if (completed.length > 0) {
@@ -641,7 +641,7 @@ export const getLearningPathsFn = createServerFn({ method: "GET" })
   .middleware([roleMiddleware(["student", "s2c"])])
   .handler(async ({ context }) => {
     const userId = context.user.id;
-    let pathsData: Array<{ id: number; title: string; description: string }> = [];
+    let pathsData: Array<{ id: number; title: string; description: string | null }> = [];
     let allLessons: Array<{ id: number; pathId: number }> = [];
     let completedLessonIds = new Set<number>();
 
