@@ -629,7 +629,9 @@ export const getStudentProjectsFn = createServerFn({ method: "GET" })
           if (p.feedback && p.feedback.startsWith("{")) {
             try {
               meta = JSON.parse(p.feedback);
-            } catch {}
+            } catch {
+              // Ignore invalid JSON feedback
+            }
           }
 
           const catalogKeys = Object.keys(projectCatalog);

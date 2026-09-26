@@ -64,7 +64,9 @@ async function getCachedSession(request: Request | undefined): Promise<CachedSes
       if (freshUser[0]?.role) {
         userRole = freshUser[0].role;
       }
-    } catch {}
+    } catch {
+      // Fallback if fresh user role cannot be fetched
+    }
     if (userRole === "user") userRole = "student";
 
     user = {
