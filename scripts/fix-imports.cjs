@@ -22,7 +22,6 @@ for (const file of files) {
   }
 }
 
-// Rename the files
 try {
   fs.renameSync(
     path.join(process.cwd(), "src/api/student.ts"),

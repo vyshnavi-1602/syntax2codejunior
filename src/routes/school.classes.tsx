@@ -4,8 +4,43 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Bar, PageHeader, Panel, Pill } from "@/client/components/app/primitives";
 
-const seedClasses: any = [];
-const teachers: any = [];
+interface ClassItem {
+  id: string;
+  name: string;
+  grade: number;
+  section: string;
+  teacher: string;
+  students: number;
+  completion: number;
+  avgScore: number;
+  attendance: number;
+  room: string;
+}
+
+interface TeacherItem {
+  id: string;
+  name: string;
+}
+
+const seedClasses: ClassItem[] = [
+  {
+    id: "grade-6a",
+    name: "Grade 6A",
+    grade: 6,
+    section: "A",
+    teacher: "Sarah Jenkins",
+    students: 24,
+    completion: 82,
+    avgScore: 88,
+    attendance: 95,
+    room: "Lab 1",
+  },
+];
+
+const teachers: TeacherItem[] = [
+  { id: "t1", name: "Sarah Jenkins" },
+  { id: "t2", name: "Michael Chen" },
+];
 
 export const Route = createFileRoute("/school/classes")({
   head: () => ({

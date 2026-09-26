@@ -12,7 +12,18 @@ import {
   type Tone,
 } from "@/client/components/app/primitives";
 
-const schoolsGlobal: any = [];
+interface SchoolItem {
+  id: string;
+  name: string;
+  city: string;
+  plan: string;
+  renewal: string;
+  students: number;
+  seats: number;
+  health: number;
+  status: string;
+}
+const schoolsGlobal: Array<SchoolItem> = [];
 
 export const Route = createFileRoute("/admin/schools")({
   head: () => ({

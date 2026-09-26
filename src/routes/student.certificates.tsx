@@ -208,11 +208,24 @@ function CertificatesPage() {
             {open.fileUrl ? (
               <div className="relative flex-1 overflow-auto bg-slate-100/50 p-4 flex items-center justify-center">
                 {open.fileUrl.startsWith("data:application/pdf") ? (
-                  <object data={open.fileUrl} type="application/pdf" className="w-full h-[60vh] rounded-lg shadow-sm border border-slate-200">
-                    <p>It appears you don't have a PDF plugin for this browser. <a href={open.fileUrl} download>Click here to download the PDF file.</a></p>
+                  <object
+                    data={open.fileUrl}
+                    type="application/pdf"
+                    className="w-full h-[60vh] rounded-lg shadow-sm border border-slate-200"
+                  >
+                    <p>
+                      It appears you don't have a PDF plugin for this browser.{" "}
+                      <a href={open.fileUrl} download>
+                        Click here to download the PDF file.
+                      </a>
+                    </p>
                   </object>
                 ) : (
-                  <img src={open.fileUrl} alt="External Certificate" className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-sm border border-slate-200" />
+                  <img
+                    src={open.fileUrl}
+                    alt="External Certificate"
+                    className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-sm border border-slate-200"
+                  />
                 )}
               </div>
             ) : (
@@ -224,9 +237,12 @@ function CertificatesPage() {
                   {open.title}
                 </h3>
                 <p className="mt-4 text-sm text-slate-500">awarded to</p>
-                <p className="font-display mt-1 text-2xl font-semibold text-slate-900">{user?.name || "Aarav Sharma"}</p>
+                <p className="font-display mt-1 text-2xl font-semibold text-slate-900">
+                  {user?.name || "Aarav Sharma"}
+                </p>
                 <p className="mt-4 text-xs text-slate-500">
-                  {user?.subtitle || "Grade 8A"} · {user?.school || "Greenfield International School"} · Issued {open.issued}
+                  {user?.subtitle || "Grade 8A"} ·{" "}
+                  {user?.school || "Greenfield International School"} · Issued {open.issued}
                 </p>
                 <div className="mt-6 flex flex-wrap justify-center gap-1.5">
                   {open.skills.map((s) => (
@@ -240,9 +256,12 @@ function CertificatesPage() {
                 </div>
               </div>
             )}
-            
+
             <div className="flex flex-wrap items-center justify-between gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50 shrink-0">
-              <p className="text-xs font-medium text-slate-500">Issued by <span className="text-slate-700">{open.fileUrl ? open.title : open.issuer}</span></p>
+              <p className="text-xs font-medium text-slate-500">
+                Issued by{" "}
+                <span className="text-slate-700">{open.fileUrl ? open.title : open.issuer}</span>
+              </p>
               <div className="flex gap-2">
                 <button
                   onClick={() =>

@@ -4,7 +4,17 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Bar, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 
-const teachers: any = [];
+interface SchoolTeacher {
+  id: string;
+  name: string;
+  subject: string;
+  students: number;
+  email: string;
+  classes: string[];
+  readiness: number;
+  active: boolean;
+}
+const teachers: Array<SchoolTeacher> = [];
 import { cn } from "@/client/lib/utils";
 
 export const Route = createFileRoute("/school/teachers")({

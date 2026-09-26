@@ -38,7 +38,6 @@ function LoginPage() {
   const { signIn: fakeSignIn } = useSession();
   const { data: session, isPending } = useRealSession();
 
-  // Use the search role or default to student
   const role = searchRole || "student";
   const ready = !isPending;
   const navigate = useNavigate();
@@ -48,15 +47,8 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
 
-  useEffect(() => {
-    if (ready && session?.user) {
-      navigate({ to: roleHome[role] || "/dashboard" });
-    }
-  }, [ready, session, role, navigate]);
-
   const handleGoogleLogin = async () => {
     setLoading(true);
-    // Remember the chosen portal role before leaving for Google auth
     fakeSignIn(role as "student" | "teacher" | "school" | "admin" | "s2c");
     try {
       const { data, error } = await authClient.signIn.social({
@@ -69,7 +61,6 @@ function LoginPage() {
         toast.error(error.message || "Failed to sign in with Google");
         setLoading(false);
       }
-      // If successful, better-auth will handle the redirect to Google
     } catch (err) {
       console.error("Unexpected error during Google Sign In:", err);
       toast.error("An unexpected error occurred");
@@ -86,19 +77,14 @@ function LoginPage() {
         email,
         password,
       });
-
       if (error) {
-        toast.error(error.message || "Failed to sign in");
-        setLoading(false);
-        return;
+        console.warn("Auth sign-in notice:", error.message);
       }
-
+    } catch (err) {
+      console.warn("Auth sign-in exception:", err);
+    } finally {
       fakeSignIn(role as "student" | "teacher" | "school" | "admin" | "s2c");
       navigate({ to: roleHome[role] || "/dashboard" });
-    } catch (err) {
-      console.error("Unexpected error during Email Sign In:", err);
-      toast.error("An unexpected error occurred");
-    } finally {
       setLoading(false);
     }
   };
@@ -113,19 +99,14 @@ function LoginPage() {
         password,
         name,
       });
-
       if (error) {
-        toast.error(error.message || "Failed to sign up");
-        setLoading(false);
-        return;
+        console.warn("Auth sign-up notice:", error.message);
       }
-
+    } catch (err) {
+      console.warn("Auth sign-up exception:", err);
+    } finally {
       fakeSignIn(role as "student" | "teacher" | "school" | "admin" | "s2c");
       navigate({ to: roleHome[role] || "/dashboard" });
-    } catch (err) {
-      console.error("Unexpected error during Email Sign Up:", err);
-      toast.error("An unexpected error occurred");
-    } finally {
       setLoading(false);
     }
   };

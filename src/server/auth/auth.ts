@@ -3,8 +3,19 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "../db";
 import * as schema from "../db/schema";
 
+const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:8080";
+const trustedOrigins = Array.from(
+  new Set([
+    baseURL,
+    "http://localhost:8080",
+    "http://localhost:8081",
+    "http://127.0.0.1:8080",
+    "http://127.0.0.1:8081",
+  ]),
+);
+
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:8080",
+  baseURL,
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
@@ -24,7 +35,7 @@ export const auth = betterAuth({
     },
   },
   advanced: {
-    useSecureCookies: false, // Ensure Secure cookies are disabled on localhost
+    useSecureCookies: false,
   },
-  trustedOrigins: ["http://localhost:8080", "http://127.0.0.1:8080"],
+  trustedOrigins,
 });

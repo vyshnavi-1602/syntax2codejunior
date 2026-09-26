@@ -29,11 +29,11 @@ function LearnPage() {
   const learningPaths = Route.useLoaderData();
   const [filter, setFilter] = useState<(typeof filters)[number]>("All paths");
 
-  const list = (learningPaths as any[]).filter((p) => {
+  const list = learningPaths.filter((p) => {
     if (filter === "In progress") return p.progress > 0;
     if (filter === "Not started") return p.progress === 0;
-    if (filter === "AI") return p.id === "ai-explorer";
-    if (filter === "Coding") return p.id !== "ai-explorer";
+    if (filter === "AI") return p.title.toLowerCase().includes("ai");
+    if (filter === "Coding") return !p.title.toLowerCase().includes("ai");
     return true;
   });
 
@@ -63,7 +63,7 @@ function LearnPage() {
             <Link
               key={p.id}
               to="/student/learn/$pathId"
-              params={{ pathId: p.id }}
+              params={{ pathId: p.id.toString() }}
               className="group rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg"
             >
               <div className="flex items-start justify-between">

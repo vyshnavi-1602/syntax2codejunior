@@ -15,6 +15,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SchoolRouteImport } from './routes/school'
 import { Route as StudentRouteImport } from './routes/student'
+import { Route as SyncRoleRouteImport } from './routes/sync-role'
 import { Route as TeacherRouteImport } from './routes/teacher'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
@@ -52,6 +53,7 @@ import { Route as StudentLearnIndexRouteImport } from './routes/student.learn.in
 import { Route as StudentLearnPathIdRouteImport } from './routes/student.learn.$pathId'
 import { Route as TeacherClassesIndexRouteImport } from './routes/teacher.classes.index'
 import { Route as TeacherClassesClassIdRouteImport } from './routes/teacher.classes.$classId'
+import { Route as TeacherStudentsIndexRouteImport } from './routes/teacher.students.index'
 import { Route as TeacherStudentsStudentIdRouteImport } from './routes/teacher.students.$studentId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -82,6 +84,11 @@ const SchoolRoute = SchoolRouteImport.update({
 const StudentRoute = StudentRouteImport.update({
   id: '/student',
   path: '/student',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SyncRoleRoute = SyncRoleRouteImport.update({
+  id: '/sync-role',
+  path: '/sync-role',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TeacherRoute = TeacherRouteImport.update({
@@ -269,6 +276,11 @@ const TeacherClassesClassIdRoute = TeacherClassesClassIdRouteImport.update({
   path: '/classes/$classId',
   getParentRoute: () => TeacherRoute,
 } as any)
+const TeacherStudentsIndexRoute = TeacherStudentsIndexRouteImport.update({
+  id: '/students/',
+  path: '/students/',
+  getParentRoute: () => TeacherRoute,
+} as any)
 const TeacherStudentsStudentIdRoute =
   TeacherStudentsStudentIdRouteImport.update({
     id: '/students/$studentId',
@@ -283,6 +295,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/school': typeof SchoolRouteWithChildren
   '/student': typeof StudentRouteWithChildren
+  '/sync-role': typeof SyncRoleRoute
   '/teacher': typeof TeacherRouteWithChildren
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/certificates': typeof AdminCertificatesRoute
@@ -321,11 +334,13 @@ export interface FileRoutesByFullPath {
   '/student/build/': typeof StudentBuildIndexRoute
   '/student/learn/': typeof StudentLearnIndexRoute
   '/teacher/classes/': typeof TeacherClassesIndexRoute
+  '/teacher/students/': typeof TeacherStudentsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/sync-role': typeof SyncRoleRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/certificates': typeof AdminCertificatesRoute
   '/admin/competitions': typeof AdminCompetitionsRoute
@@ -363,6 +378,7 @@ export interface FileRoutesByTo {
   '/student/build': typeof StudentBuildIndexRoute
   '/student/learn': typeof StudentLearnIndexRoute
   '/teacher/classes': typeof TeacherClassesIndexRoute
+  '/teacher/students': typeof TeacherStudentsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -372,6 +388,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/school': typeof SchoolRouteWithChildren
   '/student': typeof StudentRouteWithChildren
+  '/sync-role': typeof SyncRoleRoute
   '/teacher': typeof TeacherRouteWithChildren
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/certificates': typeof AdminCertificatesRoute
@@ -410,6 +427,7 @@ export interface FileRoutesById {
   '/student/build/': typeof StudentBuildIndexRoute
   '/student/learn/': typeof StudentLearnIndexRoute
   '/teacher/classes/': typeof TeacherClassesIndexRoute
+  '/teacher/students/': typeof TeacherStudentsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -420,6 +438,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/school'
     | '/student'
+    | '/sync-role'
     | '/teacher'
     | '/admin/analytics'
     | '/admin/certificates'
@@ -458,11 +477,13 @@ export interface FileRouteTypes {
     | '/student/build/'
     | '/student/learn/'
     | '/teacher/classes/'
+    | '/teacher/students/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/dashboard'
     | '/login'
+    | '/sync-role'
     | '/admin/analytics'
     | '/admin/certificates'
     | '/admin/competitions'
@@ -500,6 +521,7 @@ export interface FileRouteTypes {
     | '/student/build'
     | '/student/learn'
     | '/teacher/classes'
+    | '/teacher/students'
   id:
     | '__root__'
     | '/'
@@ -508,6 +530,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/school'
     | '/student'
+    | '/sync-role'
     | '/teacher'
     | '/admin/analytics'
     | '/admin/certificates'
@@ -546,6 +569,7 @@ export interface FileRouteTypes {
     | '/student/build/'
     | '/student/learn/'
     | '/teacher/classes/'
+    | '/teacher/students/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -555,6 +579,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SchoolRoute: typeof SchoolRouteWithChildren
   StudentRoute: typeof StudentRouteWithChildren
+  SyncRoleRoute: typeof SyncRoleRoute
   TeacherRoute: typeof TeacherRouteWithChildren
 }
 
@@ -600,6 +625,13 @@ declare module '@tanstack/react-router' {
       path: '/student'
       fullPath: '/student'
       preLoaderRoute: typeof StudentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sync-role': {
+      id: '/sync-role'
+      path: '/sync-role'
+      fullPath: '/sync-role'
+      preLoaderRoute: typeof SyncRoleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/teacher': {
@@ -861,6 +893,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TeacherClassesClassIdRouteImport
       parentRoute: typeof TeacherRoute
     }
+    '/teacher/students/': {
+      id: '/teacher/students/'
+      path: '/students'
+      fullPath: '/teacher/students/'
+      preLoaderRoute: typeof TeacherStudentsIndexRouteImport
+      parentRoute: typeof TeacherRoute
+    }
     '/teacher/students/$studentId': {
       id: '/teacher/students/$studentId'
       path: '/students/$studentId'
@@ -964,6 +1003,7 @@ interface TeacherRouteChildren {
   TeacherClassesClassIdRoute: typeof TeacherClassesClassIdRoute
   TeacherStudentsStudentIdRoute: typeof TeacherStudentsStudentIdRoute
   TeacherClassesIndexRoute: typeof TeacherClassesIndexRoute
+  TeacherStudentsIndexRoute: typeof TeacherStudentsIndexRoute
 }
 
 const TeacherRouteChildren: TeacherRouteChildren = {
@@ -975,6 +1015,7 @@ const TeacherRouteChildren: TeacherRouteChildren = {
   TeacherClassesClassIdRoute: TeacherClassesClassIdRoute,
   TeacherStudentsStudentIdRoute: TeacherStudentsStudentIdRoute,
   TeacherClassesIndexRoute: TeacherClassesIndexRoute,
+  TeacherStudentsIndexRoute: TeacherStudentsIndexRoute,
 }
 
 const TeacherRouteWithChildren =
@@ -987,6 +1028,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SchoolRoute: SchoolRouteWithChildren,
   StudentRoute: StudentRouteWithChildren,
+  SyncRoleRoute: SyncRoleRoute,
   TeacherRoute: TeacherRouteWithChildren,
 }
 export const routeTree = rootRouteImport

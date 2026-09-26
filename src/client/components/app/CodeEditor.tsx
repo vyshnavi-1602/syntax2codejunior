@@ -6,7 +6,7 @@ loader.config({ monaco });
 interface CodeEditorProps {
   value: string;
   onChange: (value: string | undefined) => void;
-  language?: "javascript" | "python" | "html" | "css";
+  language?: "javascript" | "python" | "html" | "css" | "java";
   theme?: "vs-dark" | "light";
   height?: string;
   readOnly?: boolean;
@@ -39,6 +39,9 @@ export function CodeEditor({
           cursorBlinking: "smooth",
           readOnly: readOnly,
           wordWrap: "on",
+          scrollbar: {
+            alwaysConsumeMouseWheel: false,
+          },
         }}
         loading={
           <div className="flex h-full items-center justify-center text-sm text-slate-500">

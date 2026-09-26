@@ -96,7 +96,6 @@ export const lessons = pgTable("lessons", {
   orderIdx: integer("order_idx").default(0).notNull(),
 });
 
-// Quiz table definition
 export const quizzes = pgTable("quizzes", {
   id: serial("id").primaryKey(),
   lessonId: integer("lesson_id")
@@ -198,5 +197,94 @@ export const competitions = pgTable("competitions", {
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
   type: text("type").notNull(), // e.g., "Hackathon", "Coding Challenge"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const submissions = pgTable("submissions", {
+  id: serial("id").primaryKey(),
+  assignmentId: integer("assignment_id")
+    .references(() => assignments.id)
+    .notNull(),
+  studentId: text("student_id")
+    .references(() => user.id)
+    .notNull(),
+  status: text("status").default("SUBMITTED").notNull(),
+  code: text("code"),
+  notes: text("notes"),
+  submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const reviews = pgTable("reviews", {
+  id: serial("id").primaryKey(),
+  submissionId: integer("submission_id")
+    .references(() => submissions.id)
+    .notNull(),
+  teacherId: text("teacher_id")
+    .references(() => user.id)
+    .notNull(),
+  status: text("status").default("COMPLETED").notNull(),
+  score: integer("score").notNull(),
+  maxScore: integer("max_score").default(100).notNull(),
+  feedback: text("feedback"),
+  reviewedAt: timestamp("reviewed_at").defaultNow().notNull(),
+});
+
+export const studentFlags = pgTable("student_flags", {
+  id: serial("id").primaryKey(),
+  studentId: text("student_id")
+    .references(() => user.id)
+    .notNull(),
+  classId: integer("class_id")
+    .references(() => classes.id)
+    .notNull(),
+  type: text("type").notNull(),
+  severity: text("severity").default("LOW").notNull(),
+  reason: text("reason").notNull(),
+  status: text("status").default("OPEN").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const skills = pgTable("skills", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+});
+
+export const studentSkillMastery = pgTable("student_skill_mastery", {
+  id: serial("id").primaryKey(),
+  studentId: text("student_id")
+    .references(() => user.id)
+    .notNull(),
+  skillId: integer("skill_id")
+    .references(() => skills.id)
+    .notNull(),
+  masteryScore: integer("mastery_score").default(0).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const attendanceSessions = pgTable("attendance_sessions", {
+  id: serial("id").primaryKey(),
+  classId: integer("class_id")
+    .references(() => classes.id)
+    .notNull(),
+  teacherId: text("teacher_id")
+    .references(() => user.id)
+    .notNull(),
+  date: timestamp("date").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const attendanceRecords = pgTable("attendance_records", {
+  id: serial("id").primaryKey(),
+  sessionId: integer("session_id")
+    .references(() => attendanceSessions.id)
+    .notNull(),
+  studentId: text("student_id")
+    .references(() => user.id)
+    .notNull(),
+  status: text("status").notNull(), // PRESENT, ABSENT, LATE, EXCUSED
+  remarks: text("remarks"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

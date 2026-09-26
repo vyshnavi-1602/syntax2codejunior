@@ -4,7 +4,16 @@ import { Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 
-const questionBank: any = [];
+interface QuestionItem {
+  id: string;
+  text: string;
+  topic: string;
+  difficulty: string;
+  grade: string;
+  usage: number;
+  status: string;
+}
+const questionBank: Array<QuestionItem> = [];
 
 export const Route = createFileRoute("/admin/questions")({
   head: () => ({

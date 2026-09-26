@@ -42,7 +42,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
     if (error.message.includes("Unauthorized") || error.message.includes("Forbidden")) {
-      router.navigate({ to: "/login" });
+      router.navigate({ to: "/login", search: { role: undefined } });
     }
   }, [error, router]);
 

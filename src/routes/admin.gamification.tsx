@@ -12,10 +12,37 @@ import {
   type Tone,
 } from "@/client/components/app/primitives";
 
-const badgeLibrary: any = [];
-const gamificationRules: any = [];
-const levelThresholds: any = [];
-const scoreWeights: any = [];
+interface BadgeItem {
+  id: string;
+  name: string;
+  tone: Tone;
+  criteria: string;
+  awarded: number;
+}
+interface GamificationRule {
+  id: string;
+  name: string;
+  rule: string;
+  value: number;
+  unit: string;
+}
+interface LevelThreshold {
+  level: number;
+  xp: number;
+  title: string;
+}
+interface ScoreWeight {
+  id: string;
+  label: string;
+  action: string;
+  value: number;
+  weight: number;
+}
+
+const badgeLibrary: Array<BadgeItem> = [];
+const gamificationRules: Array<GamificationRule> = [];
+const levelThresholds: Array<LevelThreshold> = [];
+const scoreWeights: Array<ScoreWeight> = [];
 
 export const Route = createFileRoute("/admin/gamification")({
   head: () => ({

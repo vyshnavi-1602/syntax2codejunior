@@ -4,8 +4,26 @@ import { BadgeCheck, Plus, Search, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 
-const certificateTemplates: any = [];
-const issuedCredentials: any = [];
+interface CertTemplate {
+  id: string;
+  name: string;
+  category?: string;
+  accent?: string;
+  status?: string;
+  usage?: number;
+  updated?: string;
+}
+interface IssuedCredential {
+  id: string;
+  holder: string;
+  student: string;
+  template: string;
+  school: string;
+  issued: string;
+  status?: string;
+}
+const certificateTemplates: Array<CertTemplate> = [];
+const issuedCredentials: Array<IssuedCredential> = [];
 import { cn } from "@/client/lib/utils";
 
 export const Route = createFileRoute("/admin/certificates")({
@@ -107,7 +125,7 @@ function AdminCertificates() {
                   <div>
                     <p className="text-sm font-semibold text-slate-900">{t.name}</p>
                     <p className="text-xs text-slate-500">
-                      {t.usage.toLocaleString()} issued · updated {t.updated}
+                      {(t.usage ?? 0).toLocaleString()} issued · updated {t.updated}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

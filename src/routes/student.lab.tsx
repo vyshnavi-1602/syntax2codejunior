@@ -1,6 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Play, RotateCcw, Save, Sparkles, TerminalSquare } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Play,
+  RotateCcw,
+  Save,
+  Sparkles,
+  TerminalSquare,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Panel, Pill } from "@/client/components/app/primitives";
 import { cn } from "@/client/lib/utils";
@@ -49,6 +57,7 @@ function LabPage() {
   const [running, setRunning] = useState(false);
 
   const [chatInput, setChatInput] = useState("");
+  const [hintsOpen, setHintsOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "ai"; text: string }[]>([
     { role: "ai", text: "I'm Ask S2C, your AI tutor! Need a hint with this loop?" },
   ]);
@@ -78,7 +87,6 @@ function LabPage() {
     setTimeout(() => {
       if (lang === "JavaScript") {
         const logs: string[] = [];
-        // Intercept console.log
         const originalLog = console.log;
         console.log = (...args) => {
           logs.push(
@@ -87,7 +95,6 @@ function LabPage() {
         };
 
         try {
-          // Execute code in a scoped function
           const fn = new Function(code);
           fn();
 
@@ -100,21 +107,20 @@ function LabPage() {
           setResults(testCases.map(() => passes));
           if (passes) toast.success("All 3 test cases passed! +50 XP");
           else toast.error("Tests failed", { description: "Output did not match expected lines." });
-        } catch (err: any) {
-          setOutput((o) => [...o, `Error: ${err.message}`]);
+        } catch (err: unknown) {
+          const error = err as Error;
+          setOutput((o) => [...o, `Error: ${error.message}`]);
           setResults(testCases.map(() => false));
-          toast.error("Execution failed", { description: err.message });
+          toast.error("Execution failed", { description: error.message });
         } finally {
           console.log = originalLog;
         }
       } else if (lang === "HTML/CSS") {
         setOutput((o) => [...o, "Rendering live preview..."]);
-        // Test cases don't really apply in the same way for HTML, but we mock success if there's basic structure
         const passes = code.includes("<h1>") && code.includes("class=");
         setResults(testCases.map(() => passes));
         if (passes) toast.success("Layout looks great! +50 XP");
       } else {
-        // Mock fallback for Python/Java
         const lines = Array.from({ length: 10 }, (_, i) => `3 x ${i + 1} = ${3 * (i + 1)}`);
         const passes = code.includes("3") && (code.includes("for") || code.includes("while"));
         setOutput((o) => [
@@ -179,48 +185,66 @@ function LabPage() {
               <li>• Exactly 10 output lines.</li>
               <li>• Spacing must match the example.</li>
             </ul>
-            <div className="mt-4 flex flex-col rounded-xl border border-indigo-100 bg-indigo-50/30 overflow-hidden">
-              <div className="flex items-center gap-1.5 bg-indigo-50/80 px-3 py-2 text-xs font-semibold text-indigo-700">
-                <Sparkles className="h-3.5 w-3.5" /> Ask S2C
-              </div>
-              <div className="flex max-h-48 flex-col gap-2 overflow-y-auto p-3">
-                {chatMessages.map((m, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "max-w-[85%] rounded-lg px-3 py-2 text-xs",
-                      m.role === "ai"
-                        ? "self-start bg-white text-slate-700 shadow-sm border border-slate-100"
-                        : "self-end bg-indigo-600 text-white",
-                    )}
-                  >
-                    {m.text}
-                  </div>
-                ))}
-                {isAsking && (
-                  <div className="self-start rounded-lg bg-white px-3 py-2 text-xs text-slate-400 shadow-sm border border-slate-100 italic">
-                    Thinking...
-                  </div>
+
+            <div className="mt-4 overflow-hidden rounded-xl border border-indigo-100 bg-indigo-50/30">
+              <button
+                type="button"
+                onClick={() => setHintsOpen((o) => !o)}
+                className="flex w-full items-center justify-between bg-indigo-50/80 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100/70 transition-colors"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+                  Ask S2C AI Tutor {hintsOpen ? "" : "· Need a hint?"}
+                </span>
+                {hintsOpen ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
                 )}
-              </div>
-              <div className="border-t border-indigo-100 bg-white p-2 flex items-center gap-2">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && askAi()}
-                  placeholder="Ask for a hint..."
-                  className="flex-1 bg-transparent px-2 py-1 text-xs outline-none"
-                  disabled={isAsking}
-                />
-                <button
-                  onClick={askAi}
-                  disabled={isAsking || !chatInput.trim()}
-                  className="rounded bg-indigo-600 px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
-                >
-                  Ask
-                </button>
-              </div>
+              </button>
+
+              {hintsOpen && (
+                <div>
+                  <div className="flex max-h-44 flex-col gap-2 overflow-y-auto p-3">
+                    {chatMessages.map((m, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          "max-w-[85%] rounded-lg px-3 py-2 text-xs",
+                          m.role === "ai"
+                            ? "self-start bg-white text-slate-700 shadow-sm border border-slate-100"
+                            : "self-end bg-indigo-600 text-white",
+                        )}
+                      >
+                        {m.text}
+                      </div>
+                    ))}
+                    {isAsking && (
+                      <div className="self-start rounded-lg bg-white px-3 py-2 text-xs text-slate-400 shadow-sm border border-slate-100 italic">
+                        Thinking...
+                      </div>
+                    )}
+                  </div>
+                  <div className="border-t border-indigo-100 bg-white p-2 flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && askAi()}
+                      placeholder="Ask for a hint..."
+                      className="flex-1 bg-transparent px-2 py-1 text-xs outline-none"
+                      disabled={isAsking}
+                    />
+                    <button
+                      onClick={askAi}
+                      disabled={isAsking || !chatInput.trim()}
+                      className="rounded bg-indigo-600 px-2 py-1 text-xs font-medium text-white disabled:opacity-50 hover:bg-indigo-700"
+                    >
+                      Ask
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </Panel>
 
@@ -283,9 +307,9 @@ function LabPage() {
                     ? "java"
                     : lang === "JavaScript"
                       ? "javascript"
-                      : "html") as any
+                      : "html") as "python" | "java" | "javascript" | "html"
               }
-              height="400px"
+              height="360px"
             />
           </Panel>
 
@@ -299,7 +323,7 @@ function LabPage() {
             bodyClassName="p-0 flex flex-col"
           >
             {lang === "HTML/CSS" ? (
-              <div className="h-64 rounded-b-2xl bg-white w-full border-t border-slate-200">
+              <div className="h-56 rounded-b-2xl bg-white w-full border-t border-slate-200">
                 <iframe
                   title="live-preview"
                   srcDoc={code}
@@ -308,7 +332,7 @@ function LabPage() {
                 />
               </div>
             ) : (
-              <div className="max-h-64 h-64 overflow-y-auto rounded-b-2xl bg-slate-900 p-4 font-mono text-[12.5px] leading-relaxed text-slate-100 w-full">
+              <div className="max-h-52 h-52 overflow-y-auto overscroll-contain rounded-b-2xl bg-slate-900 p-4 font-mono text-[12.5px] leading-relaxed text-slate-100 w-full">
                 {output.map((line, i) => (
                   <div
                     key={i}

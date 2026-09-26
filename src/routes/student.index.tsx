@@ -9,6 +9,8 @@ import {
   Hammer,
   Terminal,
   Award,
+  GraduationCap,
+  Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Bar, Pill, Panel, PageHeader, Stat } from "@/client/components/app/primitives";
@@ -109,7 +111,7 @@ function StudentHome() {
         />
         <Stat
           label="Syntax2Code Score"
-          value={profile.score || 0}
+          value={profile.xpTotal || 0}
           sub="Keep practicing to rank up!"
           tone="emerald"
           icon={<Trophy className="h-4 w-4" />}
@@ -206,6 +208,92 @@ function StudentHome() {
                 <Pill>Locked</Pill>
               </div>
             </div>
+          </Panel>
+
+          {data.assignedTeacher && (
+            <Panel title="Class Mentor & Faculty" description="Your assigned academic instructor">
+              <div className="flex items-start gap-3 rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/70 to-slate-50 p-3.5">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm">
+                  <GraduationCap className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-slate-900">
+                      {data.assignedTeacher.name}
+                    </p>
+                    <Pill tone="violet">Mentor</Pill>
+                  </div>
+                  <p className="mt-0.5 text-xs font-medium text-indigo-700">
+                    {data.assignedTeacher.title}
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    {data.assignedTeacher.className} · {data.assignedTeacher.room}
+                  </p>
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <a
+                      href={`mailto:${data.assignedTeacher.email}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      <Mail className="h-3 w-3 text-slate-500" />
+                      Contact
+                    </a>
+                    <span className="text-[10px] text-slate-400">
+                      {data.assignedTeacher.officeHours}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Panel>
+          )}
+
+          <Panel
+            title="Classroom Daily Tasks"
+            description="Posted by your teacher"
+            action={
+              <Link
+                to="/student/practice"
+                className="text-xs font-semibold text-indigo-600 hover:underline"
+              >
+                View all
+              </Link>
+            }
+          >
+            {data.classAssignments && data.classAssignments.length > 0 ? (
+              <div className="space-y-3">
+                {data.classAssignments.map(
+                  (task: {
+                    id: number;
+                    title: string;
+                    type: string;
+                    instructions: string | null;
+                    className: string;
+                  }) => (
+                    <div
+                      key={task.id}
+                      className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-indigo-900">{task.title}</span>
+                        <Pill tone="violet">{task.type}</Pill>
+                      </div>
+                      {task.instructions && (
+                        <p className="mt-1 line-clamp-2 text-xs text-slate-600">
+                          {task.instructions}
+                        </p>
+                      )}
+                      <Link
+                        to="/student/practice"
+                        className="mt-2 inline-flex h-7 items-center rounded-lg bg-indigo-600 px-3 text-[11px] font-medium text-white hover:bg-indigo-700"
+                      >
+                        Solve task
+                      </Link>
+                    </div>
+                  ),
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500">No new daily tasks posted yet.</p>
+            )}
           </Panel>
         </div>
       </div>

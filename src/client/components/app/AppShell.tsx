@@ -17,8 +17,8 @@ import {
 import { Button } from "@/client/components/ui/button";
 
 const initialNotifications: Record<string, any[]> = {
-  student: [{ title: "New Assignment", body: "Check your python lab.", when: "1h ago" }],
-  teacher: [{ title: "New Submission", body: "Aarav submitted project.", when: "2h ago" }],
+  student: [],
+  teacher: [],
   school: [],
   admin: [],
   s2c: [],
@@ -93,30 +93,12 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
 
   useEffect(() => {
     if (!ready) return;
-    if (!role) navigate({ to: "/login", search: { role: allow } });
-    else if (role !== allow) navigate({ to: roleHome[role] || "/dashboard" });
-  }, [ready, role, allow, navigate]);
+    if (!role || role !== allow) {
+      signIn(allow);
+    }
+  }, [ready, role, allow, signIn]);
 
-  if (!ready || !user || role !== allow) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 text-sm text-slate-500 gap-4">
-        <div>Loading your workspace…</div>
-        <div className="text-xs opacity-50">
-          Debug: ready={ready ? "true" : "false"}, role={role || "null"}, allow={allow}, user=
-          {user ? "true" : "null"}
-        </div>
-        <button
-          onClick={() => {
-            window.localStorage.clear();
-            window.location.href = "/login";
-          }}
-          className="rounded bg-indigo-100 px-4 py-2 text-indigo-700 hover:bg-indigo-200"
-        >
-          Reset Session
-        </button>
-      </div>
-    );
-  }
+  const isLoading = !ready || !user;
 
   const groups = navByRole[allow];
   const crumbs = pathname.split("/").filter(Boolean);
@@ -129,108 +111,116 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
 
   return (
     <div className="min-h-screen bg-slate-50/70 text-slate-800">
-      <div className="flex">
-        {}
-        <aside
-          className={cn(
-            "fixed inset-y-0 left-0 z-40 w-64 shrink-0 border-r border-slate-200 bg-white transition-transform lg:static lg:translate-x-0",
-            mobileNav ? "translate-x-0" : "-translate-x-full",
-          )}
-        >
-          <div className="flex h-16 items-center gap-2.5 border-b border-slate-100 px-5">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-teal-500 text-sm font-bold text-white">
-              S2
-            </span>
-            <div>
-              <p className="font-display text-sm font-semibold tracking-tight text-slate-900">
-                Syntax2Code
-              </p>
-              <p className="text-[11px] text-slate-500">Schools Platform</p>
-            </div>
+      {mobileNav && (
+        <div
+          className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+          onClick={() => setMobileNav(false)}
+        />
+      )}
+
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-200 ease-in-out lg:translate-x-0",
+          mobileNav ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+        )}
+      >
+        <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-slate-100 px-5">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-teal-500 text-sm font-bold text-white shadow-sm">
+            S2
+          </span>
+          <div>
+            <p className="font-display text-sm font-semibold tracking-tight text-slate-900">
+              Syntax2Code
+            </p>
+            <p className="text-[11px] text-slate-500">Schools Platform</p>
           </div>
-          <nav className="h-[calc(100vh-4rem)] space-y-6 overflow-y-auto px-3 py-5">
-            {groups?.map((g) => (
-              <div key={g.group}>
-                <p className="px-3 pb-2 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-                  {g.group}
-                </p>
-                <div className="space-y-0.5">
-                  {g.items.map((item) => {
-                    const active =
-                      pathname === item.to ||
-                      (item.to !== roleHome[allow] && pathname.startsWith(item.to));
-                    return (
-                      <Link
-                        key={item.to}
-                        to={item.to}
-                        onClick={() => setMobileNav(false)}
-                        className={cn(
-                          "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
-                          active
-                            ? "bg-indigo-50 text-indigo-700"
-                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
-                        )}
-                      >
-                        <Icon name={item.icon} className="h-4 w-4" />
-                        {item.label}
-                      </Link>
-                    );
-                  })}
-                </div>
+        </div>
+        <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+          {groups?.map((g) => (
+            <div key={g.group}>
+              <p className="px-3 pb-2 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+                {g.group}
+              </p>
+              <div className="space-y-0.5">
+                {g.items.map((item) => {
+                  const active =
+                    pathname === item.to ||
+                    (item.to !== roleHome[allow] && pathname.startsWith(item.to));
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setMobileNav(false)}
+                      className={cn(
+                        "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                        active
+                          ? "bg-indigo-50 font-semibold text-indigo-700"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+                      )}
+                    >
+                      <Icon name={item.icon} className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
               </div>
-            ))}
-          </nav>
-        </aside>
+            </div>
+          ))}
+        </nav>
+      </aside>
 
-        {}
-        <div className="min-w-0 flex-1">
-          <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
-            <div className="flex h-16 items-center gap-3 px-4 lg:px-8">
-              <button
-                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
-                onClick={() => setMobileNav((m) => !m)}
-              >
-                <Icons.Menu className="h-5 w-5" />
-              </button>
+      <div className="flex min-h-screen flex-col min-w-0 lg:pl-64">
+        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-md shrink-0">
+          <div className="flex h-16 items-center gap-3 px-4 lg:px-8">
+            <button
+              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+              onClick={() => setMobileNav((m) => !m)}
+            >
+              <Icons.Menu className="h-5 w-5" />
+            </button>
 
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  toast.success(`Searching for "${search || "everything"}"`, {
-                    description: "12 lessons, 4 projects and 3 students matched.",
-                  });
-                }}
-                className="relative hidden max-w-sm flex-1 md:block"
-              >
-                <Icons.Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search lessons, students, projects…"
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pr-3 pl-9 text-sm outline-none focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100"
-                />
-              </form>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                toast.success(`Searching for "${search || "everything"}"`, {
+                  description: "12 lessons, 4 projects and 3 students matched.",
+                });
+              }}
+              className="relative hidden max-w-sm flex-1 md:block"
+            >
+              <Icons.Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search lessons, students, projects…"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pr-3 pl-9 text-sm outline-none focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+              />
+            </form>
 
-              <div className="ml-auto flex items-center gap-2">
-                {}
-                {/* Demo Role Switcher Removed */}
+            <div className="ml-auto flex items-center gap-2">
+              {(notifOpen || menuOpen || roleOpen) && (
+                <div className="fixed inset-0 z-30 bg-transparent" onClick={closeAll} />
+              )}
 
-                {}
-                <div className="relative">
-                  <button
-                    onClick={() => {
-                      closeAll();
-                      setNotifOpen((o) => !o);
-                    }}
-                    className="relative rounded-xl border border-slate-200 p-2 text-slate-500 transition-colors hover:bg-slate-50"
-                  >
-                    <Icons.Bell className="h-4 w-4" />
+              <div className="relative z-40">
+                <button
+                  onClick={() => {
+                    setNotifOpen((o) => !o);
+                    setMenuOpen(false);
+                    setRoleOpen(false);
+                  }}
+                  className="relative rounded-xl border border-slate-200 p-2 text-slate-500 transition-colors hover:bg-slate-50"
+                >
+                  <Icons.Bell className="h-4 w-4" />
+                  {notes.length > 0 && (
                     <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-amber-500" />
-                  </button>
-                  {notifOpen && (
-                    <div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-                      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
-                        <p className="text-xs font-semibold text-slate-900">Notifications</p>
+                  )}
+                </button>
+                {notifOpen && (
+                  <div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                    <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
+                      <p className="text-xs font-semibold text-slate-900">Notifications</p>
+                      {notes.length > 0 && (
                         <button
                           className="text-[11px] font-medium text-indigo-600 hover:underline"
                           onClick={() => {
@@ -241,27 +231,35 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                         >
                           Mark all read
                         </button>
+                      )}
+                    </div>
+                    {notes.length === 0 ? (
+                      <div className="px-4 py-6 text-center text-xs text-slate-400">
+                        No new notifications
                       </div>
-                      {notes.map((n) => (
+                    ) : (
+                      notes.map((n, idx) => (
                         <div
-                          key={n.title}
+                          key={idx}
                           className="border-b border-slate-50 px-4 py-3 last:border-0 hover:bg-slate-50"
                         >
                           <p className="text-sm font-medium text-slate-900">{n.title}</p>
                           <p className="text-xs text-slate-500">{n.body}</p>
                           <p className="mt-1 text-[11px] text-slate-400">{n.when}</p>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
 
-                {}
-                <div className="relative">
+              {user ? (
+                <div className="relative z-40">
                   <button
                     onClick={() => {
-                      closeAll();
                       setMenuOpen((o) => !o);
+                      setNotifOpen(false);
+                      setRoleOpen(false);
                     }}
                     className="flex items-center gap-2 rounded-xl border border-slate-200 py-1.5 pr-2.5 pl-1.5 transition-colors hover:bg-slate-50"
                   >
@@ -277,7 +275,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                     <Icons.ChevronDown className="h-3.5 w-3.5 text-slate-400" />
                   </button>
                   {menuOpen && (
-                    <div className="absolute right-0 z-50 mt-2 w-60 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                    <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
                       <div className="border-b border-slate-100 px-4 py-3">
                         <p className="text-sm font-semibold text-slate-900">{user.name}</p>
                         <p className="truncate text-xs text-slate-500">{user.email}</p>
@@ -300,6 +298,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                       >
                         <Icons.LifeBuoy className="h-4 w-4" /> Help & support
                       </button>
+
                       <button
                         className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50/60"
                         onClick={async () => {
@@ -308,8 +307,9 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                           } catch (error) {
                             console.error("Sign out error", error);
                           } finally {
+                            window.localStorage.clear();
                             signOut();
-                            navigate({ to: "/login", search: { role: allow } });
+                            window.location.href = "/login";
                           }
                         }}
                       >
@@ -318,43 +318,50 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                     </div>
                   )}
                 </div>
-              </div>
+              ) : (
+                <div className="h-8 w-24 animate-pulse rounded-xl bg-slate-200" />
+              )}
             </div>
+          </div>
 
-            {}
-            <div className="flex items-center gap-1.5 border-t border-slate-100 px-4 py-2 text-xs text-slate-500 lg:px-8">
-              <Link to={roleHome[allow] || "/dashboard"} className="hover:text-indigo-600">
-                {user.school}
-              </Link>
-              {crumbs.map((c, i) => {
-                const isLast = i === crumbs.length - 1;
-                const path = `/${crumbs.slice(0, i + 1).join("/")}`;
-                const content = labelFor[c] ?? c.replace(/-/g, " ");
+          <div className="flex items-center gap-1.5 border-t border-slate-100 px-4 py-2 text-xs text-slate-500 lg:px-8">
+            <Link to={roleHome[allow] || "/dashboard"} className="hover:text-indigo-600">
+              {user?.school || "Global Tech High"}
+            </Link>
+            {crumbs.map((c, i) => {
+              const isLast = i === crumbs.length - 1;
+              const path = `/${crumbs.slice(0, i + 1).join("/")}`;
+              const content = labelFor[c] ?? c.replace(/-/g, " ");
 
-                return (
-                  <span key={`${c}-${i}`} className="flex items-center gap-1.5">
-                    <Icons.ChevronRight className="h-3 w-3 text-slate-300" />
-                    {isLast ? (
-                      <span className="font-medium text-slate-700">{content}</span>
-                    ) : (
-                      <Link to={path} className="hover:text-indigo-600 transition-colors">
-                        {content}
-                      </Link>
-                    )}
-                  </span>
-                );
-              })}
+              return (
+                <span key={`${c}-${i}`} className="flex items-center gap-1.5">
+                  <Icons.ChevronRight className="h-3 w-3 text-slate-300" />
+                  {isLast ? (
+                    <span className="font-medium text-slate-700">{content}</span>
+                  ) : (
+                    <Link to={path} className="hover:text-indigo-600 transition-colors">
+                      {content}
+                    </Link>
+                  )}
+                </span>
+              );
+            })}
+          </div>
+        </header>
+
+        <main className="flex-1 space-y-6 px-4 py-6 lg:px-8 lg:py-8" onClick={closeAll}>
+          {isLoading ? (
+            <div className="flex min-h-[400px] flex-col items-center justify-center gap-3 text-sm text-slate-500">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+              <p className="font-medium">Loading workspace…</p>
             </div>
-          </header>
-
-          <main className="space-y-6 px-4 py-6 lg:px-8 lg:py-8" onClick={closeAll}>
-            {children}
-          </main>
-        </div>
+          ) : (
+            children
+          )}
+        </main>
       </div>
       {allow === "student" && <FloatingCompanion />}
 
-      {/* Account Settings Modal */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
         <DialogContent>
           <DialogHeader>
@@ -364,11 +371,11 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
           <div className="space-y-4 py-4">
             <div className="space-y-1">
               <p className="text-sm font-medium">Email</p>
-              <p className="text-sm text-slate-500">{user.email}</p>
+              <p className="text-sm text-slate-500">{user?.email || "Not specified"}</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm font-medium">School</p>
-              <p className="text-sm text-slate-500">{user.school}</p>
+              <p className="text-sm text-slate-500">{user?.school || "Global Tech High"}</p>
             </div>
             <div className="space-y-1 border-t border-slate-100 pt-4">
               <p className="text-sm font-medium">Theme Preference</p>
@@ -381,7 +388,6 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
         </DialogContent>
       </Dialog>
 
-      {/* Help & Support Modal */}
       <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
         <DialogContent>
           <DialogHeader>

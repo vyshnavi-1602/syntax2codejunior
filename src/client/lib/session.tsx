@@ -127,7 +127,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const value = useMemo<SessionValue>(() => {
     let mockUser = role ? (demoUsers.find((u) => u.role === role) ?? null) : null;
 
-    // Merge real user data into the mock template so the UI shows the correct name
     if (mockUser && realSession?.user) {
       mockUser = {
         ...mockUser,
@@ -156,7 +155,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useSession() {
   return useContext(SessionContext);
 }

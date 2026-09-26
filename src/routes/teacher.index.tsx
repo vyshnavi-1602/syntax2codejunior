@@ -42,26 +42,8 @@ function TeacherHome() {
   const { data: session } = useSession();
   const teacherName = session?.user?.name || "Teacher";
 
-  const needSupport = [
-    {
-      id: 1,
-      name: "Alex Chen",
-      className: "Grade 8A",
-      tag: "Needs support",
-      lastActive: "3 days ago",
-    },
-  ];
-
-  const skillHeatmap = [
-    {
-      skill: "Variables & Data Types",
-      "Grade 6A": 90,
-      "Grade 8A": 92,
-      "Grade 8B": 85,
-      "Grade 9A": 96,
-    },
-    { skill: "Control Flow", "Grade 6A": 75, "Grade 8A": 88, "Grade 8B": 82, "Grade 9A": 94 },
-  ];
+  const needSupport = analytics.needSupport || [];
+  const skillHeatmap = analytics.skillHeatmap || [];
 
   return (
     <>

@@ -14,15 +14,18 @@ async function seedClubs() {
   let users = await db.select().from(schema.user).limit(1);
   if (users.length === 0) {
     console.log("No users found. Inserting a dummy teacher...");
-    const [inserted] = await db.insert(schema.user).values({
-      id: "teacher-1",
-      name: "Ms. Priya Raman",
-      email: "priya.raman@greenfield.edu.in",
-      emailVerified: true,
-      role: "teacher",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }).returning();
+    const [inserted] = await db
+      .insert(schema.user)
+      .values({
+        id: "teacher-1",
+        name: "Ms. Priya Raman",
+        email: "priya.raman@greenfield.edu.in",
+        emailVerified: true,
+        role: "teacher",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
     users = [inserted];
   }
   const teacherId = users[0].id;

@@ -28,12 +28,21 @@ export const Route = createFileRoute("/student/leaderboard")({
 const scopes = ["Class", "Grade", "School", "Inter-school"] as const;
 const windows = ["Weekly", "Monthly", "All-time"] as const;
 
+interface LeaderboardEntry {
+  rank: number;
+  name: string;
+  detail: string;
+  xp: number;
+  isCurrentUser?: boolean;
+}
+
 function LeaderboardPage() {
   const leaderboards = Route.useLoaderData();
   const [scope, setScope] = useState<(typeof scopes)[number]>("Class");
   const [win, setWin] = useState<(typeof windows)[number]>("Weekly");
   const factor = win === "Weekly" ? 0.18 : win === "Monthly" ? 0.6 : 1;
-  const rows = (leaderboards as any)[scope] || [];
+  const rows = ((leaderboards as Record<string, LeaderboardEntry[]>)[scope] ||
+    []) as LeaderboardEntry[];
 
   return (
     <>
@@ -99,10 +108,7 @@ function LeaderboardPage() {
               {rows.map((r) => (
                 <tr
                   key={r.rank}
-                  className={cn(
-                    "border-t border-slate-100",
-                    r.isCurrentUser && "bg-indigo-50/50",
-                  )}
+                  className={cn("border-t border-slate-100", r.isCurrentUser && "bg-indigo-50/50")}
                 >
                   <td className="px-4 py-3 font-semibold text-slate-500">#{r.rank}</td>
                   <td className="px-4 py-3 font-medium text-slate-900">{r.name}</td>

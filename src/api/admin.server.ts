@@ -141,7 +141,6 @@ export const getGlobalOverviewFn = createServerFn({ method: "GET" })
     const totalSchoolsResult = await db.select({ count: count() }).from(schema.schools);
     const totalUsersResult = await db.select({ count: count() }).from(schema.user);
 
-    // Mocking analytics history for MVP
     const platformGrowth = [
       { month: "Jan", students: 12000, active: 8000, schools: 45 },
       { month: "Feb", students: 18000, active: 14000, schools: 60 },

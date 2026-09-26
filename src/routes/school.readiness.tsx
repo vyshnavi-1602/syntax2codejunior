@@ -3,8 +3,35 @@ import { toast } from "sonner";
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { Bar, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 
-const readinessIndex: any = [];
-const readinessRecommendations: any = [];
+interface ReadinessDimension {
+  dimension: string;
+  value: number;
+}
+interface ReadinessAction {
+  title: string;
+  impact: string;
+  detail: string;
+}
+
+const readinessIndex: Array<ReadinessDimension> = [
+  { dimension: "Curriculum Coverage", value: 82 },
+  { dimension: "Faculty Readiness", value: 76 },
+  { dimension: "Student Engagement", value: 88 },
+  { dimension: "Infrastructure & Lab", value: 91 },
+  { dimension: "AI Ethics & Safety", value: 84 },
+];
+const readinessRecommendations: Array<ReadinessAction> = [
+  {
+    title: "Expand Grade 9 Python curriculum",
+    impact: "High",
+    detail: "Introduce object-oriented concepts before mid-term.",
+  },
+  {
+    title: "Faculty AI training workshops",
+    impact: "Medium",
+    detail: "Upskill 8 CS teachers in generative AI classroom tools.",
+  },
+];
 
 export const Route = createFileRoute("/school/readiness")({
   head: () => ({

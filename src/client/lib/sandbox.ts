@@ -19,13 +19,8 @@ export async function runJavaScript(
 
   const originalLog = console.log;
   console.log = (...args) => {
-    logs.push(
-      args.map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a))).join(" "),
-    );
+    logs.push(args.map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a))).join(" "));
   };
-
-  // Extremely basic and naive sandbox for demo purposes.
-  // In production, use Web Workers or an isolated iframe with Content-Security-Policy.
 
   try {
     for (const tc of testCases) {
@@ -37,7 +32,6 @@ export async function runJavaScript(
           return eval(__result);
         `;
 
-        // eslint-disable-next-line no-new-func
         const func = new Function(executableCode);
         const actualRaw = func();
 
@@ -49,9 +43,10 @@ export async function runJavaScript(
           success = false;
           results.push({ passed: false, actual });
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
+        const err = e as Error;
         success = false;
-        results.push({ passed: false, error: e.message || String(e) });
+        results.push({ passed: false, error: err.message || String(e) });
       }
     }
   } finally {

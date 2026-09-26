@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Bar, FilterChips, PageHeader, Panel, Pill } from "@/client/components/app/primitives";
 import {
@@ -17,6 +17,7 @@ import {
   getTeacherAssignmentsFn,
   getTeacherClassesFn,
   createAssignmentFn,
+  deleteAssignmentFn,
 } from "@/api/teacher.server";
 
 export const Route = createFileRoute("/teacher/assignments")({
@@ -63,10 +64,21 @@ function AssignmentsPage() {
   const router = useRouter();
   const [tab, setTab] = useState<(typeof tabs)[number]>("Assignments");
   const [creating, setCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const availableClasses =
+    classes.length > 0
+      ? classes
+      : [
+          { id: 1, name: "Grade 8A" },
+          { id: 2, name: "Grade 8B" },
+          { id: 3, name: "Grade 9A" },
+          { id: 4, name: "Grade 6A" },
+        ];
+
   const [form, setForm] = useState({
     title: "",
-    className: "Grade 8A",
-    due: "2026-10-02",
+    className: availableClasses[0]?.name || "Grade 8A",
+    due: new Date().toISOString().split("T")[0],
     type: "Practice set",
     instructions: "",
   });
@@ -131,6 +143,31 @@ function AssignmentsPage() {
                       className="h-9 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50"
                     >
                       Remind
+                    </button>
+                    <button
+                      disabled={deletingId === a.id}
+                      onClick={async () => {
+                        if (confirm(`Are you sure you want to delete "${a.title}"?`)) {
+                          setDeletingId(a.id);
+                          try {
+                            await deleteAssignmentFn({ data: a.id });
+                            toast.success(`Assignment "${a.title}" deleted`);
+                            router.invalidate();
+                          } catch (err: unknown) {
+                            const error = err as Error;
+                            toast.error("Failed to delete assignment", {
+                              description: error.message,
+                            });
+                          } finally {
+                            setDeletingId(null);
+                          }
+                        }
+                      }}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-200 px-3 text-xs font-medium text-rose-600 hover:bg-rose-50 hover:border-rose-300 disabled:opacity-50 transition-colors"
+                      title="Delete assignment"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete
                     </button>
                   </div>
                 </div>
@@ -285,10 +322,12 @@ function AssignmentsPage() {
                 <select
                   value={form.className}
                   onChange={(e) => setForm({ ...form, className: e.target.value })}
-                  className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-300"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-indigo-300"
                 >
-                  {classes.map((c) => (
-                    <option key={c.id}>{c.name}</option>
+                  {availableClasses.map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
                   ))}
                 </select>
                 <input
@@ -325,7 +364,7 @@ function AssignmentsPage() {
               <button
                 onClick={async () => {
                   try {
-                    await createAssignmentFn({ data: form });
+                    await createAssignmentFn({ data: { ...form, due: form.due || "" } });
                     toast.success("Assignment published", {
                       description: `${form.title || "Untitled"} · ${form.className} · due ${form.due}`,
                     });

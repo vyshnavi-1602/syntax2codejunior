@@ -52,8 +52,6 @@ const roles = [
   },
 ];
 
-
-
 function Index() {
   const navigate = useNavigate();
 
@@ -75,7 +73,6 @@ function Index() {
             <button
               key={r.id}
               onClick={() => {
-                // Pass the selected role to the login page so it knows which portal to open
                 navigate({ to: "/login", search: { role: r.id } });
               }}
               className="group flex w-full items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left transition-all hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-100"

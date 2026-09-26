@@ -4,7 +4,15 @@ import { ShieldAlert, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 
-const moderationQueue: any = [];
+interface ModerationItem {
+  id: string;
+  type: string;
+  severity: string;
+  content: string;
+  school: string;
+  when: string;
+}
+const moderationQueue: Array<ModerationItem> = [];
 
 export const Route = createFileRoute("/admin/moderation")({
   head: () => ({

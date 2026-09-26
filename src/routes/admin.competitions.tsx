@@ -4,8 +4,33 @@ import { Plus, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 
-const compLeaderboard: any = [];
-const competitions: any = [];
+interface CompItem {
+  id: string;
+  name: string;
+  status: string;
+  participants: number;
+  schools: number;
+  level: string;
+  date: string;
+  registered?: boolean;
+  prize?: string;
+  rounds: Array<{
+    name: string;
+    date: string;
+    type?: string;
+    status?: string;
+    state?: string;
+    score?: string;
+  }>;
+}
+interface CompLeaderboardItem {
+  rank: number;
+  name: string;
+  school: string;
+  score: number;
+}
+const compLeaderboard: Array<CompLeaderboardItem> = [];
+const competitions: Array<CompItem> = [];
 import { cn } from "@/client/lib/utils";
 
 export const Route = createFileRoute("/admin/competitions")({

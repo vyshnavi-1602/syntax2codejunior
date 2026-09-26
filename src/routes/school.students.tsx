@@ -4,8 +4,18 @@ import { Search, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 
-const classes: any = [];
-const students: any = [];
+interface SchoolStudent {
+  id: string;
+  name: string;
+  className: string;
+  tag: string;
+  score: number;
+  completion: number;
+  active: boolean;
+  lastActive: string;
+}
+const classes: Array<{ id: string; name: string }> = [];
+const students: Array<SchoolStudent> = [];
 import { cn } from "@/client/lib/utils";
 
 export const Route = createFileRoute("/school/students")({

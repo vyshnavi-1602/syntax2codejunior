@@ -4,7 +4,6 @@ import * as schema from "./schema";
 import "dotenv/config";
 
 console.log("DATABASE_URL IS:", process.env.DATABASE_URL);
-// Cache the database connection in development. This avoids creating a new connection on every HMR update.
 const globalForDb = globalThis as unknown as {
   conn: postgres.Sql | undefined;
 };

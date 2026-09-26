@@ -47,7 +47,6 @@ function PathPage() {
 
   const lesson = allLessons[index];
 
-  // Fetch lesson details when selecting a lesson
   useEffect(() => {
     if (lesson) {
       getLessonContent({ data: lesson.id }).then((content) => {
@@ -102,7 +101,9 @@ function PathPage() {
   if (!data || !path) return <div>Path not found in database. Make sure you seeded the DB!</div>;
   if (!lesson) return <div>No lessons found for this path.</div>;
 
-  const completedCount = allLessons.filter((l: any) => l.status === "completed").length;
+  const completedCount = allLessons.filter(
+    (l: { status?: string }) => l.status === "completed",
+  ).length;
   const progress =
     allLessons.length > 0 ? Math.round((completedCount / allLessons.length) * 100) : 0;
 

@@ -47,15 +47,27 @@ const flow: ProjectStatus[] = [
 function ProjectDetail() {
   const { projectId } = useParams({ from: "/student/build/$projectId" });
   const projects = Route.useLoaderData();
-  const project = (projects as any[]).find((p: any) => p.id === projectId) ?? (projects[0] as any);
-  const [milestones, setMilestones] = useState(
-    project?.milestones || [
+  const defaultProject = {
+    id: projectId || "1",
+    title: "Custom Project",
+    brief: "Design and implement your application following the project specifications.",
+    skills: ["JavaScript", "HTML", "Logic"],
+    track: "Web",
+    difficulty: "Beginner",
+    xp: 100,
+    lessonId: 1,
+    milestones: [
       { title: "Understand requirements", done: true },
       { title: "Draft logic", done: false },
       { title: "Write code", done: false },
     ],
+    status: "In Progress" as ProjectStatus,
+  };
+  const project = projects.find((p) => p.id === projectId) ?? projects[0] ?? defaultProject;
+  const [milestones, setMilestones] = useState(project.milestones);
+  const [status, setStatus] = useState<ProjectStatus>(
+    (project.status as ProjectStatus) || "In Progress",
   );
-  const [status, setStatus] = useState<ProjectStatus>(project?.status || "In Progress");
   const [note, setNote] = useState("");
 
   const done = milestones.filter((m) => m.done).length;
@@ -143,7 +155,7 @@ function ProjectDetail() {
                     await submitProject({
                       data: {
                         projectId: project.id,
-                        lessonId: project.lessonId,
+                        lessonId: (project as { lessonId?: number }).lessonId || 1,
                         title: project.title,
                         submittedUrl: note,
                       },

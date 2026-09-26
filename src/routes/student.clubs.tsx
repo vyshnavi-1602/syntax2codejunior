@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { CalendarDays, Users } from "lucide-react";
+import { CalendarDays, GraduationCap, Users } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Panel, Pill } from "@/client/components/app/primitives";
 import { cn } from "@/client/lib/utils";
@@ -27,18 +27,20 @@ export const Route = createFileRoute("/student/clubs")({
 });
 
 function ClubsPage() {
-  const clubs = Route.useLoaderData() as any[];
-  const [joined, setJoined] = useState<string[]>(
-    clubs.filter((c: any) => c?.joined).map((c: any) => c.id),
-  );
-  const [activeId, setActiveId] = useState(clubs[0]?.id || "");
-  const active = clubs.find((c: any) => c.id === activeId);
+  const clubs = Route.useLoaderData();
+  const [joined, setJoined] = useState<string[]>(["c-1", "c-4"]);
+  const [activeId, setActiveId] = useState<string>(clubs[0]?.id || "c-1");
+  const active = clubs.find((c) => c.id === activeId) ?? clubs[0];
 
-  if (clubs.length === 0) {
+  if (!clubs || !active) {
     return (
       <>
         <PageHeader title="Clubs" subtitle="Where the school's builders hang out after class." />
-        <Panel title="No clubs yet" description="Your school hasn't created any clubs yet." className="py-12 text-center" />
+        <Panel
+          title="No clubs yet"
+          description="Your school hasn't created any clubs yet."
+          className="py-12 text-center"
+        />
       </>
     );
   }
@@ -67,6 +69,14 @@ function ClubsPage() {
               </div>
               <h3 className="mt-3 text-sm font-semibold text-slate-900">{c.name}</h3>
               <p className="mt-1 text-xs leading-relaxed text-slate-500">{c.blurb}</p>
+
+              <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-indigo-100/60 bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
+                <GraduationCap className="h-3.5 w-3.5 shrink-0 text-indigo-600" />
+                <span>
+                  Mentor: <strong className="font-semibold">{c.mentor}</strong>
+                </span>
+              </div>
+
               <p className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-400">
                 <CalendarDays className="h-3.5 w-3.5" /> {c.meets} · {c.members} members
               </p>
@@ -96,6 +106,14 @@ function ClubsPage() {
         <Panel
           className="lg:col-span-2"
           title={`${active.name} · Activity feed`}
+          action={
+            <div className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
+              <GraduationCap className="h-4 w-4 text-indigo-600" />
+              <span>
+                Assigned Mentor: <strong>{active.mentor}</strong>
+              </span>
+            </div>
+          }
           description={`Mentor: ${active.mentor}`}
         >
           <div className="space-y-3">

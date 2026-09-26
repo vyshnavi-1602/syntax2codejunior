@@ -16,9 +16,24 @@ import {
 } from "recharts";
 import { FilterChips, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 
-const benchmarkSchools: any = [];
-const retentionCurve: any = [];
-const systemAnnouncements: any = [];
+interface BenchmarkSchool {
+  name: string;
+  score: number;
+  competitions?: number;
+  engagement?: number;
+  completion?: number;
+}
+interface SystemAnnouncement {
+  id: string;
+  title: string;
+  body?: string;
+  audience?: string;
+  when?: string;
+}
+
+const benchmarkSchools: Array<BenchmarkSchool> = [];
+const retentionCurve: Array<{ month: string; rate: number }> = [];
+const systemAnnouncements: Array<SystemAnnouncement> = [];
 
 export const Route = createFileRoute("/admin/analytics")({
   head: () => ({

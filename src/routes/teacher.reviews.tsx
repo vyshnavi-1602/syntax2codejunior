@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { CheckCircle2, Sparkles, Star } from "lucide-react";
 import { toast } from "sonner";
@@ -26,15 +26,16 @@ export const Route = createFileRoute("/teacher/reviews")({
 
 function ReviewsPage() {
   const { pendingProjects } = Route.useLoaderData();
+  const router = useRouter();
 
-  const [activeId, setActiveId] = useState(pendingProjects[0]?.project.id ?? null);
+  const [activeId, setActiveId] = useState<number | null>(pendingProjects[0]?.project.id ?? null);
   const [statuses, setStatuses] = useState<Record<string, string>>(
     Object.fromEntries(pendingProjects.map((p) => [p.project.id, p.project.status])),
   );
   const [featured, setFeatured] = useState<number[]>([]);
   const [feedback, setFeedback] = useState("");
 
-  const activeItem = pendingProjects.find((p) => p.project.id === activeId);
+  const activeItem = pendingProjects.find((p) => p.project.id === activeId) ?? pendingProjects[0];
 
   const handleGrade = async (status: "approved" | "needs_changes") => {
     if (!activeItem) return;
@@ -49,6 +50,8 @@ function ReviewsPage() {
       });
 
       setStatuses((m) => ({ ...m, [activeItem.project.id]: status }));
+      setFeedback("");
+      router.invalidate();
       toast.success(`${activeItem.project.title} → ${status}`, {
         description: `${activeItem.student.name} has been notified.`,
       });
@@ -59,7 +62,7 @@ function ReviewsPage() {
     }
   };
 
-  if (!pendingProjects.length) {
+  if (!pendingProjects.length || !activeItem) {
     return (
       <>
         <PageHeader
@@ -73,8 +76,8 @@ function ReviewsPage() {
     );
   }
 
-  const activeProject = activeItem!.project;
-  const activeStudent = activeItem!.student;
+  const activeProject = activeItem.project;
+  const activeStudent = activeItem.student;
 
   return (
     <>
@@ -187,14 +190,14 @@ function ReviewsPage() {
               <button
                 onClick={() => handleGrade("approved")}
                 className="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
-                disabled={statuses[activeProject.id] !== "pending"}
+                disabled={statuses[activeProject.id] !== "SUBMITTED"}
               >
                 Approve project
               </button>
               <button
                 onClick={() => handleGrade("needs_changes")}
                 className="h-10 rounded-xl border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-700 hover:bg-amber-100"
-                disabled={statuses[activeProject.id] !== "pending"}
+                disabled={statuses[activeProject.id] !== "SUBMITTED"}
               >
                 Request changes
               </button>

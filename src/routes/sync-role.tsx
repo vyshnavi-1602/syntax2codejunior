@@ -20,7 +20,6 @@ function SyncRolePage() {
   useEffect(() => {
     syncUserRoleFn({ data: role })
       .then(() => {
-        // Force a full page reload to clear any cached session role states in the server/router
         window.location.href = roleHome[role as string] || "/dashboard";
       })
       .catch((err) => {

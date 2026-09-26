@@ -70,6 +70,7 @@ function BuildPage() {
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newBrief, setNewBrief] = useState("Python Text Adventure");
+  const [creatingProject, setCreatingProject] = useState(false);
 
   const list = projects.filter((p) => status === "All" || p.status === status);
 
@@ -96,32 +97,50 @@ function BuildPage() {
                     type="text"
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
-                    placeholder="e.g. My Awesome Game"
+                    placeholder="e.g. Space Odyssey RPG, Personal Portfolio"
                     className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-700">Select a Brief</label>
+                  <label className="text-sm font-medium text-slate-700">
+                    Select a Project Brief
+                  </label>
                   <select
                     value={newBrief}
                     onChange={(e) => setNewBrief(e.target.value)}
                     className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                   >
-                    <option value="Python Text Adventure">Python Text Adventure</option>
-                    <option value="HTML/CSS Portfolio">HTML/CSS Portfolio</option>
-                    <option value="JavaScript Calculator">JavaScript Calculator</option>
+                    <option value="Python Text Adventure">
+                      Python Text Adventure (Python Backend · 150 XP)
+                    </option>
+                    <option value="HTML/CSS Portfolio">
+                      HTML/CSS Portfolio (Web Design · 120 XP)
+                    </option>
+                    <option value="JavaScript Calculator">
+                      JavaScript Calculator (Frontend · 140 XP)
+                    </option>
+                    <option value="AI Prompt Chatbot">AI Prompt Chatbot (AI & ML · 200 XP)</option>
+                    <option value="Canvas Arcade Game">
+                      Canvas Arcade Game (Game Dev · 180 XP)
+                    </option>
                   </select>
                 </div>
                 <button
+                  disabled={creatingProject}
                   onClick={async () => {
                     if (!newTitle.trim()) {
                       toast.error("Please enter a title");
                       return;
                     }
 
+                    setCreatingProject(true);
                     try {
                       await submitProject({
-                        data: { title: newTitle, submittedUrl: "" },
+                        data: {
+                          title: newTitle,
+                          briefName: newBrief,
+                          submittedUrl: "",
+                        },
                       });
                       toast.success("Project created!", {
                         description: `You can now start working on '${newTitle}'.`,
@@ -131,11 +150,13 @@ function BuildPage() {
                       router.invalidate();
                     } catch (error) {
                       toast.error("Failed to create project");
+                    } finally {
+                      setCreatingProject(false);
                     }
                   }}
-                  className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                  className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
                 >
-                  Create Project
+                  {creatingProject ? "Creating project..." : "Create Project"}
                 </button>
               </div>
             </DialogContent>

@@ -4,7 +4,14 @@ import { FileText, Send } from "lucide-react";
 import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill } from "@/client/components/app/primitives";
 
-const announcements: any = [];
+interface AnnouncementItem {
+  id: string;
+  title: string;
+  body: string;
+  audience: string;
+  when: string;
+}
+const announcements: Array<AnnouncementItem> = [];
 
 export const Route = createFileRoute("/school/reports")({
   head: () => ({
