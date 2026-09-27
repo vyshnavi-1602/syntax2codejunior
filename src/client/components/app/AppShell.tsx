@@ -71,6 +71,7 @@ const labelFor: Record<string, string> = {
   competitions: "Competitions",
   gamification: "Gamification",
   moderation: "Moderation",
+  schedule: "Schedule",
 };
 
 export function AppShell({ children, allow }: { children: ReactNode; allow: RoleId }) {

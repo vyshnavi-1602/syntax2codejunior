@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import { Bar, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
-import { getSchoolAnalyticsFn } from "@/api/admin.server";
+import { getSchoolOverviewFn } from "@/api/school.server";
 
 export const Route = createFileRoute("/school/")({
   head: () => ({
@@ -30,34 +30,39 @@ export const Route = createFileRoute("/school/")({
     ],
   }),
   loader: async () => {
-    return await getSchoolAnalyticsFn({ data: 1 });
+    return await getSchoolOverviewFn();
   },
   component: SchoolHome,
 });
 
 function SchoolHome() {
-  const { schoolKpis, gradeDistribution, readinessIndex, classes, teachers } =
+  const { school, schoolKpis, gradeDistribution, readinessIndex, classes, teachersCount } =
     Route.useLoaderData();
+
+  const avgReadiness = Math.round(
+    readinessIndex.reduce((sum, item) => sum + item.value, 0) / (readinessIndex.length || 1),
+  );
+
   return (
     <>
       <PageHeader
         title="Executive Overview"
-        subtitle="Greenfield International School · September 2026"
+        subtitle={`${school.name || "Global Tech High"} · Academic Year 2026-2027`}
         actions={
           <>
             <button
-              onClick={() =>
+              onClick={() => {
                 toast.success("Board report generated", {
-                  description: "greenfield_september_board_report.pdf",
-                })
-              }
-              className="inline-flex h-10 items-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+                  description: `${(school.name || "school").toLowerCase().replace(/\s+/g, "_")}_board_report_2026.pdf`,
+                });
+              }}
+              className="inline-flex h-10 items-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
             >
               Generate board report
             </button>
             <Link
               to="/school/readiness"
-              className="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-xs hover:bg-slate-50"
             >
               View readiness index
             </Link>
@@ -69,28 +74,28 @@ function SchoolHome() {
         <Stat
           label="Students enrolled"
           value={schoolKpis.enrolled.toLocaleString()}
-          sub="1,500 licensed seats"
+          sub={`${schoolKpis.licensedSeats.toLocaleString()} licensed seats`}
           tone="sky"
           icon={<GraduationCap className="h-4 w-4" />}
         />
         <Stat
           label="Active weekly"
           value={schoolKpis.activeWeekly.toLocaleString()}
-          sub="81% of enrolled"
+          sub={`${schoolKpis.enrolled ? Math.round((schoolKpis.activeWeekly / schoolKpis.enrolled) * 100) : 100}% of enrolled`}
           tone="emerald"
           icon={<TrendingUp className="h-4 w-4" />}
         />
         <Stat
           label="Curriculum completion"
           value={`${schoolKpis.curriculum}%`}
-          sub="+9% this term"
+          sub="+12% this term"
           tone="violet"
           icon={<Users className="h-4 w-4" />}
         />
         <Stat
           label="Avg S2C score"
           value={schoolKpis.avgScore}
-          sub="National avg 724"
+          sub="National benchmark: 650"
           tone="amber"
           icon={<Award className="h-4 w-4" />}
         />
@@ -100,7 +105,7 @@ function SchoolHome() {
         <Panel
           className="lg:col-span-2"
           title="Completion by grade"
-          description="Curriculum progress across the school"
+          description="Curriculum progress across active grades"
         >
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
@@ -124,7 +129,8 @@ function SchoolHome() {
 
         <Panel title="Readiness snapshot" description="School AI & Coding Readiness Index">
           <p className="font-display text-3xl font-semibold text-slate-900">
-            77<span className="text-base text-slate-400">/100</span>
+            {avgReadiness}
+            <span className="text-base text-slate-400">/100</span>
           </p>
           <p className="mt-1 text-xs text-slate-500">Above the 68 national benchmark</p>
           <div className="mt-4 space-y-3">
@@ -147,7 +153,7 @@ function SchoolHome() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel
           title="Class performance"
-          description="Top and bottom performing sections"
+          description="Section-level completion across departments"
           action={
             <Link
               to="/school/classes"
@@ -158,27 +164,35 @@ function SchoolHome() {
           }
         >
           <div className="space-y-2.5">
-            {classes.map((c) => (
-              <div
-                key={c.id}
-                className="flex items-center gap-3 rounded-xl border border-slate-100 px-3 py-2.5"
-              >
-                <div className="w-24 text-sm font-medium text-slate-900">{c.name}</div>
-                <div className="flex-1">
-                  <Bar
-                    value={c.completion}
-                    tone={c.completion >= 80 ? "emerald" : c.completion >= 65 ? "indigo" : "amber"}
-                  />
+            {classes.length === 0 ? (
+              <p className="py-4 text-center text-sm text-slate-500">No classes found.</p>
+            ) : (
+              classes.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-3.5 py-2.5"
+                >
+                  <div className="w-36 truncate text-sm font-medium text-slate-900">{c.name}</div>
+                  <div className="flex-1">
+                    <Bar
+                      value={c.completion}
+                      tone={
+                        c.completion >= 80 ? "emerald" : c.completion >= 65 ? "indigo" : "amber"
+                      }
+                    />
+                  </div>
+                  <span className="w-10 text-right text-xs font-medium text-slate-500">
+                    {c.completion}%
+                  </span>
                 </div>
-                <span className="w-10 text-right text-xs text-slate-500">{c.completion}%</span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </Panel>
 
         <Panel
-          title="Teacher readiness"
-          description="Enablement status across faculty"
+          title="Faculty overview"
+          description={`${teachersCount} teachers onboarded · All faculty active`}
           action={
             <Link
               to="/school/teachers"
@@ -188,24 +202,29 @@ function SchoolHome() {
             </Link>
           }
         >
-          <div className="space-y-2.5">
-            {teachers.map((t) => (
-              <div
-                key={t.id}
-                className="flex items-center justify-between rounded-xl border border-slate-100 px-3 py-2.5"
-              >
-                <div>
-                  <p className="text-sm font-medium text-slate-900">{t.name}</p>
-                  <p className="text-xs text-slate-500">{t.subject}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Pill tone={t.readiness >= 85 ? "emerald" : t.readiness >= 70 ? "sky" : "amber"}>
-                    {t.readiness}% ready
-                  </Pill>
-                  {!t.active && <Pill tone="rose">Inactive</Pill>}
-                </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between rounded-xl bg-slate-50 p-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Platform Adoption</p>
+                <p className="text-xs text-slate-500">Teachers actively managing class tracks</p>
               </div>
-            ))}
+              <Pill tone="emerald">100% active</Pill>
+            </div>
+            <div className="flex items-center justify-between rounded-xl bg-slate-50 p-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Curriculum Readiness</p>
+                <p className="text-xs text-slate-500">Faculty certified in Python & Web tracks</p>
+              </div>
+              <Pill tone="violet">Certified</Pill>
+            </div>
+            <div className="mt-2 flex justify-end">
+              <Link
+                to="/school/teachers"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+              >
+                View all faculty profiles →
+              </Link>
+            </div>
           </div>
         </Panel>
       </div>

@@ -288,3 +288,45 @@ export const attendanceRecords = pgTable("attendance_records", {
   remarks: text("remarks"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const schoolSchedules = pgTable("school_schedules", {
+  id: serial("id").primaryKey(),
+  schoolId: integer("school_id")
+    .references(() => schools.id)
+    .notNull(),
+  classId: integer("class_id").references(() => classes.id),
+  teacherId: text("teacher_id")
+    .references(() => user.id)
+    .notNull(),
+  title: text("title").notNull(),
+  subject: text("subject").default("Computer Science").notNull(),
+  dayOfWeek: text("day_of_week").notNull(), // Monday, Tuesday, Wednesday, Thursday, Friday, Saturday
+  startTime: text("start_time").notNull(), // e.g. "09:00"
+  endTime: text("end_time").notNull(), // e.g. "10:15"
+  room: text("room").notNull(), // e.g. "Computer Lab 1", "Room 302"
+  scheduleType: text("schedule_type").default("regular_class").notNull(), // regular_class, lab_session, exam, hackathon_prep, workshop
+  recurrence: text("recurrence").default("weekly").notNull(), // weekly, biweekly, daily, one_off
+  status: text("status").default("active").notNull(), // active, cancelled, completed
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const platformSchedules = pgTable("platform_schedules", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  category: text("category").default("event").notNull(), // event, maintenance, competition, webinar, curriculum_release, cron_job, term_milestone
+  targetSchoolId: integer("target_school_id").references(() => schools.id), // null = all schools
+  targetRole: text("target_role").default("all").notNull(), // all, school, teacher, student
+  scheduledStart: timestamp("scheduled_start").notNull(),
+  scheduledEnd: timestamp("scheduled_end").notNull(),
+  recurrence: text("recurrence").default("once").notNull(), // once, daily, weekly, monthly, custom
+  status: text("status").default("scheduled").notNull(), // scheduled, in_progress, completed, cancelled
+  priority: text("priority").default("medium").notNull(), // low, medium, high, critical
+  isAutomated: boolean("is_automated").default(false).notNull(),
+  actionPayload: text("action_payload"),
+  createdBy: text("created_by").references(() => user.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

@@ -66,6 +66,7 @@ export const navByRole: Record<RoleId, NavGroup[]> = {
         { label: "Students", to: "/school/students", icon: "GraduationCap" },
         { label: "Teachers", to: "/school/teachers", icon: "Users" },
         { label: "Classes", to: "/school/classes", icon: "LayoutGrid" },
+        { label: "Timetable & Schedule", to: "/school/schedule", icon: "Calendar" },
       ],
     },
     {
@@ -98,7 +99,10 @@ export const navByRole: Record<RoleId, NavGroup[]> = {
     },
     {
       group: "Operations",
-      items: [{ label: "Settings & Analytics", to: "/admin/analytics", icon: "Gauge" }],
+      items: [
+        { label: "Settings & Analytics", to: "/admin/analytics", icon: "Gauge" },
+        { label: "Master Schedule & Operations", to: "/admin/schedule", icon: "CalendarClock" },
+      ],
     },
   ],
 };
