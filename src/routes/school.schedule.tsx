@@ -22,6 +22,7 @@ import {
   deleteSchoolScheduleFn,
   toggleSchoolScheduleStatusFn,
 } from "@/api/school.server";
+import { exportTimetableCsv } from "@/client/lib/school-reports";
 import {
   Dialog,
   DialogContent,
@@ -70,7 +71,7 @@ const SCHEDULE_TYPES = [
 
 function SchoolSchedulePage() {
   const router = useRouter();
-  const { schedules, classes, teachers, conflicts, rooms, stats } = Route.useLoaderData();
+  const { school, schedules, classes, teachers, conflicts, rooms, stats } = Route.useLoaderData();
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedDay, setSelectedDay] = useState<string>("All");
@@ -241,9 +242,13 @@ function SchoolSchedulePage() {
     }
   };
 
-  const handleExport = () => {
+  const handleExportCsv = () => {
+    exportTimetableCsv(filteredSchedules, school?.name || "Global Tech High");
+    toast.success("Timetable exported to CSV");
+  };
+
+  const handlePrint = () => {
     window.print();
-    toast.info("Preparing print / PDF export...");
   };
 
   return (
@@ -254,10 +259,18 @@ function SchoolSchedulePage() {
         actions={
           <div className="flex items-center gap-2">
             <button
-              onClick={handleExport}
+              onClick={handleExportCsv}
               className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition"
+              title="Download master timetable as CSV"
             >
-              <Download className="h-4 w-4 text-slate-500" /> Export / Print
+              <Download className="h-4 w-4 text-slate-500" /> Export CSV
+            </button>
+            <button
+              onClick={handlePrint}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition"
+              title="Print schedule"
+            >
+              <CalendarIcon className="h-4 w-4 text-slate-500" /> Print
             </button>
             <button
               onClick={handleOpenAdd}

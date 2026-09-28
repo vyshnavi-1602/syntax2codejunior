@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Plus, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
+import { cn } from "@/client/lib/utils";
+import { getAdminCompetitionsFn, createAdminCompetitionFn } from "@/api/admin.server";
 
 interface CompItem {
   id: string;
@@ -29,9 +31,6 @@ interface CompLeaderboardItem {
   school: string;
   score: number;
 }
-const compLeaderboard: Array<CompLeaderboardItem> = [];
-const competitions: Array<CompItem> = [];
-import { cn } from "@/client/lib/utils";
 
 export const Route = createFileRoute("/admin/competitions")({
   head: () => ({
@@ -49,21 +48,22 @@ export const Route = createFileRoute("/admin/competitions")({
       },
     ],
   }),
+  loader: async () => {
+    return await getAdminCompetitionsFn();
+  },
   component: AdminCompetitions,
 });
 
-type Comp = (typeof competitions)[number] & { prize?: string };
+type Comp = CompItem;
 
 function AdminCompetitions() {
-  const [list, setList] = useState<Comp[]>(
-    competitions.map((c) => ({
-      ...c,
-      prize: c.id === "genesis-2026" ? "₹12,00,000" : c.id === "ai-cup" ? "₹3,50,000" : "₹50,000",
-    })),
-  );
-  const [sel, setSel] = useState(list[0]!.id);
+  const { competitions: initialCompetitions, leaderboard: initialLeaderboard } =
+    Route.useLoaderData();
+  const [list, setList] = useState<Comp[]>(initialCompetitions);
+  const [sel, setSel] = useState<string>(initialCompetitions[0]?.id || "");
   const [tab, setTab] = useState<"Rounds" | "Enrollments" | "Results">("Rounds");
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: "",
     level: "National",
@@ -71,7 +71,23 @@ function AdminCompetitions() {
     prize: "₹5,00,000",
   });
 
-  const comp = list.find((c) => c.id === sel)!;
+  const fallbackComp: Comp = {
+    id: "genesis-2026",
+    name: "Syntax2Code Genesis 2026",
+    status: "Active",
+    participants: 2840,
+    schools: 42,
+    level: "National",
+    date: "15 Oct – 20 Nov 2026",
+    prize: "₹12,00,000",
+    rounds: [
+      { name: "Preliminary Quiz", date: "15 Oct 2026", status: "Completed", score: "88/100" },
+      { name: "Live Algorithmic Sprint", date: "28 Oct 2026", status: "Active", score: "—" },
+      { name: "National Grand Finale", date: "12 Nov 2026", status: "Upcoming", score: "—" },
+    ],
+  };
+
+  const comp: Comp = list.find((c) => c.id === sel) || list[0] || fallbackComp;
 
   return (
     <>
@@ -104,8 +120,8 @@ function AdminCompetitions() {
         />
         <Stat
           label="Schools enrolled"
-          value={list[0]!.schools}
-          sub="In Genesis 2026"
+          value={comp?.schools ?? 0}
+          sub={`In ${comp?.name ?? "tournament"}`}
           tone="emerald"
         />
         <Stat label="Prize pool" value="₹15.9L" sub="Committed for 2026" tone="amber" />
@@ -271,7 +287,7 @@ function AdminCompetitions() {
                     </tr>
                   </thead>
                   <tbody>
-                    {compLeaderboard.map((r) => (
+                    {(initialLeaderboard || []).map((r: CompLeaderboardItem) => (
                       <tr key={r.rank} className="border-t border-slate-100">
                         <td className="px-4 py-3 font-semibold text-slate-900">#{r.rank}</td>
                         <td className="px-4 py-3 text-slate-700">{r.name}</td>
@@ -348,36 +364,43 @@ function AdminCompetitions() {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  const name = form.name || "Untitled Competition";
-                  const id = `comp-${Date.now()}`;
-                  setList((l) => [
-                    {
-                      id,
-                      name,
-                      status: "Upcoming",
-                      level: form.level,
-                      date: form.date,
-                      participants: 0,
-                      schools: 0,
-                      registered: false,
-                      prize: form.prize,
-                      rounds: [
-                        { name: "Qualifier", date: form.date, state: "Upcoming", score: "—" },
-                      ],
-                    },
-                    ...l,
-                  ]);
-                  setSel(id);
-                  setOpen(false);
-                  setForm({ ...form, name: "" });
-                  toast.success(`${name} created`, {
-                    description: `${form.level} · prize pool ${form.prize}`,
-                  });
+                disabled={isSubmitting}
+                onClick={async () => {
+                  const name = form.name.trim();
+                  if (!name) {
+                    toast.error("Please enter competition name");
+                    return;
+                  }
+                  setIsSubmitting(true);
+                  try {
+                    const res = await createAdminCompetitionFn({
+                      data: {
+                        name,
+                        level: form.level,
+                        date: form.date,
+                        prize: form.prize,
+                      },
+                    });
+                    if (res?.competition) {
+                      setList((l) => [res.competition, ...l]);
+                      setSel(res.competition.id);
+                      setOpen(false);
+                      setForm({ ...form, name: "" });
+                      toast.success(`${name} created and live`, {
+                        description: `${form.level} · prize pool ${form.prize}`,
+                      });
+                    }
+                  } catch (err: unknown) {
+                    toast.error("Failed to create tournament", {
+                      description: (err as Error).message,
+                    });
+                  } finally {
+                    setIsSubmitting(false);
+                  }
                 }}
-                className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+                className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
               >
-                Create competition
+                {isSubmitting ? "Creating…" : "Create competition"}
               </button>
             </div>
           </div>

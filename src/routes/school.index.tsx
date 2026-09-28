@@ -12,6 +12,11 @@ import {
 } from "recharts";
 import { Bar, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 import { getSchoolOverviewFn } from "@/api/school.server";
+import {
+  generateSchoolReportHtml,
+  printIsolatedHtml,
+  SchoolReportData,
+} from "@/client/lib/school-reports";
 
 export const Route = createFileRoute("/school/")({
   head: () => ({
@@ -43,6 +48,20 @@ function SchoolHome() {
     readinessIndex.reduce((sum, item) => sum + item.value, 0) / (readinessIndex.length || 1),
   );
 
+  const handleGenerateBoardReport = () => {
+    const reportData: SchoolReportData = {
+      school,
+      schoolKpis,
+      classes,
+      readinessIndex,
+    };
+    const html = generateSchoolReportHtml("board-pack", reportData);
+    printIsolatedHtml(html);
+    toast.success("Executive Board Dossier generated", {
+      description: "Select 'Save as PDF' or print from the dialog.",
+    });
+  };
+
   return (
     <>
       <PageHeader
@@ -51,11 +70,7 @@ function SchoolHome() {
         actions={
           <>
             <button
-              onClick={() => {
-                toast.success("Board report generated", {
-                  description: `${(school.name || "school").toLowerCase().replace(/\s+/g, "_")}_board_report_2026.pdf`,
-                });
-              }}
+              onClick={handleGenerateBoardReport}
               className="inline-flex h-10 items-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
             >
               Generate board report

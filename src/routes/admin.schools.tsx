@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, Search, X } from "lucide-react";
+import { Plus, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   Bar,
@@ -11,6 +11,12 @@ import {
   Stat,
   type Tone,
 } from "@/client/components/app/primitives";
+import {
+  getAdminSchoolsFn,
+  createAdminSchoolFn,
+  updateAdminSchoolFn,
+  deleteAdminSchoolFn,
+} from "@/api/admin.server";
 
 interface SchoolItem {
   id: string;
@@ -23,7 +29,6 @@ interface SchoolItem {
   health: number;
   status: string;
 }
-const schoolsGlobal: Array<SchoolItem> = [];
 
 export const Route = createFileRoute("/admin/schools")({
   head: () => ({
@@ -40,21 +45,26 @@ export const Route = createFileRoute("/admin/schools")({
       },
     ],
   }),
+  loader: async () => {
+    return await getAdminSchoolsFn();
+  },
   component: AdminSchools,
 });
 
 const plans = ["All plans", "Starter", "Growth", "Enterprise"] as const;
 const tiers = ["Starter", "Growth", "Enterprise"] as const;
 
-type School = (typeof schoolsGlobal)[number];
+type School = SchoolItem;
 
 function AdminSchools() {
-  const [list, setList] = useState<School[]>(schoolsGlobal);
+  const { schools: initialSchools } = Route.useLoaderData();
+  const [list, setList] = useState<School[]>(initialSchools);
   const [q, setQ] = useState("");
   const [plan, setPlan] = useState<(typeof plans)[number]>("All plans");
   const [add, setAdd] = useState(false);
   const [detail, setDetail] = useState<School | null>(null);
   const [form, setForm] = useState({ name: "", city: "", plan: "Growth", seats: "800" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const rows = list.filter(
     (s) =>
@@ -63,11 +73,15 @@ function AdminSchools() {
   const planTone = (p: string): Tone =>
     p === "Enterprise" ? "violet" : p === "Growth" ? "sky" : "slate";
 
+  const totalSeats = list.reduce((n, s) => n + s.seats, 0);
+  const totalStudents = list.reduce((n, s) => n + s.students, 0);
+  const seatUtil = totalSeats > 0 ? Math.round((totalStudents / totalSeats) * 100) : 0;
+
   return (
     <>
       <PageHeader
         title="Schools & Licenses"
-        subtitle={`${list.length} partner schools · ${list.reduce((n, s) => n + s.seats, 0).toLocaleString()} seats contracted`}
+        subtitle={`${list.length} partner schools · ${totalSeats.toLocaleString()} seats contracted`}
         actions={
           <button
             onClick={() => setAdd(true)}
@@ -87,7 +101,7 @@ function AdminSchools() {
         />
         <Stat
           label="Seat utilisation"
-          value={`${Math.round((list.reduce((n, s) => n + s.students, 0) / list.reduce((n, s) => n + s.seats, 0)) * 100)}%`}
+          value={`${seatUtil}%`}
           sub="Across all contracts"
           tone="emerald"
         />
@@ -229,31 +243,42 @@ function AdminSchools() {
               Cancel
             </button>
             <button
-              onClick={() => {
-                const name = form.name || "New Partner School";
-                setList((l) => [
-                  {
-                    id: `sc-${Date.now()}`,
-                    name,
-                    city: form.city || "—",
-                    students: 0,
-                    plan: form.plan,
-                    seats: Number(form.seats) || 0,
-                    renewal: "30 Sep 2027",
-                    health: 70,
-                    status: "Active",
-                  },
-                  ...l,
-                ]);
-                setAdd(false);
-                setForm({ name: "", city: "", plan: "Growth", seats: "800" });
-                toast.success(`${name} provisioned`, {
-                  description: `${form.plan} licence · admin invite emailed.`,
-                });
+              disabled={isSubmitting}
+              onClick={async () => {
+                const name = form.name.trim();
+                if (!name) {
+                  toast.error("Please enter school name");
+                  return;
+                }
+                setIsSubmitting(true);
+                try {
+                  const res = await createAdminSchoolFn({
+                    data: {
+                      name,
+                      city: form.city.trim() || "—",
+                      plan: form.plan,
+                      seats: Number(form.seats) || 800,
+                    },
+                  });
+                  if (res?.school) {
+                    setList((l) => [res.school, ...l]);
+                    setAdd(false);
+                    setForm({ name: "", city: "", plan: "Growth", seats: "800" });
+                    toast.success(`${res.school.name} provisioned`, {
+                      description: `${form.plan} licence · admin invite emailed.`,
+                    });
+                  }
+                } catch (err: unknown) {
+                  toast.error("Failed to provision school", {
+                    description: (err as Error).message,
+                  });
+                } finally {
+                  setIsSubmitting(false);
+                }
               }}
-              className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+              className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
             >
-              Create school
+              {isSubmitting ? "Creating…" : "Create school"}
             </button>
           </div>
         </Modal>
@@ -275,7 +300,7 @@ function AdminSchools() {
             />
             <Stat
               label="Seat usage"
-              value={`${Math.round((detail.students / detail.seats) * 100)}%`}
+              value={`${detail.seats > 0 ? Math.round((detail.students / detail.seats) * 100) : 0}%`}
               sub="Contract utilisation"
               tone="emerald"
             />
@@ -292,9 +317,13 @@ function AdminSchools() {
               <FilterChips
                 options={tiers}
                 value={detail.plan as (typeof tiers)[number]}
-                onChange={(v) => {
+                onChange={async (v) => {
                   setList((l) => l.map((s) => (s.id === detail.id ? { ...s, plan: v } : s)));
                   setDetail({ ...detail, plan: v });
+                  const numId = parseInt(detail.id, 10);
+                  if (!isNaN(numId)) {
+                    await updateAdminSchoolFn({ data: { id: numId, plan: v } });
+                  }
                   toast.success(`${detail.name} moved to ${v}`, {
                     description: "Billing updated from the next cycle.",
                   });
@@ -310,23 +339,48 @@ function AdminSchools() {
               </p>
             </div>
           </div>
-          <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <div className="mt-5 flex flex-wrap justify-between gap-2 border-t border-slate-100 pt-4">
             <button
-              onClick={() => toast.success("Renewal reminder sent to the account owner")}
-              className="h-10 rounded-xl border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
+              onClick={async () => {
+                const numId = parseInt(detail.id, 10);
+                if (!isNaN(numId)) {
+                  await deleteAdminSchoolFn({ data: numId });
+                }
+                setList((l) => l.filter((s) => s.id !== detail.id));
+                setDetail(null);
+                toast.success(`${detail.name} archived from network`);
+              }}
+              className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-rose-200 px-3 text-xs font-medium text-rose-700 hover:bg-rose-50"
             >
-              Send renewal reminder
+              <Trash2 className="h-3.5 w-3.5" /> Archive school
             </button>
-            <button
-              onClick={() =>
-                toast.success("Seats increased by 200", {
-                  description: `${detail.name} · pro-rated invoice raised.`,
-                })
-              }
-              className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
-            >
-              Add 200 seats
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => toast.success("Renewal reminder sent to the account owner")}
+                className="h-10 rounded-xl border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                Send renewal reminder
+              </button>
+              <button
+                onClick={async () => {
+                  const newSeats = detail.seats + 200;
+                  setList((l) =>
+                    l.map((s) => (s.id === detail.id ? { ...s, seats: newSeats } : s)),
+                  );
+                  setDetail({ ...detail, seats: newSeats });
+                  const numId = parseInt(detail.id, 10);
+                  if (!isNaN(numId)) {
+                    await updateAdminSchoolFn({ data: { id: numId, seats: newSeats } });
+                  }
+                  toast.success("Seats increased by 200", {
+                    description: `${detail.name} · pro-rated invoice raised.`,
+                  });
+                }}
+                className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+              >
+                Add 200 seats
+              </button>
+            </div>
           </div>
         </Modal>
       )}

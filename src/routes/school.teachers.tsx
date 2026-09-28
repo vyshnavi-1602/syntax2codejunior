@@ -1,10 +1,16 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, UserPlus, Users } from "lucide-react";
+import { Award, BookOpen, Edit2, Plus, Trash2, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Bar, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 import { cn } from "@/client/lib/utils";
-import { getSchoolTeachersFn, createTeacherFn, toggleTeacherStatusFn } from "@/api/school.server";
+import {
+  getSchoolTeachersFn,
+  createTeacherFn,
+  toggleTeacherStatusFn,
+  updateTeacherFn,
+  deleteTeacherFn,
+} from "@/api/school.server";
 
 export const Route = createFileRoute("/school/teachers")({
   head: () => ({
@@ -24,6 +30,29 @@ export const Route = createFileRoute("/school/teachers")({
   component: SchoolTeachers,
 });
 
+const TRAINING_TRACKS = [
+  {
+    id: "python",
+    name: "Python & AI Foundations",
+    desc: "Object-oriented programming and basic neural nets for middle schoolers",
+  },
+  {
+    id: "web",
+    name: "Modern Web Development",
+    desc: "Full-stack web fundamentals, responsive CSS, and browser APIs",
+  },
+  {
+    id: "sandbox",
+    name: "Sandbox Rubrics & Code Review",
+    desc: "Grading automation, live terminal feedback, and project assessment",
+  },
+  {
+    id: "ethics",
+    name: "AI Ethics & Prompt Engineering",
+    desc: "Responsible AI usage, student safety, and classroom moderation",
+  },
+];
+
 function SchoolTeachers() {
   const router = useRouter();
   const { teachers, stats } = Route.useLoaderData();
@@ -34,6 +63,16 @@ function SchoolTeachers() {
   const [subject, setSubject] = useState("Computer Science & AI");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Edit Teacher modal state
+  const [editingTeacher, setEditingTeacher] = useState<{
+    id: string;
+    name: string;
+    email: string;
+  } | null>(null);
+
+  // Assign Training modal state
+  const [trainingTeacher, setTrainingTeacher] = useState<(typeof teachers)[0] | null>(null);
+
   const handleToggleActive = async (teacherId: string, currentActive: boolean) => {
     try {
       await toggleTeacherStatusFn({ data: { teacherId, active: !currentActive } });
@@ -42,6 +81,59 @@ function SchoolTeachers() {
     } catch {
       toast.error("Failed to update teacher status");
     }
+  };
+
+  const handleDeleteTeacher = async (teacherId: string, teacherName: string) => {
+    if (
+      !confirm(
+        `Are you sure you want to remove "${teacherName}"? Their assigned classes will be reallocated.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await deleteTeacherFn({ data: teacherId });
+      toast.success(`${teacherName} removed from faculty`);
+      router.invalidate();
+    } catch {
+      toast.error("Failed to remove teacher");
+    }
+  };
+
+  const handleUpdateTeacher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTeacher) return;
+    if (!editingTeacher.name.trim() || !editingTeacher.email.trim()) {
+      toast.error("Name and email are required");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await updateTeacherFn({
+        data: {
+          teacherId: editingTeacher.id,
+          name: editingTeacher.name.trim(),
+          email: editingTeacher.email.trim(),
+        },
+      });
+      toast.success("Teacher profile updated");
+      setEditingTeacher(null);
+      router.invalidate();
+    } catch {
+      toast.error("Failed to update teacher profile");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAssignTraining = (trackName: string) => {
+    if (!trainingTeacher) return;
+    toast.success(`Training assigned to ${trainingTeacher.name}`, {
+      description: `Enrolled in "${trackName}" curriculum enablement track.`,
+    });
+    setTrainingTeacher(null);
   };
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -152,8 +244,8 @@ function SchoolTeachers() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-36">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-32 hidden sm:block">
                       <div className="mb-1 flex justify-between text-[11px] text-slate-500">
                         <span>Readiness</span>
                         <span className="font-semibold text-slate-700">{t.readiness}%</span>
@@ -166,14 +258,30 @@ function SchoolTeachers() {
                       />
                     </div>
                     <button
-                      onClick={() =>
-                        toast.success(`Enablement track assigned to ${t.name}`, {
-                          description: "Python & AI Curriculum Mentorship program enrolled.",
-                        })
-                      }
+                      onClick={() => setTrainingTeacher(t)}
                       className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50"
                     >
                       Assign training
+                    </button>
+                    <button
+                      onClick={() =>
+                        setEditingTeacher({
+                          id: t.id,
+                          name: t.name,
+                          email: t.email,
+                        })
+                      }
+                      title="Edit teacher"
+                      className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTeacher(t.id, t.name)}
+                      title="Remove teacher"
+                      className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </button>
                     <button
                       title={t.active ? "Deactivate teacher" : "Activate teacher"}
@@ -262,6 +370,105 @@ function SchoolTeachers() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Teacher Modal */}
+      {editingTeacher && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs"
+          onClick={() => setEditingTeacher(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-slate-900">Edit Faculty Member</h3>
+            <p className="mt-1 text-xs text-slate-500">Update name or email address.</p>
+            <form onSubmit={handleUpdateTeacher} className="mt-4 space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700">Full Name</label>
+                <input
+                  required
+                  value={editingTeacher.name}
+                  onChange={(e) => setEditingTeacher({ ...editingTeacher, name: e.target.value })}
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700">Email Address</label>
+                <input
+                  required
+                  type="email"
+                  value={editingTeacher.email}
+                  onChange={(e) => setEditingTeacher({ ...editingTeacher, email: e.target.value })}
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                />
+              </div>
+              <div className="mt-6 flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setEditingTeacher(null)}
+                  className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Training Track Modal */}
+      {trainingTeacher && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs"
+          onClick={() => setTrainingTeacher(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-slate-900">Assign Curriculum Enablement</h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Select a specialized training track for {trainingTeacher.name} to boost readiness.
+            </p>
+
+            <div className="mt-4 space-y-2.5">
+              {TRAINING_TRACKS.map((track) => (
+                <div
+                  key={track.id}
+                  onClick={() => handleAssignTraining(track.name)}
+                  className="group flex cursor-pointer items-start justify-between rounded-xl border border-slate-200 p-3 hover:border-indigo-400 hover:bg-indigo-50/50 transition"
+                >
+                  <div>
+                    <p className="text-xs font-semibold text-slate-900 group-hover:text-indigo-700">
+                      {track.name}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-slate-500 leading-snug">{track.desc}</p>
+                  </div>
+                  <BookOpen className="h-4 w-4 text-slate-400 group-hover:text-indigo-600 shrink-0 ml-2 mt-0.5" />
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setTrainingTeacher(null)}
+                className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

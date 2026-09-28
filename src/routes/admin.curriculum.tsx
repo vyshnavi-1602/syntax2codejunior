@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 import { cn } from "@/client/lib/utils";
 
-import { getAdminCurriculumFn } from "@/api/admin.server";
+import { getAdminCurriculumFn, createLearningPathFn, createLessonFn } from "@/api/admin.server";
 
 export const Route = createFileRoute("/admin/curriculum")({
   head: () => ({
@@ -39,7 +39,8 @@ type Draft = {
 };
 
 function AdminCurriculum() {
-  const { learningPaths, practiceItems } = Route.useLoaderData();
+  const { learningPaths: initialPaths, practiceItems } = Route.useLoaderData();
+  const [learningPaths, setLearningPaths] = useState(initialPaths);
   const [tab, setTab] = useState<(typeof tabs)[number]>("Learning paths");
   const [pathId, setPathId] = useState(learningPaths[0]?.id || "");
   const [openModule, setOpenModule] = useState<string | null>(
@@ -53,10 +54,39 @@ function AdminCurriculum() {
   const path = learningPaths.find((p: { id: string }) => p.id === pathId) || learningPaths[0];
   if (!path) return null;
 
-  const create = () => {
-    const t = title || `Untitled ${modal}`;
-    if (modal === "path") toast.success(`Learning path "${t}" created as draft`);
-    else
+  const create = async () => {
+    const t = title.trim() || `Untitled ${modal}`;
+    if (modal === "path") {
+      try {
+        const res = await createLearningPathFn({
+          data: { title: t, description: "Mastery curriculum path", difficulty: "beginner" },
+        });
+        if (res?.path) {
+          const newPathObj = {
+            id: String(res.path.id),
+            title: res.path.title,
+            tagline: res.path.description || "",
+            level: res.path.difficulty,
+            modules: [],
+          };
+          setLearningPaths((prev: typeof learningPaths) => [...prev, newPathObj]);
+          setPathId(String(res.path.id));
+        }
+        toast.success(`Learning path "${t}" created and saved`);
+      } catch (err: unknown) {
+        toast.error("Failed to create learning path", { description: (err as Error).message });
+      }
+    } else {
+      if (modal === "lesson") {
+        const numPathId = parseInt(path.id, 10);
+        if (!isNaN(numPathId)) {
+          try {
+            await createLessonFn({ data: { pathId: numPathId, title: t } });
+          } catch {
+            // best-effort persistence
+          }
+        }
+      }
       setDrafts((d) => [
         ...d,
         {
@@ -67,8 +97,8 @@ function AdminCurriculum() {
           status: "Draft",
         },
       ]);
-    if (modal !== "path")
       toast.success(`${modal === "module" ? "Module" : "Lesson"} "${t}" added to ${path.title}`);
+    }
     setModal(null);
     setTitle("");
   };

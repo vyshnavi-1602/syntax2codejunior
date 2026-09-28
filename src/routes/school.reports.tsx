@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { Download, FileText, Megaphone, Plus, Send, Trash2 } from "lucide-react";
+import { Download, FileText, Megaphone, Printer, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill } from "@/client/components/app/primitives";
 import {
@@ -8,6 +8,13 @@ import {
   createSchoolAnnouncementFn,
   deleteSchoolAnnouncementFn,
 } from "@/api/school.server";
+import {
+  generateSchoolReportHtml,
+  printIsolatedHtml,
+  downloadHtmlFile,
+  exportLiveSchoolCsv,
+  SchoolReportData,
+} from "@/client/lib/school-reports";
 
 export const Route = createFileRoute("/school/reports")({
   head: () => ({
@@ -35,7 +42,7 @@ const reports = [
     t: "Monthly Institutional Performance",
     d: "Engagement, completion, scores and competition results across all classes",
     f: "PDF",
-    when: "September 2026",
+    when: "Live generated",
   },
   {
     id: "board-pack",
@@ -49,7 +56,7 @@ const reports = [
     t: "Grade-Wise Performance Matrix",
     d: "Section-level comparative analytics and progress milestones",
     f: "PDF",
-    when: "September 2026",
+    when: "Current term",
   },
   {
     id: "full-export",
@@ -70,13 +77,14 @@ const reports = [
     t: "Guardian Progress Overview Pack",
     d: "Aggregated parent-friendly summaries and coding achievements",
     f: "PDF",
-    when: "September 2026",
+    when: "Term summary",
   },
 ];
 
 function ReportsPage() {
   const router = useRouter();
-  const { school, announcements } = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
+  const { school, announcements } = loaderData;
 
   const [tab, setTab] = useState<(typeof tabs)[number]>("Reports");
   const [title, setTitle] = useState("");
@@ -123,38 +131,69 @@ function ReportsPage() {
     }
   };
 
-  const handleDownloadReport = (r: (typeof reports)[number]) => {
-    if (r.f === "CSV") {
-      const csvData = [
-        ["Report", r.t],
-        ["School", school.name || "Global Tech High"],
-        ["Generated At", new Date().toISOString()],
-        [],
-        ["Metric", "Value"],
-        ["Enrollment Capacity", "1500"],
-        ["Platform Status", "Active"],
-        ["Curriculum Standard", "AI & Python Coding 2026"],
-      ];
+  const handlePrintPdf = (r: (typeof reports)[number]) => {
+    const reportData: SchoolReportData = {
+      school,
+      schoolKpis: loaderData.schoolKpis || {
+        enrolled: 120,
+        activeWeekly: 104,
+        curriculum: 68,
+        avgScore: 740,
+        licensedSeats: 1500,
+      },
+      classes: loaderData.classes || [],
+      teachers: loaderData.teachers || [],
+      students: loaderData.students || [],
+      readinessIndex: loaderData.readinessIndex || [],
+    };
 
-      const csvContent =
-        "data:text/csv;charset=utf-8," +
-        csvData.map((e) => e.map((val) => `"${val}"`).join(",")).join("\n");
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute(
-        "download",
-        `${r.id}_${school.name.toLowerCase().replace(/\s+/g, "_")}.csv`,
-      );
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success(`${r.t} downloaded as CSV`);
-    } else {
-      toast.success(`${r.t} compiled`, {
-        description: `${r.id}.pdf ready for download / printing.`,
-      });
-    }
+    const html = generateSchoolReportHtml(r.id, reportData);
+    printIsolatedHtml(html);
+    toast.success(`Opening ${r.t}`, {
+      description: "Select 'Save as PDF' or print from the dialog.",
+    });
+  };
+
+  const handleDownloadHtml = (r: (typeof reports)[number]) => {
+    const reportData: SchoolReportData = {
+      school,
+      schoolKpis: loaderData.schoolKpis || {
+        enrolled: 120,
+        activeWeekly: 104,
+        curriculum: 68,
+        avgScore: 740,
+        licensedSeats: 1500,
+      },
+      classes: loaderData.classes || [],
+      teachers: loaderData.teachers || [],
+      students: loaderData.students || [],
+      readinessIndex: loaderData.readinessIndex || [],
+    };
+
+    const html = generateSchoolReportHtml(r.id, reportData);
+    const filename = `${r.id}_${(school.name || "school").toLowerCase().replace(/\s+/g, "_")}.html`;
+    downloadHtmlFile(html, filename);
+    toast.success(`${r.t} downloaded as standalone report.`);
+  };
+
+  const handleDownloadCsv = () => {
+    const reportData: SchoolReportData = {
+      school,
+      schoolKpis: loaderData.schoolKpis || {
+        enrolled: 120,
+        activeWeekly: 104,
+        curriculum: 68,
+        avgScore: 740,
+        licensedSeats: 1500,
+      },
+      classes: loaderData.classes || [],
+      teachers: loaderData.teachers || [],
+      students: loaderData.students || [],
+      readinessIndex: loaderData.readinessIndex || [],
+    };
+
+    exportLiveSchoolCsv(reportData);
+    toast.success("Complete institutional roster & KPI export downloaded as CSV");
   };
 
   return (
@@ -187,13 +226,31 @@ function ReportsPage() {
                   <p className="mt-1 text-xs text-slate-500">{r.d}</p>
                   <p className="mt-3 text-[11px] font-medium text-slate-400">{r.when}</p>
                 </div>
-                <div className="mt-5 border-t border-slate-100 pt-3.5">
-                  <button
-                    onClick={() => handleDownloadReport(r)}
-                    className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700"
-                  >
-                    <Download className="h-3.5 w-3.5" /> Download {r.f}
-                  </button>
+                <div className="mt-5 border-t border-slate-100 pt-3.5 flex gap-2">
+                  {r.f === "PDF" ? (
+                    <>
+                      <button
+                        onClick={() => handlePrintPdf(r)}
+                        className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700"
+                      >
+                        <Printer className="h-3.5 w-3.5" /> Print / PDF
+                      </button>
+                      <button
+                        onClick={() => handleDownloadHtml(r)}
+                        title="Download standalone HTML file"
+                        className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={handleDownloadCsv}
+                      className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Download Live CSV
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

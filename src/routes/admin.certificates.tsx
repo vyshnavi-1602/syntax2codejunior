@@ -3,6 +3,8 @@ import { useState } from "react";
 import { BadgeCheck, Plus, Search, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
+import { cn } from "@/client/lib/utils";
+import { getAdminCertificatesFn, verifyAdminCredentialFn } from "@/api/admin.server";
 
 interface CertTemplate {
   id: string;
@@ -22,9 +24,6 @@ interface IssuedCredential {
   issued: string;
   status?: string;
 }
-const certificateTemplates: Array<CertTemplate> = [];
-const issuedCredentials: Array<IssuedCredential> = [];
-import { cn } from "@/client/lib/utils";
 
 export const Route = createFileRoute("/admin/certificates")({
   head: () => ({
@@ -42,6 +41,9 @@ export const Route = createFileRoute("/admin/certificates")({
       },
     ],
   }),
+  loader: async () => {
+    return await getAdminCertificatesFn();
+  },
   component: AdminCertificates,
 });
 
@@ -49,8 +51,14 @@ const tabs = ["Templates", "Issued registry", "Verification"] as const;
 const accents = ["indigo", "teal", "amber", "violet"] as const;
 
 function AdminCertificates() {
+  const {
+    templates: initialTemplates,
+    issuedCredentials: initialIssued,
+    stats,
+  } = Route.useLoaderData();
   const [tab, setTab] = useState<(typeof tabs)[number]>("Templates");
-  const [templates, setTemplates] = useState(certificateTemplates);
+  const [templates, setTemplates] = useState<CertTemplate[]>(initialTemplates);
+  const [issued, setIssued] = useState<IssuedCredential[]>(initialIssued);
   const [design, setDesign] = useState({
     name: "AI Literacy 2027 Refresh",
     accent: "indigo" as (typeof accents)[number],
@@ -61,7 +69,7 @@ function AdminCertificates() {
   const [code, setCode] = useState("");
   const [result, setResult] = useState<null | { ok: boolean; msg: string; detail?: string }>(null);
 
-  const rows = issuedCredentials.filter((c) =>
+  const rows = issued.filter((c) =>
     (c.holder + c.id + c.school).toLowerCase().includes(q.toLowerCase()),
   );
 
@@ -104,7 +112,7 @@ function AdminCertificates() {
         <Stat label="Verifications" value="11,908" sub="Employers, parents, schools" tone="sky" />
         <Stat
           label="Revoked"
-          value={issuedCredentials.filter((c) => c.status === "Revoked").length}
+          value={issued.filter((c) => c.status === "Revoked").length}
           sub="Integrity actions"
           tone="rose"
           icon={<ShieldAlert className="h-4 w-4" />}
@@ -297,21 +305,38 @@ function AdminCertificates() {
                 className="h-11 flex-1 rounded-xl border border-slate-200 px-3 font-mono text-sm outline-none focus:border-indigo-300"
               />
               <button
-                onClick={() => {
-                  const hit = issuedCredentials.find((c) => c.id === code.trim());
-                  if (!hit) setResult({ ok: false, msg: "No credential found with that ID" });
-                  else if (hit.status === "Revoked")
+                onClick={async () => {
+                  const searchCode = code.trim();
+                  if (!searchCode) {
+                    toast.error("Please enter a credential ID");
+                    return;
+                  }
+                  const hit = issued.find((c) => c.id.toUpperCase() === searchCode.toUpperCase());
+                  if (hit) {
+                    if (hit.status === "Revoked") {
+                      setResult({
+                        ok: false,
+                        msg: "This credential has been revoked",
+                        detail: `${hit.holder} · ${hit.template}`,
+                      });
+                    } else {
+                      setResult({
+                        ok: true,
+                        msg: "Credential verified against Syntax2Code ledger",
+                        detail: `${hit.holder} · ${hit.template} · ${hit.school} · issued ${hit.issued}`,
+                      });
+                    }
+                    return;
+                  }
+                  try {
+                    const res = await verifyAdminCredentialFn({ data: searchCode });
+                    setResult(res);
+                  } catch {
                     setResult({
                       ok: false,
-                      msg: "This credential has been revoked",
-                      detail: `${hit.holder} · ${hit.template}`,
+                      msg: "No credential found with that ID in platform ledger",
                     });
-                  else
-                    setResult({
-                      ok: true,
-                      msg: "Credential verified",
-                      detail: `${hit.holder} · ${hit.template} · ${hit.school} · issued ${hit.issued}`,
-                    });
+                  }
                 }}
                 className="h-11 rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white hover:bg-indigo-700"
               >

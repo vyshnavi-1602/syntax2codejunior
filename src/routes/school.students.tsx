@@ -1,6 +1,18 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, Search, Upload, UserPlus } from "lucide-react";
+import {
+  Award,
+  Calendar,
+  Edit2,
+  Eye,
+  Flame,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+  UserPlus,
+  Zap,
+} from "lucide-react";
 import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 import { cn } from "@/client/lib/utils";
@@ -10,6 +22,8 @@ import {
   bulkImportStudentsFn,
   toggleStudentStatusFn,
   assignStudentClassFn,
+  updateStudentFn,
+  deleteStudentFn,
 } from "@/api/school.server";
 
 export const Route = createFileRoute("/school/students")({
@@ -42,6 +56,17 @@ function SchoolStudents() {
   const [cls, setCls] = useState("All classes");
   const [bulk, setBulk] = useState(false);
   const [addModal, setAddModal] = useState(false);
+
+  // Student Profile Detail Modal
+  const [selectedStudent, setSelectedStudent] = useState<(typeof students)[0] | null>(null);
+
+  // Edit Student Modal state
+  const [editingStudent, setEditingStudent] = useState<{
+    id: string;
+    name: string;
+    email: string;
+    classId: string;
+  } | null>(null);
 
   // New Student form state
   const [newName, setNewName] = useState("");
@@ -78,6 +103,53 @@ function SchoolStudents() {
       router.invalidate();
     } catch {
       toast.error("Failed to reassign class");
+    }
+  };
+
+  const handleDeleteStudent = async (studentId: string, studentName: string) => {
+    if (
+      !confirm(
+        `Are you sure you want to remove "${studentName}" from the school roster? This will permanently delete their account and achievements.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await deleteStudentFn({ data: studentId });
+      toast.success(`${studentName} removed from school`);
+      if (selectedStudent?.id === studentId) setSelectedStudent(null);
+      router.invalidate();
+    } catch {
+      toast.error("Failed to remove student");
+    }
+  };
+
+  const handleUpdateStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStudent) return;
+    if (!editingStudent.name.trim() || !editingStudent.email.trim()) {
+      toast.error("Name and email are required");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await updateStudentFn({
+        data: {
+          studentId: editingStudent.id,
+          name: editingStudent.name.trim(),
+          email: editingStudent.email.trim(),
+          classId: editingStudent.classId ? Number(editingStudent.classId) : null,
+        },
+      });
+      toast.success("Student profile updated");
+      setEditingStudent(null);
+      router.invalidate();
+    } catch {
+      toast.error("Failed to update student profile");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -156,15 +228,29 @@ function SchoolStudents() {
   };
 
   const exportCsv = () => {
-    const headers = ["Name", "Email", "Class", "S2C Score", "Completion", "Status", "Active"];
+    const headers = [
+      "Name",
+      "Email",
+      "Class",
+      "S2C Score",
+      "Level",
+      "Streak",
+      "Completion",
+      "Status",
+      "Active",
+      "Enrolled Date",
+    ];
     const rows = list.map((s) => [
       `"${s.name}"`,
       `"${s.email}"`,
       `"${s.className}"`,
       s.score,
+      s.level,
+      `${s.streak} days`,
       `${s.completion}%`,
       `"${s.tag}"`,
       s.active ? "Yes" : "No",
+      `"${s.enrolledDate}"`,
     ]);
 
     const csvContent =
@@ -269,6 +355,7 @@ function SchoolStudents() {
                   "Status",
                   "Activity",
                   "Access",
+                  "Actions",
                 ].map((h) => (
                   <th key={h} className="px-4 py-3 font-semibold">
                     {h}
@@ -279,7 +366,7 @@ function SchoolStudents() {
             <tbody className="divide-y divide-slate-100">
               {list.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-sm text-slate-500">
+                  <td colSpan={8} className="py-8 text-center text-sm text-slate-500">
                     No students match the current filters.
                   </td>
                 </tr>
@@ -287,7 +374,12 @@ function SchoolStudents() {
                 list.map((s) => (
                   <tr key={s.id} className="hover:bg-slate-50/70">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-slate-900">{s.name}</p>
+                      <button
+                        onClick={() => setSelectedStudent(s)}
+                        className="text-left font-medium text-slate-900 hover:text-indigo-600 transition"
+                      >
+                        {s.name}
+                      </button>
                       <p className="text-xs text-slate-500">{s.email}</p>
                     </td>
                     <td className="px-4 py-3">
@@ -304,7 +396,10 @@ function SchoolStudents() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-4 py-3 font-medium text-slate-800">{s.score} XP</td>
+                    <td className="px-4 py-3 font-medium text-slate-800">
+                      <div>{s.score} XP</div>
+                      <div className="text-[11px] text-slate-400">Level {s.level}</div>
+                    </td>
                     <td className="px-4 py-3 text-slate-600">{s.completion}%</td>
                     <td className="px-4 py-3">
                       <Pill
@@ -338,6 +433,38 @@ function SchoolStudents() {
                           )}
                         />
                       </button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => setSelectedStudent(s)}
+                          title="View student profile"
+                          className="rounded-lg p-1.5 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() =>
+                            setEditingStudent({
+                              id: s.id,
+                              name: s.name,
+                              email: s.email,
+                              classId: s.classId ? String(s.classId) : "",
+                            })
+                          }
+                          title="Edit student"
+                          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStudent(s.id, s.name)}
+                          title="Remove student"
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -482,6 +609,188 @@ function SchoolStudents() {
                 <Upload className="h-4 w-4" /> Import Roster
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Student Profile Detail Modal */}
+      {selectedStudent && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs"
+          onClick={() => setSelectedStudent(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">{selectedStudent.name}</h3>
+                <p className="text-xs text-slate-500">{selectedStudent.email}</p>
+              </div>
+              <Pill
+                tone={
+                  selectedStudent.tag === "Needs support"
+                    ? "rose"
+                    : selectedStudent.tag === "Accelerated"
+                      ? "emerald"
+                      : selectedStudent.tag === "Low activity"
+                        ? "amber"
+                        : "sky"
+                }
+              >
+                {selectedStudent.tag}
+              </Pill>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <p className="text-[11px] font-medium text-slate-500 uppercase">XP Score</p>
+                <p className="mt-1 text-lg font-bold text-slate-900">{selectedStudent.score} XP</p>
+              </div>
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <p className="text-[11px] font-medium text-slate-500 uppercase">Level</p>
+                <p className="mt-1 text-lg font-bold text-indigo-600">
+                  Level {selectedStudent.level}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <p className="text-[11px] font-medium text-slate-500 uppercase">Coding Streak</p>
+                <p className="mt-1 text-lg font-bold text-amber-600">
+                  {selectedStudent.streak} days
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <p className="text-[11px] font-medium text-slate-500 uppercase">Completion</p>
+                <p className="mt-1 text-lg font-bold text-emerald-600">
+                  {selectedStudent.completion}%
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-2 text-xs">
+              <div className="flex justify-between py-1.5 border-b border-slate-50">
+                <span className="text-slate-500 font-medium">Assigned Class</span>
+                <span className="font-semibold text-slate-800">{selectedStudent.className}</span>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-slate-50">
+                <span className="text-slate-500 font-medium">Account Access</span>
+                <span className="font-semibold text-slate-800">
+                  {selectedStudent.active ? "Enabled" : "Deactivated"}
+                </span>
+              </div>
+              <div className="flex justify-between py-1.5">
+                <span className="text-slate-500 font-medium">Enrolled Date</span>
+                <span className="font-semibold text-slate-800">{selectedStudent.enrolledDate}</span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-4">
+              <button
+                type="button"
+                onClick={() => handleDeleteStudent(selectedStudent.id, selectedStudent.name)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Remove Student
+              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingStudent({
+                      id: selectedStudent.id,
+                      name: selectedStudent.name,
+                      email: selectedStudent.email,
+                      classId: selectedStudent.classId ? String(selectedStudent.classId) : "",
+                    });
+                    setSelectedStudent(null);
+                  }}
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Edit Details
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedStudent(null)}
+                  className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Student Modal */}
+      {editingStudent && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs"
+          onClick={() => setEditingStudent(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-slate-900">Edit Student Record</h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Update student roster information and classroom section.
+            </p>
+            <form onSubmit={handleUpdateStudent} className="mt-4 space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700">Full Name</label>
+                <input
+                  required
+                  value={editingStudent.name}
+                  onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700">Email Address</label>
+                <input
+                  required
+                  type="email"
+                  value={editingStudent.email}
+                  onChange={(e) => setEditingStudent({ ...editingStudent, email: e.target.value })}
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700">Class Section</label>
+                <select
+                  value={editingStudent.classId}
+                  onChange={(e) =>
+                    setEditingStudent({ ...editingStudent, classId: e.target.value })
+                  }
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                >
+                  <option value="">Unassigned</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setEditingStudent(null)}
+                  className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -3,6 +3,11 @@ import { toast } from "sonner";
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { Bar, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 import { getSchoolOverviewFn } from "@/api/school.server";
+import {
+  generateSchoolReportHtml,
+  printIsolatedHtml,
+  SchoolReportData,
+} from "@/client/lib/school-reports";
 
 export const Route = createFileRoute("/school/readiness")({
   head: () => ({
@@ -27,7 +32,7 @@ export const Route = createFileRoute("/school/readiness")({
 });
 
 function ReadinessPage() {
-  const { school, readinessIndex, schoolKpis } = Route.useLoaderData();
+  const { school, readinessIndex, schoolKpis, classes } = Route.useLoaderData();
 
   const overall = Math.round(
     readinessIndex.reduce((n, r) => n + r.value, 0) / (readinessIndex.length || 1),
@@ -35,6 +40,20 @@ function ReadinessPage() {
 
   const strongest = [...readinessIndex].sort((a, b) => b.value - a.value)[0];
   const lowest = [...readinessIndex].sort((a, b) => a.value - b.value)[0];
+
+  const handleDownloadReport = () => {
+    const reportData: SchoolReportData = {
+      school,
+      schoolKpis,
+      classes: classes || [],
+      readinessIndex,
+    };
+    const html = generateSchoolReportHtml("readiness-audit", reportData);
+    printIsolatedHtml(html);
+    toast.success("Readiness Audit Report compiled", {
+      description: "Select 'Save as PDF' or print from the dialog.",
+    });
+  };
 
   const recommendations = [
     {
@@ -69,11 +88,7 @@ function ReadinessPage() {
         subtitle={`Institutional readiness benchmark for ${school.name || "Global Tech High"} · Academic Year 2026-2027`}
         actions={
           <button
-            onClick={() =>
-              toast.success("Readiness report exported", {
-                description: `${(school.name || "school").toLowerCase().replace(/\s+/g, "_")}_readiness_index_2026.pdf`,
-              })
-            }
+            onClick={handleDownloadReport}
             className="inline-flex h-10 items-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
           >
             Download index report

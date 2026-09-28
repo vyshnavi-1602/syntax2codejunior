@@ -15,6 +15,7 @@ import {
   YAxis,
 } from "recharts";
 import { FilterChips, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
+import { getAdminAnalyticsFn, broadcastSystemAnnouncementFn } from "@/api/admin.server";
 
 interface BenchmarkSchool {
   name: string;
@@ -30,10 +31,6 @@ interface SystemAnnouncement {
   audience?: string;
   when?: string;
 }
-
-const benchmarkSchools: Array<BenchmarkSchool> = [];
-const retentionCurve: Array<{ month: string; rate: number }> = [];
-const systemAnnouncements: Array<SystemAnnouncement> = [];
 
 export const Route = createFileRoute("/admin/analytics")({
   head: () => ({
@@ -51,24 +48,28 @@ export const Route = createFileRoute("/admin/analytics")({
       },
     ],
   }),
+  loader: async () => {
+    return await getAdminAnalyticsFn();
+  },
   component: AdminAnalytics,
 });
 
 const tabs = ["Benchmarks", "Retention", "Announcements", "Settings"] as const;
 
 function AdminAnalytics() {
+  const {
+    benchmarkSchools,
+    retentionCurve,
+    systemAnnouncements,
+    settings: initialSettings,
+  } = Route.useLoaderData();
   const [tab, setTab] = useState<(typeof tabs)[number]>("Benchmarks");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [audience, setAudience] = useState("All schools");
-  const [sent, setSent] = useState(systemAnnouncements);
-  const [settings, setSettings] = useState({
-    aiCompanion: true,
-    publicPortfolios: true,
-    competitions: true,
-    parentDigest: false,
-    maintenance: false,
-  });
+  const [sent, setSent] = useState<SystemAnnouncement[]>(systemAnnouncements);
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [settings, setSettings] = useState(initialSettings);
 
   return (
     <>
@@ -260,26 +261,42 @@ function AdminAnalytics() {
               className="mt-3 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-300"
             />
             <button
-              onClick={() => {
-                setSent((s) => [
-                  {
-                    id: `sa-${Date.now()}`,
-                    title: title || "Untitled",
-                    audience,
-                    when: "Just now",
-                    body,
-                  },
-                  ...s,
-                ]);
-                setTitle("");
-                setBody("");
-                toast.success("Broadcast sent", {
-                  description: `${audience} · delivered to 148 schools.`,
-                });
+              disabled={isBroadcasting}
+              onClick={async () => {
+                const cleanTitle = title.trim();
+                const cleanBody = body.trim();
+                if (!cleanTitle || !cleanBody) {
+                  toast.error("Please enter both a title and message body");
+                  return;
+                }
+                setIsBroadcasting(true);
+                try {
+                  const res = await broadcastSystemAnnouncementFn({
+                    data: {
+                      title: cleanTitle,
+                      body: cleanBody,
+                      audience,
+                    },
+                  });
+                  if (res?.announcement) {
+                    setSent((s) => [res.announcement, ...s]);
+                    setTitle("");
+                    setBody("");
+                    toast.success("Broadcast transmitted across partner network", {
+                      description: `${audience} · delivered to all active portals.`,
+                    });
+                  }
+                } catch (err: unknown) {
+                  toast.error("Failed to broadcast announcement", {
+                    description: (err as Error).message,
+                  });
+                } finally {
+                  setIsBroadcasting(false);
+                }
               }}
-              className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+              className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
             >
-              <Send className="h-4 w-4" /> Broadcast
+              <Send className="h-4 w-4" /> {isBroadcasting ? "Transmitting…" : "Broadcast"}
             </button>
           </Panel>
           <Panel title="Recent broadcasts">

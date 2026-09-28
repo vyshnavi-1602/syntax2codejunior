@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import { Bar, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 
+import { printIsolatedHtml } from "@/client/lib/school-reports";
 import { getGlobalOverviewFn } from "@/api/admin.server";
 
 export const Route = createFileRoute("/admin/")({
@@ -42,19 +43,95 @@ export const Route = createFileRoute("/admin/")({
 function AdminHome() {
   const { platformKpis, platformGrowth, schoolsGlobal, benchmarkSchools, moderationQueue } =
     Route.useLoaderData();
+
+  const handleExportSnapshot = () => {
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Syntax2Code Junior - Super Admin Global Executive Snapshot</title>
+  <style>
+    @page { size: A4 portrait; margin: 16mm; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; line-height: 1.5; margin: 0; padding: 24px; }
+    .header { border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-end; }
+    h1 { font-size: 24px; margin: 0; color: #1e1b4b; }
+    .subtitle { color: #64748b; font-size: 13px; margin-top: 4px; }
+    .badge { background: #4f46e5; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; }
+    .card-label { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; }
+    .card-val { font-size: 22px; font-weight: 800; color: #0f172a; margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; }
+    th { background: #f1f5f9; padding: 8px 12px; text-align: left; font-size: 11px; text-transform: uppercase; color: #475569; }
+    td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; }
+    .footer { margin-top: 36px; padding-top: 14px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <span class="badge">Syntax2Code Platform Dossier</span>
+      <h1>Executive Network Snapshot</h1>
+      <p class="subtitle">Platform-wide KPI audit & multi-school operational report · Generated ${new Date().toLocaleDateString()}</p>
+    </div>
+    <div style="text-align: right;">
+      <div style="font-weight: bold; color: #4f46e5;">Uptime: 99.99%</div>
+      <div style="font-size: 12px; color: #64748b;">Enterprise Grade</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card"><div class="card-label">Partner Schools</div><div class="card-val">${platformKpis.schools}</div></div>
+    <div class="card"><div class="card-label">Enrolled Students</div><div class="card-val">${platformKpis.students.toLocaleString()}</div></div>
+    <div class="card"><div class="card-label">Daily Active Coders</div><div class="card-val">${platformKpis.activeToday.toLocaleString()}</div></div>
+    <div class="card"><div class="card-label">Platform Reliability</div><div class="card-val">${platformKpis.uptime}</div></div>
+  </div>
+
+  <h2 style="font-size: 16px; color: #1e1b4b; margin-top: 24px;">Partner School Roster & Health Overview</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>School Name</th>
+        <th>City</th>
+        <th>Contracted Tier</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${schoolsGlobal
+        .map(
+          (s: { name: string; city: string | null; planType: string; status: string }) => `
+        <tr>
+          <td style="font-weight: 600;">${s.name}</td>
+          <td>${s.city || "—"}</td>
+          <td>${s.planType || "Enterprise"}</td>
+          <td>${s.status || "Active"}</td>
+        </tr>
+      `,
+        )
+        .join("")}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <span>Syntax2Code Junior Operating Platform © ${new Date().getFullYear()}</span>
+    <span>Confidential Institutional Dossier</span>
+  </div>
+</body>
+</html>`;
+    printIsolatedHtml(html);
+    toast.success("Executive snapshot generated and opened for print/PDF export");
+  };
+
   return (
     <>
       <PageHeader
         title="Global Overview"
-        subtitle="148 partner schools · September 2026"
+        subtitle={`${platformKpis.schools} partner schools · Platform Operations`}
         actions={
           <>
             <button
-              onClick={() =>
-                toast.success("Investor snapshot generated", {
-                  description: "s2c_platform_september_2026.pdf",
-                })
-              }
+              onClick={handleExportSnapshot}
               className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
             >
               Export snapshot

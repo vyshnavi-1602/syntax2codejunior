@@ -60,18 +60,47 @@ function AdminUsers() {
       .slice(0, 2)
       .join("");
 
+  const studentCount = users.filter((u) => u.role.toLowerCase() === "student").length;
+  const teacherCount = users.filter((u) => u.role.toLowerCase() === "teacher").length;
+  const schoolAdminCount = users.filter(
+    (u) => u.role.toLowerCase().includes("admin") || u.role.toLowerCase() === "school",
+  ).length;
+  const suspendedCount = users.filter((u) => !u.active).length;
+
   return (
     <>
       <PageHeader
         title="User Directory"
-        subtitle="92,430 accounts across 148 schools · sampled view"
+        subtitle={`${users.length} accounts across ${schoolsGlobal.length} partner schools`}
         actions={
           <button
-            onClick={() =>
-              toast.success("Directory export queued", {
-                description: "platform_users.csv will be emailed to you.",
-              })
-            }
+            onClick={() => {
+              const rowsData = [
+                ["User ID", "Name", "Email", "Role", "School", "Active Status"],
+                ...users.map((u) => [
+                  u.id,
+                  u.name,
+                  u.detail,
+                  u.role,
+                  u.school,
+                  u.active ? "Active" : "Suspended",
+                ]),
+              ];
+              const csvContent =
+                "data:text/csv;charset=utf-8," +
+                rowsData
+                  .map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+                  .join("\n");
+              const link = document.createElement("a");
+              link.setAttribute("href", encodeURI(csvContent));
+              link.setAttribute("download", "platform_user_directory.csv");
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              toast.success("Directory export completed", {
+                description: `${users.length} accounts exported to CSV.`,
+              });
+            }}
             className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
           >
             Export directory
@@ -80,13 +109,28 @@ function AdminUsers() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Students" value="88,940" sub="96% of accounts" tone="sky" />
-        <Stat label="Teachers" value="3,142" sub="Across all schools" tone="violet" />
-        <Stat label="School admins" value="348" sub="Principals and directors" tone="teal" />
+        <Stat
+          label="Students"
+          value={studentCount.toLocaleString()}
+          sub={`${users.length > 0 ? Math.round((studentCount / users.length) * 100) : 0}% of accounts`}
+          tone="sky"
+        />
+        <Stat
+          label="Teachers"
+          value={teacherCount.toLocaleString()}
+          sub="Across all schools"
+          tone="violet"
+        />
+        <Stat
+          label="School admins"
+          value={schoolAdminCount.toLocaleString()}
+          sub="Principals and directors"
+          tone="teal"
+        />
         <Stat
           label="Suspended"
-          value={users.filter((u) => !u.active).length}
-          sub="In this sample"
+          value={suspendedCount.toLocaleString()}
+          sub={`${suspendedCount} accounts inactive`}
           tone="rose"
         />
       </div>

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
+import { getAdminModerationFn, resolveModerationItemFn } from "@/api/admin.server";
 
 interface ModerationItem {
   id: string;
@@ -12,7 +13,6 @@ interface ModerationItem {
   school: string;
   when: string;
 }
-const moderationQueue: Array<ModerationItem> = [];
 
 export const Route = createFileRoute("/admin/moderation")({
   head: () => ({
@@ -30,57 +30,39 @@ export const Route = createFileRoute("/admin/moderation")({
       },
     ],
   }),
+  loader: async () => {
+    return await getAdminModerationFn();
+  },
   component: AdminModeration,
 });
 
 const tabs = ["Open queue", "Showcase review", "Resolved"] as const;
 const sev = ["All", "High", "Medium", "Low"] as const;
 
-const showcase = [
-  {
-    id: "s1",
-    title: "AI Plant Doctor",
-    student: "Diya Nair",
-    school: "Greenfield International",
-    note: "Nominated by teacher for national showcase",
-  },
-  {
-    id: "s2",
-    title: "Smart Attendance Bot",
-    student: "Aarav Sharma",
-    school: "Greenfield International",
-    note: "Face-detection feature needs privacy check",
-  },
-  {
-    id: "s3",
-    title: "Recycle Quest",
-    student: "Manav Rao",
-    school: "Bluewood Academy",
-    note: "Contains external asset credits to verify",
-  },
-];
-
 function AdminModeration() {
+  const {
+    queue: initialQueue,
+    resolved: initialResolved,
+    showcase: initialShowcase,
+  } = Route.useLoaderData();
   const [tab, setTab] = useState<(typeof tabs)[number]>("Open queue");
   const [filter, setFilter] = useState<(typeof sev)[number]>("All");
-  const [queue, setQueue] = useState(moderationQueue);
-  const [resolved, setResolved] = useState<
-    { id: string; type: string; content: string; action: string }[]
-  >([
-    {
-      id: "r0",
-      type: "Club post",
-      content: "Off-topic meme in Coding Club feed",
-      action: "Removed · student coached",
-    },
-  ]);
+  const [queue, setQueue] = useState<ModerationItem[]>(initialQueue);
+  const [showcaseList, setShowcaseList] = useState(initialShowcase);
+  const [resolved, setResolved] =
+    useState<{ id: string; type: string; content: string; action: string }[]>(initialResolved);
 
   const rows = queue.filter((m) => filter === "All" || m.severity === filter);
 
-  const act = (m: (typeof moderationQueue)[number], action: string) => {
-    setQueue((q) => q.filter((x) => x.id !== m.id));
-    setResolved((r) => [{ id: m.id, type: m.type, content: m.content, action }, ...r]);
-    toast.success(`Flag resolved · ${action}`, { description: m.school });
+  const act = async (m: ModerationItem, action: string) => {
+    try {
+      await resolveModerationItemFn({ data: { id: m.id, action } });
+      setQueue((q) => q.filter((x) => x.id !== m.id));
+      setResolved((r) => [{ id: m.id, type: m.type, content: m.content, action }, ...r]);
+      toast.success(`Flag resolved · ${action}`, { description: m.school });
+    } catch (err: unknown) {
+      toast.error("Failed to update flag", { description: (err as Error).message });
+    }
   };
 
   return (
@@ -194,7 +176,12 @@ function AdminModeration() {
           description="Approve student work for public showcase — privacy checked first"
         >
           <div className="grid gap-3 md:grid-cols-3">
-            {showcase.map((s) => (
+            {showcaseList.length === 0 && (
+              <p className="col-span-3 py-6 text-center text-sm text-slate-500">
+                All showcase nominations have been reviewed.
+              </p>
+            )}
+            {showcaseList.map((s) => (
               <div key={s.id} className="rounded-2xl border border-slate-200 p-4">
                 <p className="text-sm font-semibold text-slate-900">{s.title}</p>
                 <p className="mt-0.5 text-xs text-slate-500">
@@ -203,21 +190,23 @@ function AdminModeration() {
                 <p className="mt-2 text-xs text-slate-600">{s.note}</p>
                 <div className="mt-3 flex gap-2">
                   <button
-                    onClick={() =>
+                    onClick={() => {
+                      setShowcaseList((list) => list.filter((item) => item.id !== s.id));
                       toast.success(`${s.title} approved for showcase`, {
                         description: "Published with first name only.",
-                      })
-                    }
+                      });
+                    }}
                     className="h-9 flex-1 rounded-lg bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700"
                   >
                     Approve
                   </button>
                   <button
-                    onClick={() =>
+                    onClick={() => {
+                      setShowcaseList((list) => list.filter((item) => item.id !== s.id));
                       toast("Changes requested", {
                         description: `${s.title} · sent back to the school.`,
-                      })
-                    }
+                      });
+                    }}
                     className="h-9 flex-1 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50"
                   >
                     Request changes

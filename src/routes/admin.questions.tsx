@@ -1,8 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
+import {
+  getAdminQuestionsFn,
+  createAdminQuestionFn,
+  deleteAdminQuestionFn,
+} from "@/api/admin.server";
 
 interface QuestionItem {
   id: string;
@@ -13,7 +18,6 @@ interface QuestionItem {
   usage: number;
   status: string;
 }
-const questionBank: Array<QuestionItem> = [];
 
 export const Route = createFileRoute("/admin/questions")({
   head: () => ({
@@ -31,6 +35,9 @@ export const Route = createFileRoute("/admin/questions")({
       },
     ],
   }),
+  loader: async () => {
+    return await getAdminQuestionsFn();
+  },
   component: AdminQuestions,
 });
 
@@ -39,11 +46,13 @@ const diffs = ["All", "Easy", "Medium", "Hard"] as const;
 const skills = ["Loops", "AI Ethics", "Web", "Algorithms", "Debugging", "Logic"] as const;
 
 function AdminQuestions() {
+  const { questions: initialBank, stats } = Route.useLoaderData();
   const [tab, setTab] = useState<(typeof tabs)[number]>("Question bank");
   const [diff, setDiff] = useState<(typeof diffs)[number]>("All");
   const [q, setQ] = useState("");
-  const [bank, setBank] = useState(questionBank);
+  const [bank, setBank] = useState<QuestionItem[]>(initialBank);
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
     text: "",
     topic: "Loops",
@@ -181,6 +190,23 @@ function AdminQuestions() {
                     className="h-9 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700"
                   >
                     {b.status === "Published" ? "Unpublish" : "Publish"}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await deleteAdminQuestionFn({ data: b.id });
+                        setBank((l) => l.filter((x) => x.id !== b.id));
+                        toast.success("Question deleted from bank");
+                      } catch (err: unknown) {
+                        toast.error("Failed to delete question", {
+                          description: (err as Error).message,
+                        });
+                      }
+                    }}
+                    className="h-9 rounded-lg border border-rose-200 px-2.5 text-rose-600 hover:bg-rose-50"
+                    title="Delete question"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
@@ -329,28 +355,42 @@ function AdminQuestions() {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  setBank((l) => [
-                    {
-                      id: `qb-${Date.now()}`,
-                      text: form.text || "Untitled question",
-                      topic: form.topic,
-                      difficulty: form.difficulty,
-                      grade: form.grade,
-                      usage: 0,
-                      status: "Draft",
-                    },
-                    ...l,
-                  ]);
-                  setOpen(false);
-                  setForm({ ...form, text: "" });
-                  toast.success("Question added to the bank", {
-                    description: `${form.topic} · ${form.difficulty}`,
-                  });
+                disabled={isSubmitting}
+                onClick={async () => {
+                  const text = form.text.trim();
+                  if (!text) {
+                    toast.error("Please enter question text");
+                    return;
+                  }
+                  setIsSubmitting(true);
+                  try {
+                    const res = await createAdminQuestionFn({
+                      data: {
+                        text,
+                        topic: form.topic,
+                        difficulty: form.difficulty,
+                        grade: form.grade,
+                      },
+                    });
+                    if (res?.question) {
+                      setBank((l) => [res.question, ...l]);
+                      setOpen(false);
+                      setForm({ ...form, text: "" });
+                      toast.success("Question saved to platform bank", {
+                        description: `${form.topic} · ${form.difficulty}`,
+                      });
+                    }
+                  } catch (err: unknown) {
+                    toast.error("Failed to create question", {
+                      description: (err as Error).message,
+                    });
+                  } finally {
+                    setIsSubmitting(false);
+                  }
                 }}
-                className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+                className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
               >
-                Save question
+                {isSubmitting ? "Saving…" : "Save question"}
               </button>
             </div>
           </div>

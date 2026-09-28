@@ -11,6 +11,7 @@ import {
   Stat,
   type Tone,
 } from "@/client/components/app/primitives";
+import { getAdminGamificationFn } from "@/api/admin.server";
 
 interface BadgeItem {
   id: string;
@@ -39,11 +40,6 @@ interface ScoreWeight {
   weight: number;
 }
 
-const badgeLibrary: Array<BadgeItem> = [];
-const gamificationRules: Array<GamificationRule> = [];
-const levelThresholds: Array<LevelThreshold> = [];
-const scoreWeights: Array<ScoreWeight> = [];
-
 export const Route = createFileRoute("/admin/gamification")({
   head: () => ({
     meta: [
@@ -59,6 +55,9 @@ export const Route = createFileRoute("/admin/gamification")({
       },
     ],
   }),
+  loader: async () => {
+    return await getAdminGamificationFn();
+  },
   component: AdminGamification,
 });
 
@@ -66,10 +65,16 @@ const tabs = ["XP rewards", "Levels", "Badges", "S2C Score formula"] as const;
 const tones: Tone[] = ["amber", "teal", "violet", "sky", "emerald", "rose"];
 
 function AdminGamification() {
+  const {
+    rules: initialRules,
+    levelThresholds,
+    badgeLibrary: initialBadges,
+    scoreWeights: initialWeights,
+  } = Route.useLoaderData();
   const [tab, setTab] = useState<(typeof tabs)[number]>("XP rewards");
-  const [rules, setRules] = useState(gamificationRules);
-  const [weights, setWeights] = useState(scoreWeights);
-  const [badges, setBadges] = useState(badgeLibrary);
+  const [rules, setRules] = useState<GamificationRule[]>(initialRules);
+  const [weights, setWeights] = useState<ScoreWeight[]>(initialWeights);
+  const [badges, setBadges] = useState<BadgeItem[]>(initialBadges);
   const [open, setOpen] = useState(false);
   const [badge, setBadge] = useState({ name: "", criteria: "", tone: "amber" as Tone });
 
@@ -271,7 +276,7 @@ function AdminGamification() {
                 Save formula
               </button>
               <button
-                onClick={() => setWeights(scoreWeights)}
+                onClick={() => setWeights(initialWeights)}
                 className="h-10 rounded-xl border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
               >
                 Reset to default
