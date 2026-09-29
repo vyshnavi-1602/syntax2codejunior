@@ -47,6 +47,15 @@ export const demoUsers: DemoUser[] = [
     school: "Syntax2Code",
     subtitle: "Platform Admin",
   },
+  {
+    id: "5",
+    role: "s2c",
+    name: "S2C Admin",
+    email: "admin@syntax2code.com",
+    avatar: "SA",
+    school: "Syntax2Code",
+    subtitle: "Platform Admin",
+  },
 ];
 export interface DemoUser {
   id: string;
@@ -125,7 +134,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<SessionValue>(() => {
-    let mockUser = role ? (demoUsers.find((u) => u.role === role) ?? null) : null;
+    let mockUser = role
+      ? (demoUsers.find(
+          (u) =>
+            u.role === role ||
+            (role === "s2c" && u.role === "admin") ||
+            (role === "admin" && u.role === "s2c"),
+        ) ?? demoUsers[0])
+      : demoUsers[0];
 
     if (mockUser && realSession?.user) {
       mockUser = {

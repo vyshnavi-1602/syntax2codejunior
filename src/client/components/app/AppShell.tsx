@@ -99,7 +99,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
     }
   }, [ready, role, allow, signIn]);
 
-  const isLoading = !ready || !user;
+  const isLoading = !ready;
 
   const groups = navByRole[allow];
   const crumbs = pathname.split("/").filter(Boolean);
