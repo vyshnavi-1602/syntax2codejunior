@@ -3,8 +3,10 @@ import { useState } from "react";
 import {
   Award,
   Calendar,
+  CheckCircle2,
   Edit2,
   Eye,
+  FileText,
   Flame,
   Plus,
   Search,
@@ -74,8 +76,42 @@ function SchoolStudents() {
   const [newClassId, setNewClassId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Bulk paste state
+  // Bulk upload state
   const [bulkInput, setBulkInput] = useState("");
+  const [bulkMode, setBulkMode] = useState<"file" | "paste">("file");
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [parsedPreview, setParsedPreview] = useState<
+    Array<{ name: string; email: string; className?: string }>
+  >([]);
+
+  const processCsvFile = (file: File) => {
+    setUploadedFile(file);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+      setBulkInput(text);
+      const lines = text.trim().split("\n");
+      const preview: Array<{ name: string; email: string; className?: string }> = [];
+      for (const line of lines) {
+        const parts = line.split(",").map((p) => p.trim());
+        if (
+          parts.length >= 2 &&
+          parts[0] &&
+          parts[1] &&
+          !parts[1].toLowerCase().includes("email")
+        ) {
+          preview.push({
+            name: parts[0],
+            email: parts[1],
+            className: parts[2] || undefined,
+          });
+        }
+      }
+      setParsedPreview(preview);
+    };
+    reader.readAsText(file);
+  };
 
   const list = students.filter(
     (s) =>
@@ -120,7 +156,8 @@ function SchoolStudents() {
       toast.success(`${studentName} removed from school`);
       if (selectedStudent?.id === studentId) setSelectedStudent(null);
       router.invalidate();
-    } catch {
+    } catch (err) {
+      console.error("Failed to remove student:", err);
       toast.error("Failed to remove student");
     }
   };
@@ -559,54 +596,173 @@ function SchoolStudents() {
             className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-semibold text-slate-900">Bulk Upload Students</h3>
-            <p className="mt-1 text-xs text-slate-500">
-              Paste CSV roster lines in the format:{" "}
-              <code className="rounded-sm bg-slate-100 px-1 py-0.5">
-                Name, Email, Class Name (optional)
-              </code>
-            </p>
-
-            <div className="mt-4">
-              <textarea
-                rows={6}
-                value={bulkInput}
-                onChange={(e) => setBulkInput(e.target.value)}
-                placeholder="Lucas Gray, lucas.g@school.edu, Grade 6A - Python Explorers&#10;Sophia Lin, sophia.l@school.edu, Grade 7B - Web Foundations"
-                className="w-full rounded-xl border border-slate-200 p-3 font-mono text-xs outline-none focus:border-indigo-400"
-              />
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">Bulk Upload Students</h3>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Import class rosters rapidly via CSV spreadsheet or manual paste.
+                </p>
+              </div>
             </div>
 
-            <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-              <span>One student per line</span>
+            {/* Mode switch */}
+            <div className="mt-4 flex gap-2 border-b border-slate-100 pb-3">
               <button
                 type="button"
-                onClick={() =>
-                  setBulkInput(
-                    "Lucas Gray, lucas.g@school.edu, Grade 6A - Python Explorers\nSophia Lin, sophia.l@school.edu, Grade 7B - Web Foundations\nDavid Kim, david.k@school.edu, Grade 8A - Algorithms & Logic",
-                  )
-                }
-                className="font-medium text-indigo-600 hover:underline"
+                onClick={() => setBulkMode("file")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+                  bulkMode === "file"
+                    ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                    : "text-slate-600 hover:bg-slate-50",
+                )}
               >
-                Insert sample roster
+                <FileText className="h-3.5 w-3.5" /> Drag & Drop CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => setBulkMode("paste")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+                  bulkMode === "paste"
+                    ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                    : "text-slate-600 hover:bg-slate-50",
+                )}
+              >
+                <Edit2 className="h-3.5 w-3.5" /> Paste Text
               </button>
             </div>
+
+            {bulkMode === "file" ? (
+              <div className="mt-4">
+                <label
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const file = e.dataTransfer.files[0];
+                    if (file) processCsvFile(file);
+                  }}
+                  className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 p-6 text-center hover:border-indigo-400 hover:bg-indigo-50/30 transition cursor-pointer"
+                >
+                  <input
+                    type="file"
+                    accept=".csv,text/csv,text/plain"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+                    <Upload className="h-6 w-6" />
+                  </div>
+                  <p className="mt-3 text-xs font-semibold text-slate-800">
+                    Click to browse or drop your CSV file here
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Supports .csv with columns: Name, Email, Class (optional)
+                  </p>
+                </label>
+
+                {uploadedFile && (
+                  <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                        <div>
+                          <p className="text-xs font-semibold text-emerald-900">
+                            {uploadedFile.name}
+                          </p>
+                          <p className="text-[11px] text-emerald-700">
+                            {parsedPreview.length} student records recognized
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUploadedFile(null);
+                          setParsedPreview([]);
+                          setBulkInput("");
+                        }}
+                        className="text-[11px] font-medium text-rose-600 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+
+                    {parsedPreview.length > 0 && (
+                      <div className="mt-2.5 max-h-32 overflow-y-auto rounded-lg border border-emerald-100 bg-white p-2">
+                        <table className="w-full text-left text-[11px]">
+                          <thead>
+                            <tr className="border-b border-slate-100 text-slate-400">
+                              <th className="pb-1 font-semibold">Name</th>
+                              <th className="pb-1 font-semibold">Email</th>
+                              <th className="pb-1 font-semibold">Class</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50 text-slate-600">
+                            {parsedPreview.slice(0, 4).map((p, idx) => (
+                              <tr key={idx}>
+                                <td className="py-1 font-medium text-slate-800">{p.name}</td>
+                                <td className="py-1">{p.email}</td>
+                                <td className="py-1 text-slate-500">{p.className || "Default"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {parsedPreview.length > 4 && (
+                          <p className="mt-1 text-center text-[10px] text-slate-400">
+                            + {parsedPreview.length - 4} more students...
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="mt-4">
+                <textarea
+                  rows={5}
+                  value={bulkInput}
+                  onChange={(e) => setBulkInput(e.target.value)}
+                  placeholder="Lucas Gray, lucas.g@school.edu, Grade 6A - Python Explorers&#10;Sophia Lin, sophia.l@school.edu, Grade 7B - Web Foundations"
+                  className="w-full rounded-xl border border-slate-200 p-3 font-mono text-xs outline-none focus:border-indigo-400"
+                />
+                <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+                  <span>One student per line</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setBulkInput(
+                        "Lucas Gray, lucas.g@school.edu, Grade 6A - Python Explorers\nSophia Lin, sophia.l@school.edu, Grade 7B - Web Foundations\nDavid Kim, david.k@school.edu, Grade 8A - Algorithms & Logic",
+                      )
+                    }
+                    className="font-medium text-indigo-600 hover:underline"
+                  >
+                    Insert sample roster
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="mt-5 flex justify-end gap-2.5">
               <button
                 type="button"
-                onClick={() => setBulk(false)}
+                onClick={() => {
+                  setBulk(false);
+                  setUploadedFile(null);
+                  setParsedPreview([]);
+                }}
                 className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-600 hover:bg-slate-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !bulkInput.trim()}
                 onClick={handleBulkImport}
                 className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
               >
-                <Upload className="h-4 w-4" /> Import Roster
+                <Upload className="h-4 w-4" /> Import {parsedPreview.length > 0 ? `${parsedPreview.length} Students` : "Roster"}
               </button>
             </div>
           </div>

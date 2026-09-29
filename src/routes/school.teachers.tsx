@@ -10,6 +10,7 @@ import {
   toggleTeacherStatusFn,
   updateTeacherFn,
   deleteTeacherFn,
+  assignTeacherTrainingFn,
 } from "@/api/school.server";
 
 export const Route = createFileRoute("/school/teachers")({
@@ -128,12 +129,24 @@ function SchoolTeachers() {
     }
   };
 
-  const handleAssignTraining = (trackName: string) => {
+  const handleAssignTraining = async (trackId: string, trackName: string) => {
     if (!trainingTeacher) return;
-    toast.success(`Training assigned to ${trainingTeacher.name}`, {
-      description: `Enrolled in "${trackName}" curriculum enablement track.`,
-    });
-    setTrainingTeacher(null);
+    try {
+      await assignTeacherTrainingFn({
+        data: {
+          teacherId: trainingTeacher.id,
+          trackId,
+          trackName,
+        },
+      });
+      toast.success(`Training assigned to ${trainingTeacher.name}`, {
+        description: `Enrolled in "${trackName}" curriculum enablement track.`,
+      });
+      setTrainingTeacher(null);
+      router.invalidate();
+    } catch {
+      toast.error("Failed to assign training track");
+    }
   };
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -243,6 +256,21 @@ function SchoolTeachers() {
                         ))
                       )}
                     </div>
+
+                    {t.trainings && t.trainings.length > 0 && (
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[11px] font-semibold text-slate-500">Enablement:</span>
+                        {t.trainings.map((tr) => (
+                          <span
+                            key={tr.id}
+                            className="inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50/70 px-2 py-0.5 text-[10px] font-medium text-indigo-700"
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                            {tr.trackName} ({tr.progressPercent}%)
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2.5">
                     <div className="w-32 hidden sm:block">
@@ -446,7 +474,7 @@ function SchoolTeachers() {
               {TRAINING_TRACKS.map((track) => (
                 <div
                   key={track.id}
-                  onClick={() => handleAssignTraining(track.name)}
+                  onClick={() => handleAssignTraining(track.id, track.name)}
                   className="group flex cursor-pointer items-start justify-between rounded-xl border border-slate-200 p-3 hover:border-indigo-400 hover:bg-indigo-50/50 transition"
                 >
                   <div>

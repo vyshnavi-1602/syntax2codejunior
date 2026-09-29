@@ -330,3 +330,29 @@ export const platformSchedules = pgTable("platform_schedules", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const teacherTrainings = pgTable("teacher_trainings", {
+  id: serial("id").primaryKey(),
+  teacherId: text("teacher_id")
+    .references(() => user.id)
+    .notNull(),
+  trackId: text("track_id").notNull(),
+  trackName: text("track_name").notNull(),
+  status: text("status").default("in_progress").notNull(), // in_progress, completed
+  progressPercent: integer("progress_percent").default(25).notNull(),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const parentReportLogs = pgTable("parent_report_logs", {
+  id: serial("id").primaryKey(),
+  schoolId: integer("school_id")
+    .references(() => schools.id)
+    .notNull(),
+  recipientCount: integer("recipient_count").notNull(),
+  reportType: text("report_type").notNull(), // e.g. "Monthly Progress", "Term 1 Report Card"
+  subject: text("subject").notNull(),
+  status: text("status").default("delivered").notNull(),
+  sentAt: timestamp("sent_at").defaultNow().notNull(),
+});
+

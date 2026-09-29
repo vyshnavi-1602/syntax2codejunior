@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { Edit2, Plus, Trash2, Users } from "lucide-react";
+import { ArrowRight, Edit2, GraduationCap, Plus, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Bar, PageHeader, Pill } from "@/client/components/app/primitives";
 import {
@@ -8,6 +8,7 @@ import {
   createClassFn,
   updateClassFn,
   deleteClassFn,
+  promoteClassRosterFn,
 } from "@/api/school.server";
 
 export const Route = createFileRoute("/school/classes")({
@@ -48,6 +49,50 @@ function SchoolClasses() {
     teacherId: teachers[0]?.id || "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Rollover / Promotion modal state
+  const [rolloverOpen, setRolloverOpen] = useState(false);
+  const [rolloverSource, setRolloverSource] = useState<string>(classes[0]?.id ? String(classes[0].id) : "");
+  const [rolloverTarget, setRolloverTarget] = useState<string>(classes[1]?.id ? String(classes[1].id) : "");
+  const [rolloverMode, setRolloverMode] = useState<"transfer" | "graduate">("transfer");
+
+  const handleRollover = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rolloverSource) {
+      toast.error("Please select a source class.");
+      return;
+    }
+    if (rolloverMode === "transfer" && !rolloverTarget) {
+      toast.error("Please select a target destination class.");
+      return;
+    }
+    if (rolloverMode === "transfer" && rolloverSource === rolloverTarget) {
+      toast.error("Target class must be different from source class.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await promoteClassRosterFn({
+        data: {
+          sourceClassId: Number(rolloverSource),
+          targetClassId: rolloverMode === "transfer" ? Number(rolloverTarget) : null,
+          mode: rolloverMode,
+        },
+      });
+      toast.success(
+        rolloverMode === "transfer"
+          ? `Successfully promoted ${res.count} students to new class!`
+          : `Graduated/Archived ${res.count} students from class!`,
+      );
+      setRolloverOpen(false);
+      router.invalidate();
+    } catch {
+      toast.error("Failed to complete class rollover.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,12 +171,21 @@ function SchoolClasses() {
         title="Class Management"
         subtitle={`${classes.length} active class sections with assigned faculty`}
         actions={
-          <button
-            onClick={() => setOpen(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
-          >
-            <Plus className="h-4 w-4" /> Add class section
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setRolloverOpen(true)}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition"
+            >
+              <GraduationCap className="h-4 w-4 text-indigo-600" />
+              Promote & Rollover
+            </button>
+            <button
+              onClick={() => setOpen(true)}
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
+            >
+              <Plus className="h-4 w-4" /> Add class section
+            </button>
+          </div>
         }
       />
 
@@ -400,6 +454,136 @@ function SchoolClasses() {
                   className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
                 >
                   Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Class Promotion & Semester Rollover Modal */}
+      {rolloverOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs"
+          onClick={() => setRolloverOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                <GraduationCap className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">
+                  Academic Promotion & Rollover
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Advance student rosters to the next grade or semester.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleRollover} className="mt-4 space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700">
+                  Promotion Mode
+                </label>
+                <div className="mt-1.5 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRolloverMode("transfer")}
+                    className={cn(
+                      "flex items-center justify-center gap-1.5 rounded-xl border p-2.5 text-xs font-semibold transition",
+                      rolloverMode === "transfer"
+                        ? "border-indigo-400 bg-indigo-50 text-indigo-700"
+                        : "border-slate-200 text-slate-600 hover:bg-slate-50",
+                    )}
+                  >
+                    <ArrowRight className="h-3.5 w-3.5" /> Next Class
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRolloverMode("graduate")}
+                    className={cn(
+                      "flex items-center justify-center gap-1.5 rounded-xl border p-2.5 text-xs font-semibold transition",
+                      rolloverMode === "graduate"
+                        ? "border-indigo-400 bg-indigo-50 text-indigo-700"
+                        : "border-slate-200 text-slate-600 hover:bg-slate-50",
+                    )}
+                  >
+                    <GraduationCap className="h-3.5 w-3.5" /> Graduate Cohort
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700">
+                  Current Source Class
+                </label>
+                <select
+                  required
+                  value={rolloverSource}
+                  onChange={(e) => setRolloverSource(e.target.value)}
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                >
+                  <option value="">Select source class</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.students} students)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {rolloverMode === "transfer" && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Target Destination Class
+                  </label>
+                  <select
+                    required
+                    value={rolloverTarget}
+                    onChange={(e) => setRolloverTarget(e.target.value)}
+                    className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                  >
+                    <option value="">Select destination class</option>
+                    {classes
+                      .filter((c) => String(c.id) !== rolloverSource)
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                  </select>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Students will be moved to the target section while retaining XP and stats.
+                  </p>
+                </div>
+              )}
+
+              {rolloverMode === "graduate" && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-800">
+                  Enrolled students will be marked as alumni/graduated and unassigned from active
+                  rosters while preserving their projects, XP, and certificates.
+                </div>
+              )}
+
+              <div className="mt-6 flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setRolloverOpen(false)}
+                  className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  <GraduationCap className="h-4 w-4" /> Execute Rollover
                 </button>
               </div>
             </form>

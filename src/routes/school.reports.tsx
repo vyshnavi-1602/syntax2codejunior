@@ -1,12 +1,13 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { Download, FileText, Megaphone, Printer, Send, Trash2 } from "lucide-react";
+import { CheckCircle2, Download, FileText, Mail, Megaphone, Printer, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill } from "@/client/components/app/primitives";
 import {
   getSchoolReportsFn,
   createSchoolAnnouncementFn,
   deleteSchoolAnnouncementFn,
+  dispatchParentReportsFn,
 } from "@/api/school.server";
 import {
   generateSchoolReportHtml,
@@ -34,7 +35,7 @@ export const Route = createFileRoute("/school/reports")({
   component: ReportsPage,
 });
 
-const tabs = ["Reports", "Announcements"] as const;
+const tabs = ["Reports", "Announcements", "Parent Dispatches"] as const;
 
 const reports = [
   {
@@ -85,12 +86,46 @@ function ReportsPage() {
   const router = useRouter();
   const loaderData = Route.useLoaderData();
   const { school, announcements } = loaderData;
+  const parentLogs = loaderData.parentReportLogs || [];
 
   const [tab, setTab] = useState<(typeof tabs)[number]>("Reports");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [audience, setAudience] = useState("All");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Parent report dispatch modal state
+  const [dispatchOpen, setDispatchOpen] = useState(false);
+  const [dispatchType, setDispatchType] = useState("Monthly Progress Summary");
+  const [dispatchSubject, setDispatchSubject] = useState(
+    "Student Coding Progress & Achievement Card",
+  );
+  const [dispatchNote, setDispatchNote] = useState(
+    "Dear Guardian, please find attached the student's coding milestones, completion rates, and problem-solving assessment scores for this term.",
+  );
+
+  const handleDispatchReports = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const res = await dispatchParentReportsFn({
+        data: {
+          reportType: dispatchType,
+          subject: dispatchSubject.trim(),
+          customNote: dispatchNote.trim(),
+        },
+      });
+      toast.success("Report cards dispatched to parents!", {
+        description: `Delivered to ${res.recipientCount} student guardians via verified email channels.`,
+      });
+      setDispatchOpen(false);
+      router.invalidate();
+    } catch {
+      toast.error("Failed to dispatch report cards");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handlePostAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -357,6 +392,163 @@ function ReportsPage() {
               </button>
             </form>
           </Panel>
+        </div>
+      )}
+
+      {tab === "Parent Dispatches" && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/80 via-white to-blue-50/50 p-6 shadow-xs">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-xs">
+                  <Mail className="h-4 w-4" />
+                </span>
+                <h3 className="text-base font-semibold text-slate-900">
+                  Automated Guardian Report Cards
+                </h3>
+              </div>
+              <p className="mt-1 text-xs text-slate-500 max-w-xl">
+                Batch email verified coding progress summaries, lesson completion percentages, and
+                achievement transcripts directly to enrolled students' parents and guardians.
+              </p>
+            </div>
+            <button
+              onClick={() => setDispatchOpen(true)}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition shrink-0"
+            >
+              <Send className="h-4 w-4" /> Dispatch Report Cards
+            </button>
+          </div>
+
+          <Panel
+            title="Dispatch History & Delivery Logs"
+            description="Audit trail of report card broadcasts sent to parent email contacts"
+          >
+            {parentLogs.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center">
+                <Mail className="mx-auto h-8 w-8 text-slate-300" />
+                <p className="mt-2 text-sm font-medium text-slate-700">
+                  No parent reports dispatched yet
+                </p>
+                <p className="mt-0.5 text-xs text-slate-400">
+                  Click "Dispatch Report Cards" to trigger your first term progress release.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {parentLogs.map((log: any) => (
+                  <div
+                    key={log.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3.5"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-slate-900">{log.reportType}</p>
+                        <Pill tone="emerald">
+                          <CheckCircle2 className="h-3 w-3 mr-1 inline" /> {log.status}
+                        </Pill>
+                      </div>
+                      <p className="mt-0.5 text-xs text-slate-500">{log.subject}</p>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-slate-500 shrink-0">
+                      <span className="font-medium text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                        {log.recipientCount} Recipients
+                      </span>
+                      <span>{log.sentAt}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
+        </div>
+      )}
+
+      {/* Dispatch Modal */}
+      {dispatchOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs"
+          onClick={() => setDispatchOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                <Mail className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">
+                  Dispatch Parent Progress Cards
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Email customized coding achievement cards to student guardians.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleDispatchReports} className="mt-4 space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700">Report Package</label>
+                <select
+                  value={dispatchType}
+                  onChange={(e) => setDispatchType(e.target.value)}
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                >
+                  <option value="Monthly Progress Summary">Monthly Progress Summary</option>
+                  <option value="Term 1 Midterm Coding Card">Term 1 Midterm Coding Card</option>
+                  <option value="AI & Coding Readiness Audit">AI & Coding Readiness Audit</option>
+                  <option value="End-of-Term Transcript">End-of-Term Transcript</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700">Email Subject</label>
+                <input
+                  required
+                  value={dispatchSubject}
+                  onChange={(e) => setDispatchSubject(e.target.value)}
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700">
+                  Guardian Notice Message
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={dispatchNote}
+                  onChange={(e) => setDispatchNote(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-400"
+                />
+              </div>
+
+              <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-[11px] text-indigo-900">
+                Reports will be rendered dynamically with student-specific XP, completed modules,
+                and teacher evaluation rubrics.
+              </div>
+
+              <div className="mt-5 flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setDispatchOpen(false)}
+                  className="h-10 rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  <Send className="h-4 w-4" /> Send to All Parents
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </>

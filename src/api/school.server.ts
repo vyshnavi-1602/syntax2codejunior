@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import { db } from "../server/db";
 import * as schema from "../server/db/schema";
 import { roleMiddleware } from "./auth.server";
@@ -323,10 +323,13 @@ export const getSchoolTeachersFn = createServerFn({ method: "GET" })
       .innerJoin(schema.user, eq(schema.studentProfiles.userId, schema.user.id))
       .where(eq(schema.user.schoolId, school.id));
 
+    const trainings = await db.select().from(schema.teacherTrainings);
+
     const teachersFormatted = teachers.map((t) => {
       const assignedClasses = classes.filter((c) => c.teacherId === t.id);
       const classIds = new Set(assignedClasses.map((c) => c.id));
       const studentCount = profiles.filter((p) => p.classId && classIds.has(p.classId)).length;
+      const myTrainings = trainings.filter((tr) => tr.teacherId === t.id);
 
       return {
         id: t.id,
@@ -337,6 +340,7 @@ export const getSchoolTeachersFn = createServerFn({ method: "GET" })
         classes: assignedClasses.map((c) => c.name),
         students: studentCount,
         readiness: assignedClasses.length > 0 ? 88 : 72,
+        trainings: myTrainings,
       };
     });
 
@@ -356,6 +360,36 @@ export const getSchoolTeachersFn = createServerFn({ method: "GET" })
         classesCovered: classes.length,
       },
     };
+  });
+
+export const assignTeacherTrainingFn = createServerFn({ method: "POST" })
+  .middleware([roleMiddleware(["school", "s2c", "admin"])])
+  .validator((data: { teacherId: string; trackId: string; trackName: string }) => data)
+  .handler(async ({ data }) => {
+    const existing = await db
+      .select()
+      .from(schema.teacherTrainings)
+      .where(
+        and(
+          eq(schema.teacherTrainings.teacherId, data.teacherId),
+          eq(schema.teacherTrainings.trackId, data.trackId),
+        ),
+      );
+
+    if (existing.length > 0) {
+      return { success: true, alreadyAssigned: true };
+    }
+
+    await db.insert(schema.teacherTrainings).values({
+      teacherId: data.teacherId,
+      trackId: data.trackId,
+      trackName: data.trackName,
+      status: "in_progress",
+      progressPercent: 40,
+      assignedAt: new Date(),
+    });
+
+    return { success: true };
   });
 
 export const createTeacherFn = createServerFn({ method: "POST" })
@@ -432,13 +466,78 @@ export const deleteTeacherFn = createServerFn({ method: "POST" })
         .update(schema.schoolSchedules)
         .set({ teacherId: replacementId })
         .where(eq(schema.schoolSchedules.teacherId, teacherId));
+      await db
+        .update(schema.assignments)
+        .set({ teacherId: replacementId })
+        .where(eq(schema.assignments.teacherId, teacherId));
+      await db
+        .update(schema.clubs)
+        .set({ teacherId: replacementId })
+        .where(eq(schema.clubs.teacherId, teacherId));
+      await db
+        .update(schema.attendanceSessions)
+        .set({ teacherId: replacementId })
+        .where(eq(schema.attendanceSessions.teacherId, teacherId));
+      await db
+        .update(schema.reviews)
+        .set({ teacherId: replacementId })
+        .where(eq(schema.reviews.teacherId, teacherId));
     } else {
       await db
         .delete(schema.schoolSchedules)
         .where(eq(schema.schoolSchedules.teacherId, teacherId));
+      await db
+        .delete(schema.reviews)
+        .where(eq(schema.reviews.teacherId, teacherId));
+
+      const teacherAssignments = await db
+        .select({ id: schema.assignments.id })
+        .from(schema.assignments)
+        .where(eq(schema.assignments.teacherId, teacherId));
+
+      if (teacherAssignments.length > 0) {
+        const assignmentIds = teacherAssignments.map((a) => a.id);
+        const subs = await db
+          .select({ id: schema.submissions.id })
+          .from(schema.submissions)
+          .where(inArray(schema.submissions.assignmentId, assignmentIds));
+
+        if (subs.length > 0) {
+          const subIds = subs.map((s) => s.id);
+          await db
+            .delete(schema.reviews)
+            .where(inArray(schema.reviews.submissionId, subIds));
+          await db
+            .delete(schema.submissions)
+            .where(inArray(schema.submissions.id, subIds));
+        }
+
+        await db
+          .delete(schema.assignments)
+          .where(inArray(schema.assignments.id, assignmentIds));
+      }
+
+      const sessions = await db
+        .select({ id: schema.attendanceSessions.id })
+        .from(schema.attendanceSessions)
+        .where(eq(schema.attendanceSessions.teacherId, teacherId));
+
+      if (sessions.length > 0) {
+        const sessionIds = sessions.map((s) => s.id);
+        await db
+          .delete(schema.attendanceRecords)
+          .where(inArray(schema.attendanceRecords.sessionId, sessionIds));
+        await db
+          .delete(schema.attendanceSessions)
+          .where(inArray(schema.attendanceSessions.id, sessionIds));
+      }
+
+      await db.delete(schema.clubs).where(eq(schema.clubs.teacherId, teacherId));
       await db.delete(schema.classes).where(eq(schema.classes.teacherId, teacherId));
     }
 
+    await db.delete(schema.session).where(eq(schema.session.userId, teacherId));
+    await db.delete(schema.account).where(eq(schema.account.userId, teacherId));
     await db.delete(schema.user).where(eq(schema.user.id, teacherId));
     return { success: true };
   });
@@ -674,13 +773,70 @@ export const deleteStudentFn = createServerFn({ method: "POST" })
   .middleware([roleMiddleware(["school", "s2c", "admin"])])
   .validator((studentId: string) => studentId)
   .handler(async ({ data: studentId }) => {
+    // 1. Delete reviews on student's submissions, and then student's submissions
+    const studentSubs = await db
+      .select({ id: schema.submissions.id })
+      .from(schema.submissions)
+      .where(eq(schema.submissions.studentId, studentId));
+
+    if (studentSubs.length > 0) {
+      const subIds = studentSubs.map((s) => s.id);
+      await db
+        .delete(schema.reviews)
+        .where(inArray(schema.reviews.submissionId, subIds));
+      await db
+        .delete(schema.submissions)
+        .where(eq(schema.submissions.studentId, studentId));
+    }
+
+    // 2. Delete student flags
+    await db
+      .delete(schema.studentFlags)
+      .where(eq(schema.studentFlags.studentId, studentId));
+
+    // 3. Delete attendance records
+    await db
+      .delete(schema.attendanceRecords)
+      .where(eq(schema.attendanceRecords.studentId, studentId));
+
+    // 4. Delete skill mastery
+    await db
+      .delete(schema.studentSkillMastery)
+      .where(eq(schema.studentSkillMastery.studentId, studentId));
+
+    // 5. Delete completed lessons
     await db
       .delete(schema.completedLessons)
       .where(eq(schema.completedLessons.studentId, studentId));
-    await db.delete(schema.projects).where(eq(schema.projects.studentId, studentId));
-    await db.delete(schema.earnedBadges).where(eq(schema.earnedBadges.studentId, studentId));
-    await db.delete(schema.studentProfiles).where(eq(schema.studentProfiles.userId, studentId));
-    await db.delete(schema.user).where(eq(schema.user.id, studentId));
+
+    // 6. Delete projects
+    await db
+      .delete(schema.projects)
+      .where(eq(schema.projects.studentId, studentId));
+
+    // 7. Delete earned badges
+    await db
+      .delete(schema.earnedBadges)
+      .where(eq(schema.earnedBadges.studentId, studentId));
+
+    // 8. Delete student profile
+    await db
+      .delete(schema.studentProfiles)
+      .where(eq(schema.studentProfiles.userId, studentId));
+
+    // 9. Delete session and account
+    await db
+      .delete(schema.session)
+      .where(eq(schema.session.userId, studentId));
+    await db
+      .delete(schema.account)
+      .where(eq(schema.account.userId, studentId));
+
+    // 10. Delete user
+    await db
+      .delete(schema.user)
+      .where(eq(schema.user.id, studentId));
+
     return { success: true };
   });
 
@@ -802,6 +958,37 @@ export const deleteClassFn = createServerFn({ method: "POST" })
 
     await db.delete(schema.classes).where(eq(schema.classes.id, classId));
     return { success: true };
+  });
+
+export const promoteClassRosterFn = createServerFn({ method: "POST" })
+  .middleware([roleMiddleware(["school", "s2c", "admin"])])
+  .validator(
+    (data: {
+      sourceClassId: number;
+      targetClassId: number | null;
+      mode: "transfer" | "graduate";
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    // Count students to promote
+    const students = await db
+      .select({ userId: schema.studentProfiles.userId })
+      .from(schema.studentProfiles)
+      .where(eq(schema.studentProfiles.classId, data.sourceClassId));
+
+    if (data.mode === "transfer" && data.targetClassId) {
+      await db
+        .update(schema.studentProfiles)
+        .set({ classId: data.targetClassId })
+        .where(eq(schema.studentProfiles.classId, data.sourceClassId));
+    } else if (data.mode === "graduate") {
+      await db
+        .update(schema.studentProfiles)
+        .set({ classId: null })
+        .where(eq(schema.studentProfiles.classId, data.sourceClassId));
+    }
+
+    return { success: true, count: students.length };
   });
 
 // -------------------------------------------------------------
@@ -926,9 +1113,29 @@ export const getSchoolReportsFn = createServerFn({ method: "GET" })
       { dimension: "AI Ethics & Safety", value: 84 },
     ];
 
+    const parentLogs = await db
+      .select()
+      .from(schema.parentReportLogs)
+      .where(eq(schema.parentReportLogs.schoolId, school.id))
+      .orderBy(sql`${schema.parentReportLogs.sentAt} DESC`);
+
     return {
       school,
       announcements: formattedAnnouncements,
+      parentReportLogs: parentLogs.map((p) => ({
+        id: p.id,
+        reportType: p.reportType,
+        subject: p.subject,
+        recipientCount: p.recipientCount,
+        status: p.status,
+        sentAt: new Date(p.sentAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      })),
       schoolKpis,
       classes: classSummaries,
       teachers: allTeachers.map((t) => ({
@@ -949,6 +1156,50 @@ export const getSchoolReportsFn = createServerFn({ method: "GET" })
         active: s.active,
       })),
       readinessIndex,
+    };
+  });
+
+export const dispatchParentReportsFn = createServerFn({ method: "POST" })
+  .middleware([roleMiddleware(["school", "s2c", "admin"])])
+  .validator(
+    (data: {
+      reportType: string;
+      subject: string;
+      customNote?: string | undefined;
+    }) => data,
+  )
+  .handler(async ({ data, context }) => {
+    const school = await getEffectiveSchool(context);
+
+    const students = await db
+      .select({ id: schema.user.id })
+      .from(schema.user)
+      .where(
+        and(
+          eq(schema.user.schoolId, school.id),
+          eq(schema.user.role, "student"),
+          eq(schema.user.active, true),
+        ),
+      );
+
+    const recipientCount = Math.max(students.length, 1);
+
+    const [log] = await db
+      .insert(schema.parentReportLogs)
+      .values({
+        schoolId: school.id,
+        recipientCount,
+        reportType: data.reportType,
+        subject: data.subject,
+        status: "delivered",
+        sentAt: new Date(),
+      })
+      .returning();
+
+    return {
+      success: true,
+      recipientCount,
+      log,
     };
   });
 
@@ -1276,6 +1527,41 @@ export const createSchoolScheduleFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const school = await getEffectiveSchool(context);
 
+    // Pre-flight conflict check: Check if room or teacher is already occupied at overlapping times
+    const existingSlots = await db
+      .select({
+        id: schema.schoolSchedules.id,
+        title: schema.schoolSchedules.title,
+        room: schema.schoolSchedules.room,
+        teacherId: schema.schoolSchedules.teacherId,
+        startTime: schema.schoolSchedules.startTime,
+        endTime: schema.schoolSchedules.endTime,
+      })
+      .from(schema.schoolSchedules)
+      .where(
+        and(
+          eq(schema.schoolSchedules.schoolId, school.id),
+          eq(schema.schoolSchedules.dayOfWeek, data.dayOfWeek),
+          eq(schema.schoolSchedules.status, "active"),
+        ),
+      );
+
+    for (const slot of existingSlots) {
+      const overlap = data.startTime < slot.endTime && slot.startTime < data.endTime;
+      if (overlap) {
+        if (slot.room.toLowerCase().trim() === data.room.toLowerCase().trim()) {
+          throw new Error(
+            `Room Collision: "${data.room}" is already booked for "${slot.title}" between ${slot.startTime} and ${slot.endTime}.`,
+          );
+        }
+        if (slot.teacherId === data.teacherId) {
+          throw new Error(
+            `Teacher Double-Booking: This faculty member is already scheduled for "${slot.title}" between ${slot.startTime} and ${slot.endTime}.`,
+          );
+        }
+      }
+    }
+
     const [created] = await db
       .insert(schema.schoolSchedules)
       .values({
@@ -1320,6 +1606,43 @@ export const updateSchoolScheduleFn = createServerFn({ method: "POST" })
     }) => data,
   )
   .handler(async ({ data }) => {
+    // Check conflicts if active
+    if (data.status === "active") {
+      const existingSlots = await db
+        .select({
+          id: schema.schoolSchedules.id,
+          title: schema.schoolSchedules.title,
+          room: schema.schoolSchedules.room,
+          teacherId: schema.schoolSchedules.teacherId,
+          startTime: schema.schoolSchedules.startTime,
+          endTime: schema.schoolSchedules.endTime,
+        })
+        .from(schema.schoolSchedules)
+        .where(
+          and(
+            eq(schema.schoolSchedules.dayOfWeek, data.dayOfWeek),
+            eq(schema.schoolSchedules.status, "active"),
+            sql`${schema.schoolSchedules.id} != ${data.id}`,
+          ),
+        );
+
+      for (const slot of existingSlots) {
+        const overlap = data.startTime < slot.endTime && slot.startTime < data.endTime;
+        if (overlap) {
+          if (slot.room.toLowerCase().trim() === data.room.toLowerCase().trim()) {
+            throw new Error(
+              `Room Collision: "${data.room}" is already booked for "${slot.title}" between ${slot.startTime} and ${slot.endTime}.`,
+            );
+          }
+          if (slot.teacherId === data.teacherId) {
+            throw new Error(
+              `Teacher Double-Booking: This faculty member is already scheduled for "${slot.title}" between ${slot.startTime} and ${slot.endTime}.`,
+            );
+          }
+        }
+      }
+    }
+
     const [updated] = await db
       .update(schema.schoolSchedules)
       .set({
