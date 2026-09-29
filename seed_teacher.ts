@@ -99,13 +99,24 @@ async function seedTeacherData() {
       .from(schema.assignments)
       .where(eq(schema.assignments.teacherId, teacher.id));
 
+    const authenticNames = [
+      "Aarav Sharma", "Maya Patel", "Ethan Walker", "Zoe Chen", "Liam O'Connor",
+      "Ananya Roy", "Lucas Miller", "Sophia Williams", "Daniel Kim", "Emma Johnson",
+      "Noah Garcia", "Isabella Martinez", "Oliver Brown", "Ava Davis", "Leo Anderson"
+    ];
+    let nameIdx = 0;
+
     for (const cls of insertedClasses) {
       for (let i = 1; i <= 5; i++) {
         const studentId = randomUUID();
+        const studentName = authenticNames[nameIdx % authenticNames.length] || `Student ${i}`;
+        const emailSlug = studentName.toLowerCase().replace(/[^a-z]/g, "");
+        nameIdx++;
+
         await db.insert(schema.user).values({
           id: studentId,
-          name: `Student ${i} (${cls.name})`,
-          email: `student${i}_${cls.id}@example.com`,
+          name: studentName,
+          email: `${emailSlug}_${cls.id}@globaltech.edu`,
           emailVerified: true,
           role: "student",
           schoolId: school.id,
