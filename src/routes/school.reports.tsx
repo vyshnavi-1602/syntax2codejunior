@@ -1,6 +1,15 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { CheckCircle2, Download, FileText, Mail, Megaphone, Printer, Send, Trash2 } from "lucide-react";
+import {
+  CheckCircle2,
+  Download,
+  FileText,
+  Mail,
+  Megaphone,
+  Printer,
+  Send,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { FilterChips, PageHeader, Panel, Pill } from "@/client/components/app/primitives";
 import {
@@ -82,11 +91,23 @@ const reports = [
   },
 ];
 
+interface ParentReportLog {
+  id: number;
+  schoolId: number;
+  reportType: string;
+  recipientCount: number;
+  subject: string;
+  customNote?: string | null;
+  status: string;
+  sentAt: Date | string | null;
+}
+
 function ReportsPage() {
   const router = useRouter();
   const loaderData = Route.useLoaderData();
   const { school, announcements } = loaderData;
-  const parentLogs = loaderData.parentReportLogs || [];
+  const parentLogs: ParentReportLog[] =
+    (loaderData.parentReportLogs as ParentReportLog[]) || [];
 
   const [tab, setTab] = useState<(typeof tabs)[number]>("Reports");
   const [title, setTitle] = useState("");
@@ -436,7 +457,7 @@ function ReportsPage() {
               </div>
             ) : (
               <div className="divide-y divide-slate-100">
-                {parentLogs.map((log: any) => (
+                {parentLogs.map((log) => (
                   <div
                     key={log.id}
                     className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3.5"
@@ -454,7 +475,11 @@ function ReportsPage() {
                       <span className="font-medium text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
                         {log.recipientCount} Recipients
                       </span>
-                      <span>{log.sentAt}</span>
+                      <span>
+                        {log.sentAt
+                          ? new Date(log.sentAt).toLocaleDateString()
+                          : "Recently"}
+                      </span>
                     </div>
                   </div>
                 ))}

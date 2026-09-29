@@ -101,16 +101,24 @@ function SchoolStudents() {
           parts[1] &&
           !parts[1].toLowerCase().includes("email")
         ) {
-          preview.push({
+          const item: { name: string; email: string; className?: string } = {
             name: parts[0],
             email: parts[1],
-            className: parts[2] || undefined,
-          });
+          };
+          if (parts[2]) {
+            item.className = parts[2];
+          }
+          preview.push(item);
         }
       }
       setParsedPreview(preview);
     };
     reader.readAsText(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processCsvFile(file);
   };
 
   const list = students.filter(
@@ -762,7 +770,8 @@ function SchoolStudents() {
                 onClick={handleBulkImport}
                 className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
               >
-                <Upload className="h-4 w-4" /> Import {parsedPreview.length > 0 ? `${parsedPreview.length} Students` : "Roster"}
+                <Upload className="h-4 w-4" /> Import{" "}
+                {parsedPreview.length > 0 ? `${parsedPreview.length} Students` : "Roster"}
               </button>
             </div>
           </div>

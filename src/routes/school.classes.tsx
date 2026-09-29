@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ArrowRight, Edit2, GraduationCap, Plus, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Bar, PageHeader, Pill } from "@/client/components/app/primitives";
+import { cn } from "@/client/lib/utils";
 import {
   getSchoolClassesFn,
   createClassFn,
@@ -52,8 +53,12 @@ function SchoolClasses() {
 
   // Rollover / Promotion modal state
   const [rolloverOpen, setRolloverOpen] = useState(false);
-  const [rolloverSource, setRolloverSource] = useState<string>(classes[0]?.id ? String(classes[0].id) : "");
-  const [rolloverTarget, setRolloverTarget] = useState<string>(classes[1]?.id ? String(classes[1].id) : "");
+  const [rolloverSource, setRolloverSource] = useState<string>(
+    classes[0]?.id ? String(classes[0].id) : "",
+  );
+  const [rolloverTarget, setRolloverTarget] = useState<string>(
+    classes[1]?.id ? String(classes[1].id) : "",
+  );
   const [rolloverMode, setRolloverMode] = useState<"transfer" | "graduate">("transfer");
 
   const handleRollover = async (e: React.FormEvent) => {
@@ -487,9 +492,7 @@ function SchoolClasses() {
 
             <form onSubmit={handleRollover} className="mt-4 space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-700">
-                  Promotion Mode
-                </label>
+                <label className="block text-xs font-semibold text-slate-700">Promotion Mode</label>
                 <div className="mt-1.5 grid grid-cols-2 gap-2">
                   <button
                     type="button"
