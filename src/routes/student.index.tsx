@@ -11,11 +11,17 @@ import {
   Award,
   GraduationCap,
   Mail,
+  ClipboardList,
+  Check,
+  CheckCircle2,
+  Clock,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Bar, Pill, Panel, PageHeader, Stat } from "@/client/components/app/primitives";
-import { getStudentDashboard } from "@/api/student.server";
+import { getStudentDashboard, type StudentAssignmentCard } from "@/api/student.server";
 import { useSession } from "@/client/lib/auth-client";
+import { cn } from "@/client/lib/utils";
 
 export const Route = createFileRoute("/student/")({
   head: () => ({
@@ -245,93 +251,141 @@ function StudentHome() {
               </div>
             </Panel>
           )}
-
-          <Panel
-            title="Classroom Daily Tasks"
-            description="Posted by your teacher"
-            action={
-              <Link
-                to="/student/practice"
-                className="text-xs font-semibold text-indigo-600 hover:underline"
-              >
-                View all
-              </Link>
-            }
-          >
-            {data.classAssignments && data.classAssignments.length > 0 ? (
-              <div className="space-y-3">
-                {data.classAssignments.map(
-                  (task: {
-                    id: number;
-                    title: string;
-                    type: string;
-                    instructions: string | null;
-                    className: string;
-                  }) => {
-                    let desc = task.instructions || "";
-                    let isCoding = task.type === "Coding task" || task.type === "Assessment";
-                    let tcCount = 0;
-                    if (task.instructions) {
-                      try {
-                        const parsed = JSON.parse(task.instructions);
-                        if (parsed && (parsed.isCodingRound || Array.isArray(parsed.testCases))) {
-                          desc = parsed.description || "";
-                          isCoding = true;
-                          tcCount = parsed.testCases?.length || 0;
-                        }
-                      } catch {}
-                    }
-
-                    return (
-                      <div
-                        key={task.id}
-                        className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 space-y-2"
-                      >
-                        <div className="flex items-center justify-between flex-wrap gap-1">
-                          <span className="text-xs font-bold text-slate-900">{task.title}</span>
-                          <div className="flex items-center gap-1.5">
-                            <Pill tone="violet">{task.type}</Pill>
-                            {isCoding && tcCount > 0 && (
-                              <span className="inline-flex items-center gap-1 rounded bg-indigo-100/80 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-800">
-                                {tcCount} Test Cases
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {desc && (
-                          <p className="line-clamp-2 text-xs text-slate-600 leading-relaxed">
-                            {desc}
-                          </p>
-                        )}
-                        <div className="pt-1">
-                          {isCoding ? (
-                            <Link
-                              to="/student/lab"
-                              search={{ assignmentId: task.id }}
-                              className="inline-flex h-7.5 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-[11px] font-semibold text-white hover:bg-indigo-700 shadow-2xs transition-colors"
-                            >
-                              <Terminal className="h-3 w-3" />
-                              Solve in IDE
-                            </Link>
-                          ) : (
-                            <Link
-                              to="/student/practice"
-                              className="inline-flex h-7.5 items-center rounded-lg bg-indigo-600 px-3 text-[11px] font-medium text-white hover:bg-indigo-700 transition-colors"
-                            >
-                              Solve task
-                            </Link>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  },
-                )}
-              </div>
-            ) : (
-              <p className="text-xs text-slate-500">No new daily tasks posted yet.</p>
-            )}
-          </Panel>
         </div>
+      </div>
+
+      {/* Prominent Assignments Section: Rendered as Interactive CARDS */}
+      <div className="space-y-4 pt-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              My Assigned Coursework & Coding Challenges
+            </h2>
+            <p className="text-xs text-slate-500">
+              Complete your weekly labs, challenges, and assessments directly inside the IDE.
+            </p>
+          </div>
+          <Link
+            to="/student/assignments"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+          >
+            <span>View All Assignments ({data.classAssignments?.length || 0})</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
+        {data.classAssignments && data.classAssignments.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {(data.classAssignments as unknown as StudentAssignmentCard[]).map(
+              (task: StudentAssignmentCard) => {
+                const isSolved = task.status === "Submitted" || task.status === "Graded";
+                const isCoding =
+                  task.isCodingRound ?? (task.type === "Coding task" || task.type === "Assessment");
+                const tcCount = task.testCasesCount ?? 3;
+                const xpVal = task.xp ?? 50;
+                const diff = task.difficulty ?? "Easy";
+
+                return (
+                  <div
+                    key={task.id}
+                    className={cn(
+                      "group relative flex flex-col justify-between rounded-2xl border p-5 shadow-xs transition-all hover:shadow-md",
+                      isSolved
+                        ? "border-emerald-200/80 dark:border-emerald-900/40 bg-gradient-to-b from-white to-emerald-50/15 dark:from-slate-900 dark:to-emerald-950/10"
+                        : "border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-200 dark:hover:border-indigo-800",
+                    )}
+                  >
+                    <div>
+                      {/* Card Header Badges */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                          <GraduationCap className="h-3 w-3 text-indigo-500" />
+                          {task.className}
+                        </span>
+
+                        {task.status === "Graded" ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
+                            <Check className="h-3 w-3 stroke-[3]" />
+                            Score: {task.score}%
+                          </span>
+                        ) : task.status === "Submitted" ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 dark:bg-sky-950 px-2.5 py-0.5 text-[11px] font-bold text-sky-800 dark:text-sky-300">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Submitted
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 dark:text-amber-300">
+                            <Clock className="h-3 w-3" />
+                            Due {task.dueDate || "Soon"}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Card Title & Snippet */}
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        {task.title}
+                      </h3>
+                      <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                        {task.description ||
+                          "Complete this programming challenge and verify test cases."}
+                      </p>
+
+                      {/* Metadata Chips */}
+                      <div className="mt-3.5 flex flex-wrap items-center gap-1.5 pt-3 border-t border-slate-100 dark:border-slate-800/80">
+                        <Pill
+                          tone={diff === "Easy" ? "emerald" : diff === "Medium" ? "amber" : "rose"}
+                        >
+                          {diff}
+                        </Pill>
+                        <span className="inline-flex items-center gap-1 rounded bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
+                          <Sparkles className="h-3 w-3" />+{xpVal} XP
+                        </span>
+                        {tcCount > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                            {tcCount} Test Cases
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card Action Button */}
+                    <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                      {isCoding ? (
+                        <Link
+                          to="/student/lab"
+                          search={{ assignmentId: task.id }}
+                          className={cn(
+                            "flex h-9 w-full items-center justify-center gap-2 rounded-xl text-xs font-semibold shadow-xs transition-all",
+                            isSolved
+                              ? "border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100"
+                              : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-600/20",
+                          )}
+                        >
+                          <Terminal className="h-3.5 w-3.5" />
+                          {isSolved ? "Review in IDE" : "Solve in IDE ⚡"}
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/student/practice"
+                          className="flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 transition-all"
+                        >
+                          <span>Start Task</span>
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                );
+              },
+            )}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-8 text-center">
+            <ClipboardList className="mx-auto h-8 w-8 text-slate-400" />
+            <p className="mt-2 text-xs text-slate-500">No new coursework assignments posted yet.</p>
+          </div>
+        )}
       </div>
     </>
   );

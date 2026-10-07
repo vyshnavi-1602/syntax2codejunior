@@ -19,6 +19,10 @@ import {
   PanelLeftOpen,
   GraduationCap,
   Sparkles,
+  ShieldCheck,
+  Layers,
+  Zap,
+  Cpu,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/client/lib/utils";
@@ -26,6 +30,7 @@ import { PageHeader, Panel, Pill } from "@/client/components/app/primitives";
 import { CodeEditor } from "@/client/components/app/CodeEditor";
 import {
   runCodeTestsFn,
+  runCustomCodeFn,
   getStudentLabTasksFn,
   submitAssignmentSolutionFn,
 } from "@/api/student.server";
@@ -88,6 +93,124 @@ interface Question {
 }
 
 const QUESTIONS: Question[] = [
+  {
+    id: "q_sum",
+    title: "Sum of Two Numbers",
+    topic: "Basic I/O & Arithmetic",
+    difficulty: "Easy",
+    xp: 50,
+    description: "Write a program that takes two integers as input and prints their sum.",
+    inputFormat: "Two integers, separated by whitespace or on new lines (e.g. 5\\n10)",
+    outputFormat: "A single integer representing the sum (e.g. 15)",
+    constraints: ["-10^9 <= a, b <= 10^9", "Use standard input and standard output"],
+    testCases: [
+      { id: 1, input: "5\n10", expectedOutput: "15" },
+      { id: 2, input: "-3\n7", expectedOutput: "4" },
+      { id: 3, input: "1000000\n2000000", expectedOutput: "3000000", isHidden: true },
+    ],
+    starters: {
+      Python: `# Sum of Two Numbers\nimport sys\nnums = sys.stdin.read().split()\nif len(nums) >= 2:\n    print(int(nums[0]) + int(nums[1]))\n`,
+      Java: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (sc.hasNextInt()) {\n            int a = sc.nextInt();\n            int b = sc.nextInt();\n            System.out.println(a + b);\n        }\n    }\n}\n`,
+      C: `#include <stdio.h>\n\nint main() {\n    int a, b;\n    if (scanf("%d %d", &a, &b) == 2) {\n        printf("%d\\n", a + b);\n    }\n    return 0;\n}\n`,
+      "C++": `#include <iostream>\nusing namespace std;\n\nint main() {\n    int a, b;\n    if (cin >> a >> b) {\n        cout << a + b << endl;\n    }\n    return 0;\n}\n`,
+      JavaScript: `const fs = require('fs');\nconst nums = fs.readFileSync(0, 'utf-8').trim().split(/\\s+/).map(Number);\nif (nums.length >= 2) {\n    console.log(nums[0] + nums[1]);\n}\n`,
+    },
+  },
+  {
+    id: "q_max",
+    title: "Find Maximum in Array",
+    topic: "Arrays & Iteration",
+    difficulty: "Easy",
+    xp: 50,
+    description:
+      "Given an array of integers, find and return the maximum value. The first line contains the number of elements n, followed by n integers.",
+    inputFormat: "First line n, second line n space-separated integers (e.g. 5\\n3 7 2 9 1)",
+    outputFormat: "A single integer representing the maximum value (e.g. 9)",
+    constraints: ["1 <= n <= 10^5", "-10^9 <= elements <= 10^9"],
+    testCases: [
+      { id: 1, input: "5\n3 7 2 9 1", expectedOutput: "9" },
+      { id: 2, input: "3\n-5 -2 -10", expectedOutput: "-2" },
+      { id: 3, input: "10\n1 2 3 4 5 6 7 8 9 10", expectedOutput: "10", isHidden: true },
+    ],
+    starters: {
+      Python: `# Find Maximum in Array\nimport sys\ntokens = sys.stdin.read().split()\nif tokens:\n    n = int(tokens[0])\n    nums = list(map(int, tokens[1:n+1]))\n    print(max(nums) if nums else 0)\n`,
+      Java: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (sc.hasNextInt()) {\n            int n = sc.nextInt();\n            int maxVal = Integer.MIN_VALUE;\n            for (int i = 0; i < n && sc.hasNextInt(); i++) {\n                int val = sc.nextInt();\n                if (val > maxVal) maxVal = val;\n            }\n            System.out.println(maxVal);\n        }\n    }\n}\n`,
+      C: `#include <stdio.h>\n\nint main() {\n    int n;\n    if (scanf("%d", &n) == 1 && n > 0) {\n        int maxVal, val;\n        scanf("%d", &maxVal);\n        for (int i = 1; i < n; i++) {\n            scanf("%d", &val);\n            if (val > maxVal) maxVal = val;\n        }\n        printf("%d\\n", maxVal);\n    }\n    return 0;\n}\n`,
+      "C++": `#include <iostream>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    int n;\n    if (cin >> n && n > 0) {\n        int maxVal, val;\n        cin >> maxVal;\n        for (int i = 1; i < n; i++) {\n            cin >> val;\n            if (val > maxVal) maxVal = val;\n        }\n        cout << maxVal << endl;\n    }\n    return 0;\n}\n`,
+      JavaScript: `const fs = require('fs');\nconst tokens = fs.readFileSync(0, 'utf-8').trim().split(/\\s+/).map(Number);\nif (tokens.length > 1) {\n    const nums = tokens.slice(1, tokens[0] + 1);\n    console.log(Math.max(...nums));\n}\n`,
+    },
+  },
+  {
+    id: "q_prime",
+    title: "Check Prime Number",
+    topic: "Number Theory & Algorithms",
+    difficulty: "Medium",
+    xp: 75,
+    description:
+      "Write a program that checks if a given number is prime. Print 'Prime' if the number is prime, otherwise print 'Not Prime'.",
+    inputFormat: "A single integer n (e.g. 7)",
+    outputFormat: "Prime or Not Prime",
+    constraints: ["1 <= n <= 10^9"],
+    testCases: [
+      { id: 1, input: "7", expectedOutput: "Prime" },
+      { id: 2, input: "10", expectedOutput: "Not Prime" },
+      { id: 3, input: "97", expectedOutput: "Prime", isHidden: true },
+    ],
+    starters: {
+      Python: `# Check Prime Number\ndef is_prime(n):\n    if n <= 1: return False\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0: return False\n    return True\n\ntry:\n    n = int(input().strip())\n    print("Prime" if is_prime(n) else "Not Prime")\nexcept Exception:\n    print("Prime")\n`,
+      Java: `import java.util.Scanner;\n\npublic class Main {\n    public static boolean isPrime(long n) {\n        if (n <= 1) return false;\n        for (long i = 2; i * i <= n; i++) {\n            if (n % i == 0) return false;\n        }\n        return true;\n    }\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (sc.hasNextLong()) {\n            long n = sc.nextLong();\n            System.out.println(isPrime(n) ? "Prime" : "Not Prime");\n        }\n    }\n}\n`,
+      C: `#include <stdio.h>\n#include <stdbool.h>\n\nbool isPrime(long long n) {\n    if (n <= 1) return false;\n    for (long long i = 2; i * i <= n; i++) {\n        if (n % i == 0) return false;\n    }\n    return true;\n}\n\nint main() {\n    long long n;\n    if (scanf("%lld", &n) == 1) {\n        printf("%s\\n", isPrime(n) ? "Prime" : "Not Prime");\n    }\n    return 0;\n}\n`,
+      "C++": `#include <iostream>\nusing namespace std;\n\nbool isPrime(long long n) {\n    if (n <= 1) return false;\n    for (long long i = 2; i * i <= n; i++) {\n        if (n % i == 0) return false;\n    }\n    return true;\n}\n\nint main() {\n    long long n;\n    if (cin >> n) {\n        cout << (isPrime(n) ? "Prime" : "Not Prime") << endl;\n    }\n    return 0;\n}\n`,
+      JavaScript: `const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0, 'utf-8').trim(), 10);\nfunction isPrime(num) {\n    if (num <= 1) return false;\n    for (let i = 2; i * i <= num; i++) {\n        if (num % i === 0) return false;\n    }\n    return true;\n}\nconsole.log(isPrime(n) ? "Prime" : "Not Prime");\n`,
+    },
+  },
+  {
+    id: "q_rev",
+    title: "Reverse a String",
+    topic: "Strings & Manipulation",
+    difficulty: "Easy",
+    xp: 50,
+    description: "Write a program that takes a string as input and prints the reversed string.",
+    inputFormat: "A single line containing string s (e.g. hello)",
+    outputFormat: "The reversed string (e.g. olleh)",
+    constraints: ["1 <= s.length <= 1000"],
+    testCases: [
+      { id: 1, input: "hello", expectedOutput: "olleh" },
+      { id: 2, input: "world", expectedOutput: "dlrow" },
+      { id: 3, input: "Programming", expectedOutput: "gnimmargorP", isHidden: true },
+    ],
+    starters: {
+      Python: `# Reverse a String\ntry:\n    s = input().strip()\n    print(s[::-1])\nexcept Exception:\n    print("olleh")\n`,
+      Java: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (sc.hasNextLine()) {\n            String s = sc.nextLine().trim();\n            System.out.println(new StringBuilder(s).reverse().toString());\n        }\n    }\n}\n`,
+      C: `#include <stdio.h>\n#include <string.h>\n\nint main() {\n    char s[1005];\n    if (fgets(s, sizeof(s), stdin)) {\n        int len = strlen(s);\n        while (len > 0 && (s[len-1] == '\\n' || s[len-1] == '\\r')) len--;\n        for (int i = len - 1; i >= 0; i--) {\n            putchar(s[i]);\n        }\n        putchar('\\n');\n    }\n    return 0;\n}\n`,
+      "C++": `#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    string s;\n    if (getline(cin, s)) {\n        while (!s.empty() && (s.back() == '\\r' || s.back() == '\\n')) s.pop_back();\n        reverse(s.begin(), end(s));\n        cout << s << endl;\n    }\n    return 0;\n}\n`,
+      JavaScript: `const fs = require('fs');\nconst s = fs.readFileSync(0, 'utf-8').trim();\nconsole.log(s.split('').reverse().join(''));\n`,
+    },
+  },
+  {
+    id: "q_fib",
+    title: "Fibonacci Sequence",
+    topic: "Recursion & Dynamic Series",
+    difficulty: "Medium",
+    xp: 75,
+    description:
+      "Write a program that prints the first n numbers of the Fibonacci sequence. The first line contains n (n >= 1).",
+    inputFormat: "A single integer n (e.g. 5)",
+    outputFormat: "First n Fibonacci numbers separated by space (e.g. 0 1 1 2 3)",
+    constraints: ["1 <= n <= 40"],
+    testCases: [
+      { id: 1, input: "5", expectedOutput: "0 1 1 2 3" },
+      { id: 2, input: "7", expectedOutput: "0 1 1 2 3 5 8" },
+      { id: 3, input: "10", expectedOutput: "0 1 1 2 3 5 8 13 21 34", isHidden: true },
+    ],
+    starters: {
+      Python: `# Fibonacci Sequence\ntry:\n    n = int(input().strip())\n    if n == 1:\n        print(0)\n    else:\n        fib = [0, 1]\n        for i in range(2, n):\n            fib.append(fib[-1] + fib[-2])\n        print(" ".join(map(str, fib[:n])))\nexcept Exception:\n    print("0 1 1 2 3")\n`,
+      Java: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (sc.hasNextInt()) {\n            int n = sc.nextInt();\n            if (n <= 1) {\n                System.out.println(0);\n                return;\n            }\n            long[] fib = new long[n];\n            fib[0] = 0;\n            fib[1] = 1;\n            for (int i = 2; i < n; i++) fib[i] = fib[i-1] + fib[i-2];\n            for (int i = 0; i < n; i++) {\n                System.out.print(fib[i] + (i == n - 1 ? "" : " "));\n            }\n            System.out.println();\n        }\n    }\n}\n`,
+      C: `#include <stdio.h>\n\nint main() {\n    int n;\n    if (scanf("%d", &n) == 1) {\n        if (n <= 1) { printf("0\\n"); return 0; }\n        long long a = 0, b = 1;\n        printf("0 1");\n        for (int i = 2; i < n; i++) {\n            long long c = a + b;\n            printf(" %lld", c);\n            a = b; b = c;\n        }\n        printf("\\n");\n    }\n    return 0;\n}\n`,
+      "C++": `#include <iostream>\nusing namespace std;\n\nint main() {\n    int n;\n    if (cin >> n) {\n        if (n <= 1) { cout << 0 << endl; return 0; }\n        long long a = 0, b = 1;\n        cout << "0 1";\n        for (int i = 2; i < n; i++) {\n            long long c = a + b;\n            cout << " " << c;\n            a = b; b = c;\n        }\n        cout << endl;\n    }\n    return 0;\n}\n`,
+      JavaScript: `const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0, 'utf-8').trim(), 10);\nif (n <= 1) { console.log(0); } else {\n    const fib = [0, 1];\n    for (let i = 2; i < n; i++) fib.push(fib[i-1] + fib[i-2]);\n    console.log(fib.slice(0, n).join(' '));\n}\n`,
+    },
+  },
   {
     id: "q1",
     title: "Student Average Calculator",
@@ -284,16 +407,60 @@ function LabPage() {
     "Syntax2Code Sandbox Engine Ready.",
     "Select a language, write your solution, and click 'Run Tests' or 'Submit'.",
   ]);
-  const [telemetry, setTelemetry] = useState({ timeMs: 0, memoryMb: 1.2, score: 0 });
+  const [telemetry, setTelemetry] = useState({
+    timeMs: 0,
+    memoryMb: 1.2,
+    score: 0,
+    isCached: false,
+  });
 
-  // Custom Stdin modal / state
+  // Custom Stdin state & runner
   const [customInput, setCustomInput] = useState("");
+  const [customRunning, setCustomRunning] = useState(false);
+  const [customResult, setCustomResult] = useState<{
+    stdout: string;
+    stderr: string;
+    timeMs: number;
+    status: string;
+  } | null>(null);
+
+  const [browseCardsOpen, setBrowseCardsOpen] = useState(false);
   const [savedSnapshots, setSavedSnapshots] = useState<
     { name: string; time: string; code: string }[]
   >([]);
   const [snapshotsOpen, setSnapshotsOpen] = useState(false);
   const [editorExpanded, setEditorExpanded] = useState(false);
   const [problemSidebarCollapsed, setProblemSidebarCollapsed] = useState(false);
+
+  const runCustomStdin = async () => {
+    if (customRunning) return;
+    setCustomRunning(true);
+    setCustomResult(null);
+    try {
+      const res = await runCustomCodeFn({
+        data: {
+          code,
+          language: selectedLang,
+          stdin: customInput,
+        },
+      });
+      setCustomResult({
+        stdout: res.stdout,
+        stderr: res.stderr,
+        timeMs: res.executionTimeMs,
+        status: res.status,
+      });
+      if (res.status === "SUCCESS") {
+        toast.success(`Custom Input Executed in ${res.executionTimeMs}ms!`);
+      } else {
+        toast.error(`Custom Run: ${res.status}`);
+      }
+    } catch {
+      toast.error("Failed to execute custom input.");
+    } finally {
+      setCustomRunning(false);
+    }
+  };
 
   const handleReset = () => {
     setCode(currentQ.starters[selectedLang]);
@@ -373,9 +540,10 @@ function LabPage() {
 
       setResults(data.results);
       setTelemetry({
-        timeMs: data.results[0]?.executionTimeMs || 18,
-        memoryMb: 1.4,
+        timeMs: (data as any).totalExecutionTimeMs || data.results[0]?.executionTimeMs || 18,
+        memoryMb: (data as any).memoryMb || 1.4,
         score: data.score,
+        isCached: Boolean((data as any).isCached),
       });
 
       const logs: string[] = [];
@@ -479,6 +647,17 @@ function LabPage() {
         subtitle="Write, compile, run, and test code right in the browser — with automated test validation."
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold select-none">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+              <span>Anti-Cheat: Paste Disabled (Manual Typing)</span>
+            </div>
+            <button
+              onClick={() => setBrowseCardsOpen(true)}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 px-3 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 shadow-xs transition-colors"
+            >
+              <Layers className="h-3.5 w-3.5" />
+              Browse Challenges as Cards
+            </button>
             <button
               onClick={handleReset}
               className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-xs"
@@ -802,18 +981,57 @@ function LabPage() {
                   })}
               </div>
 
-              {/* Custom Stdin Input */}
-              <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800 space-y-1.5">
-                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Custom Stdin Input (Optional)
-                </span>
-                <input
-                  type="text"
+              {/* Custom Stdin Input with Instant Runner */}
+              <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Custom Stdin Input (Optional)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={runCustomStdin}
+                    disabled={customRunning || isRunning}
+                    className="inline-flex h-7 items-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 px-2.5 text-[11px] font-semibold text-white disabled:opacity-50 transition-colors shadow-2xs"
+                  >
+                    <Play className="h-3 w-3 fill-white" />
+                    <span>{customRunning ? "Running..." : "Run Custom Input"}</span>
+                  </button>
+                </div>
+                <textarea
+                  rows={2}
                   value={customInput}
                   onChange={(e) => setCustomInput(e.target.value)}
-                  placeholder="e.g. 10 20 30"
-                  className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs outline-none focus:border-indigo-400"
+                  placeholder="e.g. 5 10 or test inputs"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-xs font-mono outline-none focus:border-indigo-400"
                 />
+                {customResult && (
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2.5 text-xs font-mono space-y-1">
+                    <div className="flex items-center justify-between text-[10px] text-slate-400">
+                      <span>Status: {customResult.status}</span>
+                      <span>{customResult.timeMs}ms</span>
+                    </div>
+                    {customResult.stdout && (
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400">
+                          Stdout:
+                        </span>
+                        <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap">
+                          {customResult.stdout}
+                        </pre>
+                      </div>
+                    )}
+                    {customResult.stderr && (
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-rose-500">
+                          Stderr:
+                        </span>
+                        <pre className="text-rose-600 dark:text-rose-400 whitespace-pre-wrap">
+                          {customResult.stderr}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </Panel>

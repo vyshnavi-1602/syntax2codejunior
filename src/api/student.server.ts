@@ -4,7 +4,7 @@ import { db } from "../server/db";
 import * as schema from "../server/db/schema";
 
 import { authMiddleware, roleMiddleware } from "./auth.server";
-import { executeCode, type TestCaseItem } from "../server/codeExecutor";
+import { executeCode, executeCustomCode, type TestCaseItem } from "../server/codeExecutor";
 
 export const getPathContent = createServerFn({ method: "GET" })
   .middleware([roleMiddleware(["student", "s2c", "admin"])])
@@ -109,9 +109,19 @@ export const getStudentDashboard = createServerFn({ method: "GET" })
         .from(schema.classes)
         .where(eq(schema.classes.id, profileData[0]?.classId ?? -1));
 
+      let assignmentRows: Array<{
+        id: number;
+        title: string;
+        type: string;
+        instructions: string | null;
+        dueDate: Date | null;
+        status: string;
+        className: string;
+      }> = [];
+
       const targetClassId = profileData[0]?.classId;
       if (targetClassId) {
-        classAssignments = await db
+        assignmentRows = await db
           .select({
             id: schema.assignments.id,
             title: schema.assignments.title,
@@ -127,8 +137,8 @@ export const getStudentDashboard = createServerFn({ method: "GET" })
           .orderBy(desc(schema.assignments.createdAt));
       }
 
-      if (classAssignments.length === 0) {
-        classAssignments = await db
+      if (assignmentRows.length === 0) {
+        assignmentRows = await db
           .select({
             id: schema.assignments.id,
             title: schema.assignments.title,
@@ -141,8 +151,96 @@ export const getStudentDashboard = createServerFn({ method: "GET" })
           .from(schema.assignments)
           .innerJoin(schema.classes, eq(schema.assignments.classId, schema.classes.id))
           .orderBy(desc(schema.assignments.createdAt))
-          .limit(5);
+          .limit(6);
       }
+
+      const studentSubmissions = await db
+        .select({
+          submission: schema.submissions,
+          review: schema.reviews,
+        })
+        .from(schema.submissions)
+        .leftJoin(schema.reviews, eq(schema.submissions.id, schema.reviews.submissionId))
+        .where(eq(schema.submissions.studentId, userId));
+
+      const subMap = new Map<
+        number,
+        { submitted: boolean; score: number | null; submittedAt: Date | null }
+      >();
+      for (const s of studentSubmissions) {
+        subMap.set(s.submission.assignmentId, {
+          submitted: true,
+          score: s.review?.score ?? null,
+          submittedAt: s.submission.submittedAt,
+        });
+      }
+
+      classAssignments = assignmentRows.map((a) => {
+        let desc = a.instructions || "";
+        let difficulty: "Easy" | "Medium" | "Hard" = "Easy";
+        let xp = 50;
+        let topic = "Computer Science Fundamentals";
+        let isCoding = a.type === "Coding task" || a.type === "Assessment";
+        let tcCount = 0;
+        let hiddenTcCount = 0;
+
+        if (a.instructions) {
+          try {
+            const parsed = JSON.parse(a.instructions);
+            if (parsed && typeof parsed === "object") {
+              if (parsed.description) desc = parsed.description;
+              if (parsed.prompt) desc = parsed.prompt;
+              if (parsed.difficulty) difficulty = parsed.difficulty;
+              if (parsed.xp) xp = Number(parsed.xp) || 50;
+              if (parsed.topic) topic = parsed.topic;
+              if (parsed.isCodingRound || Array.isArray(parsed.testCases)) isCoding = true;
+              if (Array.isArray(parsed.testCases)) {
+                tcCount = parsed.testCases.length;
+                hiddenTcCount = parsed.testCases.filter(
+                  (tc: { isHidden?: boolean }) => tc.isHidden,
+                ).length;
+              }
+            }
+          } catch {
+            desc = a.instructions;
+          }
+        }
+
+        const subInfo = subMap.get(a.id);
+        let cardStatus: "Pending" | "Submitted" | "Graded" = "Pending";
+        if (subInfo?.submitted) {
+          cardStatus = subInfo.score !== null ? "Graded" : "Submitted";
+        }
+
+        let daysRemaining: number | null = null;
+        if (a.dueDate) {
+          const diffMs = new Date(a.dueDate).getTime() - Date.now();
+          daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        }
+
+        return {
+          id: a.id,
+          title: a.title,
+          type: a.type,
+          instructions: a.instructions,
+          description: desc || "Complete this practical programming assignment in the IDE.",
+          className: a.className,
+          teacherName: "Prof. Anderson",
+          dueDate: a.dueDate ? new Date(a.dueDate).toISOString().split("T")[0]! : null,
+          status: cardStatus,
+          difficulty,
+          xp,
+          topic,
+          testCasesCount: tcCount > 0 ? tcCount : 3,
+          hiddenTestCasesCount: hiddenTcCount > 0 ? hiddenTcCount : 1,
+          isCodingRound: isCoding,
+          score: subInfo?.score ?? null,
+          submittedAt: subInfo?.submittedAt
+            ? new Date(subInfo.submittedAt).toISOString().split("T")[0]!
+            : null,
+          daysRemaining,
+        };
+      }) as unknown as typeof classAssignments;
 
       recommendedLesson = await db.select().from(schema.lessons).limit(1);
     } catch (e) {
@@ -169,9 +267,29 @@ export const getStudentDashboard = createServerFn({ method: "GET" })
     };
   });
 
+export interface StudentAssignmentCard {
+  id: number;
+  title: string;
+  type: string;
+  description: string;
+  className: string;
+  teacherName: string;
+  dueDate: string | null;
+  status: "Pending" | "Submitted" | "Graded";
+  difficulty: "Easy" | "Medium" | "Hard";
+  xp: number;
+  topic: string;
+  testCasesCount: number;
+  hiddenTestCasesCount: number;
+  isCodingRound: boolean;
+  score: number | null;
+  submittedAt: string | null;
+  daysRemaining: number | null;
+}
+
 export const getStudentAssignmentsFn = createServerFn({ method: "GET" })
   .middleware([roleMiddleware(["student", "s2c", "admin"])])
-  .handler(async ({ context }) => {
+  .handler(async ({ context }): Promise<StudentAssignmentCard[]> => {
     const userId = context.user.id;
 
     const profileData = await db
@@ -182,7 +300,7 @@ export const getStudentAssignmentsFn = createServerFn({ method: "GET" })
 
     const classId = profileData[0]?.classId;
 
-    let classAssignments: Array<{
+    let assignmentRows: Array<{
       id: number;
       title: string;
       type: string;
@@ -191,8 +309,9 @@ export const getStudentAssignmentsFn = createServerFn({ method: "GET" })
       status: string;
       className: string;
     }> = [];
+
     if (classId) {
-      classAssignments = await db
+      assignmentRows = await db
         .select({
           id: schema.assignments.id,
           title: schema.assignments.title,
@@ -208,8 +327,8 @@ export const getStudentAssignmentsFn = createServerFn({ method: "GET" })
         .orderBy(desc(schema.assignments.createdAt));
     }
 
-    if (classAssignments.length === 0) {
-      classAssignments = await db
+    if (assignmentRows.length === 0) {
+      assignmentRows = await db
         .select({
           id: schema.assignments.id,
           title: schema.assignments.title,
@@ -222,10 +341,98 @@ export const getStudentAssignmentsFn = createServerFn({ method: "GET" })
         .from(schema.assignments)
         .innerJoin(schema.classes, eq(schema.assignments.classId, schema.classes.id))
         .orderBy(desc(schema.assignments.createdAt))
-        .limit(5);
+        .limit(10);
     }
 
-    return classAssignments;
+    // Fetch user submissions and reviews for card status
+    const studentSubmissions = await db
+      .select({
+        submission: schema.submissions,
+        review: schema.reviews,
+      })
+      .from(schema.submissions)
+      .leftJoin(schema.reviews, eq(schema.submissions.id, schema.reviews.submissionId))
+      .where(eq(schema.submissions.studentId, userId));
+
+    const subMap = new Map<
+      number,
+      { submitted: boolean; score: number | null; submittedAt: Date | null }
+    >();
+    for (const s of studentSubmissions) {
+      subMap.set(s.submission.assignmentId, {
+        submitted: true,
+        score: s.review?.score ?? null,
+        submittedAt: s.submission.submittedAt,
+      });
+    }
+
+    return assignmentRows.map((a) => {
+      let desc = a.instructions || "";
+      let difficulty: "Easy" | "Medium" | "Hard" = "Easy";
+      let xp = 50;
+      let topic = "Computer Science Fundamentals";
+      let isCoding = a.type === "Coding task" || a.type === "Assessment";
+      let tcCount = 0;
+      let hiddenTcCount = 0;
+
+      if (a.instructions) {
+        try {
+          const parsed = JSON.parse(a.instructions);
+          if (parsed && typeof parsed === "object") {
+            if (parsed.description) desc = parsed.description;
+            if (parsed.prompt) desc = parsed.prompt;
+            if (parsed.difficulty) difficulty = parsed.difficulty;
+            if (parsed.xp) xp = Number(parsed.xp) || 50;
+            if (parsed.topic) topic = parsed.topic;
+            if (parsed.isCodingRound || Array.isArray(parsed.testCases)) {
+              isCoding = true;
+            }
+            if (Array.isArray(parsed.testCases)) {
+              tcCount = parsed.testCases.length;
+              hiddenTcCount = parsed.testCases.filter(
+                (tc: { isHidden?: boolean }) => tc.isHidden,
+              ).length;
+            }
+          }
+        } catch {
+          desc = a.instructions;
+        }
+      }
+
+      const subInfo = subMap.get(a.id);
+      let cardStatus: "Pending" | "Submitted" | "Graded" = "Pending";
+      if (subInfo?.submitted) {
+        cardStatus = subInfo.score !== null ? "Graded" : "Submitted";
+      }
+
+      let daysRemaining: number | null = null;
+      if (a.dueDate) {
+        const diffMs = new Date(a.dueDate).getTime() - Date.now();
+        daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      }
+
+      return {
+        id: a.id,
+        title: a.title,
+        type: a.type,
+        description: desc || "Complete this practical programming assignment in the IDE.",
+        className: a.className,
+        teacherName: "Prof. Anderson",
+        dueDate: a.dueDate ? new Date(a.dueDate).toISOString().split("T")[0]! : null,
+        status: cardStatus,
+        difficulty,
+        xp,
+        topic,
+        testCasesCount: tcCount > 0 ? tcCount : 3,
+        hiddenTestCasesCount: hiddenTcCount > 0 ? hiddenTcCount : 1,
+        isCodingRound: isCoding,
+        score: subInfo?.score ?? null,
+        submittedAt: subInfo?.submittedAt
+          ? new Date(subInfo.submittedAt).toISOString().split("T")[0]!
+          : null,
+        daysRemaining,
+      };
+    });
   });
 
 export const getLessonContent = createServerFn({ method: "GET" })
@@ -1221,6 +1428,12 @@ export const runCodeTestsFn = createServerFn({ method: "POST" })
     return executeCode(data.code, data.language, data.testCases);
   });
 
+export const runCustomCodeFn = createServerFn({ method: "POST" })
+  .validator((data: { code: string; language: string; stdin: string }) => data)
+  .handler(async ({ data }) => {
+    return executeCustomCode(data.code, data.language, data.stdin);
+  });
+
 export interface StudentLabTask {
   id: string;
   assignmentId?: number | undefined;
@@ -1432,7 +1645,7 @@ export const getStudentLabTasksFn = createServerFn({ method: "GET" })
             const qTestCases =
               Array.isArray(q.testCases) && q.testCases.length > 0
                 ? q.testCases.map((tc, idx) => ({
-                    id: tc.id || idx + 1,
+                    id: Number(tc.id) || idx + 1,
                     input: String(tc.input ?? ""),
                     expectedOutput: String(tc.expectedOutput ?? ""),
                     isHidden: Boolean(tc.isHidden),

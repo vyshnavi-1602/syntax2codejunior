@@ -33,6 +33,7 @@ import { Route as SchoolScheduleRouteImport } from './routes/school.schedule'
 import { Route as SchoolStudentsRouteImport } from './routes/school.students'
 import { Route as SchoolTeachersRouteImport } from './routes/school.teachers'
 import { Route as StudentIndexRouteImport } from './routes/student.index'
+import { Route as StudentAssignmentsRouteImport } from './routes/student.assignments'
 import { Route as StudentCertificatesRouteImport } from './routes/student.certificates'
 import { Route as StudentClubsRouteImport } from './routes/student.clubs'
 import { Route as StudentCompeteRouteImport } from './routes/student.compete'
@@ -198,6 +199,11 @@ const StudentIndexRoute = StudentIndexRouteImport.update({
   path: '/',
   getParentRoute: () => StudentRoute,
 } as any)
+const StudentAssignmentsRoute = StudentAssignmentsRouteImport.update({
+  id: '/assignments',
+  path: '/assignments',
+  getParentRoute: () => StudentRoute,
+} as any)
 const StudentCertificatesRoute = StudentCertificatesRouteImport.update({
   id: '/certificates',
   path: '/certificates',
@@ -346,6 +352,7 @@ export interface FileRoutesByFullPath {
   '/school/schedule': typeof SchoolScheduleRoute
   '/school/students': typeof SchoolStudentsRoute
   '/school/teachers': typeof SchoolTeachersRoute
+  '/student/assignments': typeof StudentAssignmentsRoute
   '/student/certificates': typeof StudentCertificatesRoute
   '/student/clubs': typeof StudentClubsRoute
   '/student/compete': typeof StudentCompeteRoute
@@ -396,6 +403,7 @@ export interface FileRoutesByTo {
   '/school/schedule': typeof SchoolScheduleRoute
   '/school/students': typeof SchoolStudentsRoute
   '/school/teachers': typeof SchoolTeachersRoute
+  '/student/assignments': typeof StudentAssignmentsRoute
   '/student/certificates': typeof StudentCertificatesRoute
   '/student/clubs': typeof StudentClubsRoute
   '/student/compete': typeof StudentCompeteRoute
@@ -451,6 +459,7 @@ export interface FileRoutesById {
   '/school/schedule': typeof SchoolScheduleRoute
   '/school/students': typeof SchoolStudentsRoute
   '/school/teachers': typeof SchoolTeachersRoute
+  '/student/assignments': typeof StudentAssignmentsRoute
   '/student/certificates': typeof StudentCertificatesRoute
   '/student/clubs': typeof StudentClubsRoute
   '/student/compete': typeof StudentCompeteRoute
@@ -507,6 +516,7 @@ export interface FileRouteTypes {
     | '/school/schedule'
     | '/school/students'
     | '/school/teachers'
+    | '/student/assignments'
     | '/student/certificates'
     | '/student/clubs'
     | '/student/compete'
@@ -557,6 +567,7 @@ export interface FileRouteTypes {
     | '/school/schedule'
     | '/school/students'
     | '/school/teachers'
+    | '/student/assignments'
     | '/student/certificates'
     | '/student/clubs'
     | '/student/compete'
@@ -611,6 +622,7 @@ export interface FileRouteTypes {
     | '/school/schedule'
     | '/school/students'
     | '/school/teachers'
+    | '/student/assignments'
     | '/student/certificates'
     | '/student/clubs'
     | '/student/compete'
@@ -849,6 +861,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudentIndexRouteImport
       parentRoute: typeof StudentRoute
     }
+    '/student/assignments': {
+      id: '/student/assignments'
+      path: '/assignments'
+      fullPath: '/student/assignments'
+      preLoaderRoute: typeof StudentAssignmentsRouteImport
+      parentRoute: typeof StudentRoute
+    }
     '/student/certificates': {
       id: '/student/certificates'
       path: '/certificates'
@@ -1076,6 +1095,7 @@ const SchoolRouteWithChildren =
   SchoolRoute._addFileChildren(SchoolRouteChildren)
 
 interface StudentRouteChildren {
+  StudentAssignmentsRoute: typeof StudentAssignmentsRoute
   StudentCertificatesRoute: typeof StudentCertificatesRoute
   StudentClubsRoute: typeof StudentClubsRoute
   StudentCompeteRoute: typeof StudentCompeteRoute
@@ -1093,6 +1113,7 @@ interface StudentRouteChildren {
 }
 
 const StudentRouteChildren: StudentRouteChildren = {
+  StudentAssignmentsRoute: StudentAssignmentsRoute,
   StudentCertificatesRoute: StudentCertificatesRoute,
   StudentClubsRoute: StudentClubsRoute,
   StudentCompeteRoute: StudentCompeteRoute,
