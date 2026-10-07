@@ -81,6 +81,7 @@ export function CodeEditor({
           }
         }}
         options={{
+          automaticLayout: true,
           minimap: { enabled: false },
           fontSize: 14,
           fontFamily: "'JetBrains Mono', 'Fira Code', monospace",

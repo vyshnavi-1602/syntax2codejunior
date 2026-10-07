@@ -41,6 +41,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/client/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/client/components/ui/select";
 
 export const Route = createFileRoute("/student/lab")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -1041,7 +1048,10 @@ function LabPage() {
                 {problemSidebarCollapsed && (
                   <button
                     type="button"
-                    onClick={() => setProblemSidebarCollapsed(false)}
+                    onClick={() => {
+                      setProblemSidebarCollapsed(false);
+                      setEditorExpanded(false);
+                    }}
                     title="Show Question & Test Cases Sidebar"
                     className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition-colors"
                   >
@@ -1050,24 +1060,32 @@ function LabPage() {
                   </button>
                 )}
 
-                <div className="flex items-center gap-1">
-                  {(["Python", "Java", "C", "C++", "JavaScript"] as Lang[]).map((l) => (
-                    <button
-                      key={l}
-                      onClick={() => {
-                        setSelectedLang(l);
-                        setResults(null);
-                      }}
-                      className={cn(
-                        "rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
-                        selectedLang === l
-                          ? "bg-indigo-600 text-white shadow-xs"
-                          : "text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100",
-                      )}
-                    >
-                      {l}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-1.5">
+                  <Select
+                    value={selectedLang}
+                    onValueChange={(val: string) => {
+                      setSelectedLang(val as Lang);
+                      setResults(null);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-[130px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-xs focus:ring-1 focus:ring-indigo-500">
+                      <div className="flex items-center gap-1.5">
+                        <FileCode className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                        <SelectValue placeholder="Language" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg">
+                      {(["Python", "Java", "C", "C++", "JavaScript"] as Lang[]).map((l) => (
+                        <SelectItem
+                          key={l}
+                          value={l}
+                          className="text-xs font-medium cursor-pointer"
+                        >
+                          {l}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -1075,16 +1093,27 @@ function LabPage() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setEditorExpanded((prev) => !prev)}
+                  onClick={() => {
+                    const next = !editorExpanded;
+                    setEditorExpanded(next);
+                    setProblemSidebarCollapsed(next);
+                  }}
                   title={
-                    editorExpanded ? "Contract Editor (480px)" : "Expand Editor Height (640px)"
+                    editorExpanded
+                      ? "Collapse Editor to Standard Layout"
+                      : "Expand Editor (Full Width & Height)"
                   }
-                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs font-medium text-slate-700 dark:text-slate-300 shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                  className={cn(
+                    "inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-xs transition-all",
+                    editorExpanded
+                      ? "border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100"
+                      : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700",
+                  )}
                 >
                   {editorExpanded ? (
                     <>
-                      <Minimize2 className="h-3.5 w-3.5 text-slate-500" />
-                      <span className="hidden sm:inline">Standard</span>
+                      <Minimize2 className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                      <span className="hidden sm:inline">Collapse</span>
                     </>
                   ) : (
                     <>
