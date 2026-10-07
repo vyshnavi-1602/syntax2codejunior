@@ -424,7 +424,6 @@ function LabPage() {
     status: string;
   } | null>(null);
 
-  const [browseCardsOpen, setBrowseCardsOpen] = useState(false);
   const [savedSnapshots, setSavedSnapshots] = useState<
     { name: string; time: string; code: string }[]
   >([]);
@@ -647,17 +646,6 @@ function LabPage() {
         subtitle="Write, compile, run, and test code right in the browser — with automated test validation."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold select-none">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-              <span>Anti-Cheat: Paste Disabled (Manual Typing)</span>
-            </div>
-            <button
-              onClick={() => setBrowseCardsOpen(true)}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 px-3 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 shadow-xs transition-colors"
-            >
-              <Layers className="h-3.5 w-3.5" />
-              Browse Challenges as Cards
-            </button>
             <button
               onClick={handleReset}
               className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-xs"

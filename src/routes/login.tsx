@@ -511,61 +511,6 @@ function LoginPage() {
 
             <TabsContent value="login" className="mt-6">
               <form onSubmit={handleEmailSignIn} noValidate className="space-y-4">
-                {/* Account Portal Selection */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-slate-700">Account Portal</Label>
-                  <div className="grid grid-cols-4 gap-1 rounded-xl bg-slate-100 p-1">
-                    {(
-                      [
-                        { id: "student", label: "Student" },
-                        { id: "teacher", label: "Teacher" },
-                        { id: "school", label: "School" },
-                        { id: "admin", label: "Admin" },
-                      ] as const
-                    ).map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedRole(p.id);
-                          setSignInEmailError("");
-                          setSignInPasswordError("");
-                        }}
-                        className={cn(
-                          "rounded-lg py-1.5 text-xs font-medium transition-all text-center",
-                          selectedRole === p.id
-                            ? "bg-white text-indigo-700 font-semibold shadow-xs"
-                            : "text-slate-600 hover:text-slate-900",
-                        )}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-                  {selectedRole !== "student" && (
-                    <p className="text-[11px] text-slate-500">
-                      {selectedRole === "teacher" && (
-                        <span>
-                          Teacher access: use <strong>teacher@syntax2code.com</strong> (or any
-                          teacher email) &amp; <strong>Password123!</strong>
-                        </span>
-                      )}
-                      {selectedRole === "school" && (
-                        <span>
-                          School Admin: use <strong>school@syntax2code.com</strong> (or your school
-                          email) &amp; <strong>Password123!</strong>
-                        </span>
-                      )}
-                      {selectedRole === "admin" && (
-                        <span>
-                          Platform Admin: use <strong>admin@syntax2code.com</strong> &amp;{" "}
-                          <strong>Password123!</strong>
-                        </span>
-                      )}
-                    </p>
-                  )}
-                </div>
-
                 <div className="space-y-1.5">
                   <Label htmlFor="signin-email">Email Address</Label>
                   <Input
@@ -576,15 +521,7 @@ function LoginPage() {
                       setSignInEmail(e.target.value);
                       if (signInEmailError) setSignInEmailError("");
                     }}
-                    placeholder={
-                      selectedRole === "teacher"
-                        ? "teacher@syntax2code.com"
-                        : selectedRole === "school"
-                          ? "school@syntax2code.com"
-                          : selectedRole === "admin"
-                            ? "admin@syntax2code.com"
-                            : "student@school.edu"
-                    }
+                    placeholder="name@school.edu"
                     className={cn(
                       signInEmailError &&
                         "border-rose-400 bg-rose-50/30 focus-visible:ring-rose-200",
