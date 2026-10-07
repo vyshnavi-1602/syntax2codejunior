@@ -75,7 +75,7 @@ function Index() {
               onClick={() => {
                 navigate({ to: "/login", search: { role: r.id } });
               }}
-              className="group flex w-full items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left transition-all hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-100"
+              className="group flex w-full items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left transition-all hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-100 cursor-pointer"
             >
               <div
                 className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${r.bg} ${r.color}`}
