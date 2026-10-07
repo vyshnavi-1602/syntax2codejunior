@@ -1341,18 +1341,32 @@ function AssignmentsPage() {
                                 Test Case #{index + 1}
                               </span>
                               <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => updateTestCase(tc.id, "isHidden", !tc.isHidden)}
-                                  className={cn(
-                                    "rounded px-2 py-0.5 text-[11px] font-semibold transition-colors",
-                                    tc.isHidden
-                                      ? "bg-amber-100 text-amber-800 border border-amber-200"
-                                      : "bg-emerald-100 text-emerald-800 border border-emerald-200",
-                                  )}
-                                >
-                                  {tc.isHidden ? "Hidden (Evaluation)" : "Sample (Visible)"}
-                                </button>
+                                <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 shadow-2xs">
+                                  <button
+                                    type="button"
+                                    onClick={() => updateTestCase(tc.id, "isHidden", false)}
+                                    className={cn(
+                                      "rounded-md px-2 py-0.5 text-[11px] font-semibold transition-all cursor-pointer",
+                                      !tc.isHidden
+                                        ? "bg-emerald-100 text-emerald-800 shadow-xs"
+                                        : "text-slate-500 hover:text-slate-800 hover:bg-slate-50",
+                                    )}
+                                  >
+                                    Sample (Visible)
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateTestCase(tc.id, "isHidden", true)}
+                                    className={cn(
+                                      "rounded-md px-2 py-0.5 text-[11px] font-semibold transition-all cursor-pointer",
+                                      tc.isHidden
+                                        ? "bg-amber-100 text-amber-800 shadow-xs"
+                                        : "text-slate-500 hover:text-slate-800 hover:bg-slate-50",
+                                    )}
+                                  >
+                                    Hidden (Evaluation)
+                                  </button>
+                                </div>
                                 {currentQ.testCases.length > 1 && (
                                   <button
                                     type="button"
