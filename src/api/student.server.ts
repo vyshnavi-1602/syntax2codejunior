@@ -4,7 +4,15 @@ import { db } from "../server/db";
 import * as schema from "../server/db/schema";
 
 import { authMiddleware, roleMiddleware } from "./auth.server";
-import { executeCode, executeCustomCode, type TestCaseItem } from "../server/codeExecutor";
+import {
+  executeCode,
+  executeCustomCode,
+  type TestCaseItem,
+  type ExecutionResponse,
+  type CustomRunResponse,
+} from "../server/codeExecutor";
+
+export type { TestCaseItem, ExecutionResponse, CustomRunResponse };
 
 export const getPathContent = createServerFn({ method: "GET" })
   .middleware([roleMiddleware(["student", "s2c", "admin"])])

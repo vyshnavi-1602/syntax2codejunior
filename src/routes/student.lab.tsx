@@ -33,6 +33,7 @@ import {
   runCustomCodeFn,
   getStudentLabTasksFn,
   submitAssignmentSolutionFn,
+  type ExecutionResponse,
 } from "@/api/student.server";
 import {
   Dialog,
@@ -544,12 +545,13 @@ function LabPage() {
         },
       });
 
-      setResults(data.results);
+      const execData = data as ExecutionResponse;
+      setResults(execData.results);
       setTelemetry({
-        timeMs: (data as any).totalExecutionTimeMs || data.results[0]?.executionTimeMs || 18,
-        memoryMb: (data as any).memoryMb || 1.4,
-        score: data.score,
-        isCached: Boolean((data as any).isCached),
+        timeMs: execData.totalExecutionTimeMs || execData.results[0]?.executionTimeMs || 18,
+        memoryMb: execData.memoryMb || 1.4,
+        score: execData.score,
+        isCached: Boolean(execData.isCached),
       });
 
       const logs: string[] = [];
