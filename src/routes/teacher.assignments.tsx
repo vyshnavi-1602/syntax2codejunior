@@ -7,6 +7,7 @@ import {
   Copy,
   Code2,
   Eye,
+  EyeOff,
   Sparkles,
   FileCode,
   X,
@@ -1341,30 +1342,34 @@ function AssignmentsPage() {
                                 Test Case #{index + 1}
                               </span>
                               <div className="flex items-center gap-2">
-                                <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 shadow-2xs">
+                                <div className="flex items-center gap-1.5">
                                   <button
                                     type="button"
                                     onClick={() => updateTestCase(tc.id, "isHidden", false)}
                                     className={cn(
-                                      "rounded-md px-2 py-0.5 text-[11px] font-semibold transition-all cursor-pointer",
+                                      "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold transition-all border cursor-pointer",
                                       !tc.isHidden
-                                        ? "bg-emerald-100 text-emerald-800 shadow-xs"
-                                        : "text-slate-500 hover:text-slate-800 hover:bg-slate-50",
+                                        ? "bg-emerald-50 text-emerald-700 border-emerald-300 shadow-2xs font-bold"
+                                        : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700",
                                     )}
+                                    title="Mark as Sample (Visible to students)"
                                   >
-                                    Sample (Visible)
+                                    <Eye className="h-3 w-3" />
+                                    <span>Sample</span>
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => updateTestCase(tc.id, "isHidden", true)}
                                     className={cn(
-                                      "rounded-md px-2 py-0.5 text-[11px] font-semibold transition-all cursor-pointer",
+                                      "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold transition-all border cursor-pointer",
                                       tc.isHidden
-                                        ? "bg-amber-100 text-amber-800 shadow-xs"
-                                        : "text-slate-500 hover:text-slate-800 hover:bg-slate-50",
+                                        ? "bg-amber-50 text-amber-700 border-amber-300 shadow-2xs font-bold"
+                                        : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700",
                                     )}
+                                    title="Mark as Hidden (Used for evaluation only)"
                                   >
-                                    Hidden (Evaluation)
+                                    <EyeOff className="h-3 w-3" />
+                                    <span>Hidden</span>
                                   </button>
                                 </div>
                                 {currentQ.testCases.length > 1 && (
