@@ -87,7 +87,6 @@ function TeacherQuestionsPage() {
     if (loaded.length > 0 && loaded[0]) {
       setSelectedSubjectId((prev) => prev || loaded[0]!.id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const activeSubject = subjects.find((s) => s.id === selectedSubjectId) || subjects[0];
