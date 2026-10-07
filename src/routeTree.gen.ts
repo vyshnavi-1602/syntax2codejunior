@@ -48,6 +48,7 @@ import { Route as TeacherAnalyticsRouteImport } from './routes/teacher.analytics
 import { Route as TeacherAnnouncementsRouteImport } from './routes/teacher.announcements'
 import { Route as TeacherAssignmentsRouteImport } from './routes/teacher.assignments'
 import { Route as TeacherGuardrailsRouteImport } from './routes/teacher.guardrails'
+import { Route as TeacherQuestionsRouteImport } from './routes/teacher.questions'
 import { Route as TeacherReviewsRouteImport } from './routes/teacher.reviews'
 import { Route as TeacherSupportRouteImport } from './routes/teacher.support'
 import { Route as StudentBuildIndexRouteImport } from './routes/student.build.index'
@@ -274,6 +275,11 @@ const TeacherGuardrailsRoute = TeacherGuardrailsRouteImport.update({
   path: '/guardrails',
   getParentRoute: () => TeacherRoute,
 } as any)
+const TeacherQuestionsRoute = TeacherQuestionsRouteImport.update({
+  id: '/questions',
+  path: '/questions',
+  getParentRoute: () => TeacherRoute,
+} as any)
 const TeacherReviewsRoute = TeacherReviewsRouteImport.update({
   id: '/reviews',
   path: '/reviews',
@@ -366,6 +372,7 @@ export interface FileRoutesByFullPath {
   '/teacher/announcements': typeof TeacherAnnouncementsRoute
   '/teacher/assignments': typeof TeacherAssignmentsRoute
   '/teacher/guardrails': typeof TeacherGuardrailsRoute
+  '/teacher/questions': typeof TeacherQuestionsRoute
   '/teacher/reviews': typeof TeacherReviewsRoute
   '/teacher/support': typeof TeacherSupportRoute
   '/admin/': typeof AdminIndexRoute
@@ -417,6 +424,7 @@ export interface FileRoutesByTo {
   '/teacher/announcements': typeof TeacherAnnouncementsRoute
   '/teacher/assignments': typeof TeacherAssignmentsRoute
   '/teacher/guardrails': typeof TeacherGuardrailsRoute
+  '/teacher/questions': typeof TeacherQuestionsRoute
   '/teacher/reviews': typeof TeacherReviewsRoute
   '/teacher/support': typeof TeacherSupportRoute
   '/admin': typeof AdminIndexRoute
@@ -473,6 +481,7 @@ export interface FileRoutesById {
   '/teacher/announcements': typeof TeacherAnnouncementsRoute
   '/teacher/assignments': typeof TeacherAssignmentsRoute
   '/teacher/guardrails': typeof TeacherGuardrailsRoute
+  '/teacher/questions': typeof TeacherQuestionsRoute
   '/teacher/reviews': typeof TeacherReviewsRoute
   '/teacher/support': typeof TeacherSupportRoute
   '/admin/': typeof AdminIndexRoute
@@ -530,6 +539,7 @@ export interface FileRouteTypes {
     | '/teacher/announcements'
     | '/teacher/assignments'
     | '/teacher/guardrails'
+    | '/teacher/questions'
     | '/teacher/reviews'
     | '/teacher/support'
     | '/admin/'
@@ -581,6 +591,7 @@ export interface FileRouteTypes {
     | '/teacher/announcements'
     | '/teacher/assignments'
     | '/teacher/guardrails'
+    | '/teacher/questions'
     | '/teacher/reviews'
     | '/teacher/support'
     | '/admin'
@@ -636,6 +647,7 @@ export interface FileRouteTypes {
     | '/teacher/announcements'
     | '/teacher/assignments'
     | '/teacher/guardrails'
+    | '/teacher/questions'
     | '/teacher/reviews'
     | '/teacher/support'
     | '/admin/'
@@ -966,6 +978,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TeacherGuardrailsRouteImport
       parentRoute: typeof TeacherRoute
     }
+    '/teacher/questions': {
+      id: '/teacher/questions'
+      path: '/questions'
+      fullPath: '/teacher/questions'
+      preLoaderRoute: typeof TeacherQuestionsRouteImport
+      parentRoute: typeof TeacherRoute
+    }
     '/teacher/reviews': {
       id: '/teacher/reviews'
       path: '/reviews'
@@ -1138,6 +1157,7 @@ interface TeacherRouteChildren {
   TeacherAnnouncementsRoute: typeof TeacherAnnouncementsRoute
   TeacherAssignmentsRoute: typeof TeacherAssignmentsRoute
   TeacherGuardrailsRoute: typeof TeacherGuardrailsRoute
+  TeacherQuestionsRoute: typeof TeacherQuestionsRoute
   TeacherReviewsRoute: typeof TeacherReviewsRoute
   TeacherSupportRoute: typeof TeacherSupportRoute
   TeacherIndexRoute: typeof TeacherIndexRoute
@@ -1152,6 +1172,7 @@ const TeacherRouteChildren: TeacherRouteChildren = {
   TeacherAnnouncementsRoute: TeacherAnnouncementsRoute,
   TeacherAssignmentsRoute: TeacherAssignmentsRoute,
   TeacherGuardrailsRoute: TeacherGuardrailsRoute,
+  TeacherQuestionsRoute: TeacherQuestionsRoute,
   TeacherReviewsRoute: TeacherReviewsRoute,
   TeacherSupportRoute: TeacherSupportRoute,
   TeacherIndexRoute: TeacherIndexRoute,

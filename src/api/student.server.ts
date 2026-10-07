@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { db } from "../server/db";
 import * as schema from "../server/db/schema";
 
@@ -201,6 +201,11 @@ export const getStudentDashboard = createServerFn({ method: "GET" })
               if (parsed.difficulty) difficulty = parsed.difficulty;
               if (parsed.xp) xp = Number(parsed.xp) || 50;
               if (parsed.topic) topic = parsed.topic;
+              if (parsed.isMcqTest || a.type === "MCQ Test" || Array.isArray(parsed.mcqQuestions)) {
+                isCoding = false;
+                if (parsed.subject) topic = parsed.subject;
+                if (Array.isArray(parsed.mcqQuestions)) tcCount = parsed.mcqQuestions.length;
+              }
               if (parsed.isCodingRound || Array.isArray(parsed.testCases)) isCoding = true;
               if (Array.isArray(parsed.testCases)) {
                 tcCount = parsed.testCases.length;
@@ -242,6 +247,10 @@ export const getStudentDashboard = createServerFn({ method: "GET" })
           testCasesCount: tcCount > 0 ? tcCount : 3,
           hiddenTestCasesCount: hiddenTcCount > 0 ? hiddenTcCount : 1,
           isCodingRound: isCoding,
+          isMcqTest: Boolean(
+            a.type === "MCQ Test" ||
+            (a.instructions && a.instructions.includes('"isMcqTest":true')),
+          ),
           score: subInfo?.score ?? null,
           submittedAt: subInfo?.submittedAt
             ? new Date(subInfo.submittedAt).toISOString().split("T")[0]!
@@ -290,6 +299,21 @@ export interface StudentAssignmentCard {
   testCasesCount: number;
   hiddenTestCasesCount: number;
   isCodingRound: boolean;
+  isMcqTest?: boolean | undefined;
+  subject?: string | undefined;
+  mcqQuestions?:
+    | Array<{
+        id: string;
+        questionText: string;
+        options: string[];
+        correctAnswer: string;
+        explanation?: string | undefined;
+        difficulty?: string | undefined;
+        xp?: number | undefined;
+      }>
+    | undefined;
+  passingScore?: number | undefined;
+  timeLimitMinutes?: number | undefined;
   score: number | null;
   submittedAt: string | null;
   daysRemaining: number | null;
@@ -382,6 +406,20 @@ export const getStudentAssignmentsFn = createServerFn({ method: "GET" })
       let isCoding = a.type === "Coding task" || a.type === "Assessment";
       let tcCount = 0;
       let hiddenTcCount = 0;
+      let mcqQuestions:
+        | Array<{
+            id: string;
+            questionText: string;
+            options: string[];
+            correctAnswer: string;
+            explanation?: string | undefined;
+            difficulty?: string | undefined;
+            xp?: number | undefined;
+          }>
+        | undefined = undefined;
+      let subject: string | undefined = undefined;
+      let passingScore: number | undefined = undefined;
+      let timeLimitMinutes: number | undefined = undefined;
 
       if (a.instructions) {
         try {
@@ -400,6 +438,14 @@ export const getStudentAssignmentsFn = createServerFn({ method: "GET" })
               hiddenTcCount = parsed.testCases.filter(
                 (tc: { isHidden?: boolean }) => tc.isHidden,
               ).length;
+            }
+            if (parsed.isMcqTest || Array.isArray(parsed.mcqQuestions)) {
+              if (Array.isArray(parsed.mcqQuestions)) {
+                mcqQuestions = parsed.mcqQuestions;
+              }
+              if (parsed.subject) subject = parsed.subject;
+              if (parsed.passingScore) passingScore = Number(parsed.passingScore);
+              if (parsed.timeLimitMinutes) timeLimitMinutes = Number(parsed.timeLimitMinutes);
             }
           }
         } catch {
@@ -434,6 +480,13 @@ export const getStudentAssignmentsFn = createServerFn({ method: "GET" })
         testCasesCount: tcCount > 0 ? tcCount : 3,
         hiddenTestCasesCount: hiddenTcCount > 0 ? hiddenTcCount : 1,
         isCodingRound: isCoding,
+        isMcqTest: Boolean(
+          a.type === "MCQ Test" || (a.instructions && a.instructions.includes('"isMcqTest":true')),
+        ),
+        subject,
+        mcqQuestions,
+        passingScore,
+        timeLimitMinutes,
         score: subInfo?.score ?? null,
         submittedAt: subInfo?.submittedAt
           ? new Date(subInfo.submittedAt).toISOString().split("T")[0]!
@@ -1833,5 +1886,122 @@ export const submitAssignmentSolutionFn = createServerFn({ method: "POST" })
       submissionId,
       score: data.score,
       xpEarned,
+    };
+  });
+
+export const submitStudentMcqQuizFn = createServerFn({ method: "POST" })
+  .middleware([roleMiddleware(["student", "s2c"])])
+  .validator(
+    (data: {
+      assignmentId: number;
+      score: number;
+      passed: boolean;
+      answers: Record<string, string>;
+      totalQuestions: number;
+      correctCount: number;
+      earnedXp: number;
+    }) => data,
+  )
+  .handler(async ({ data, context }) => {
+    const studentId = context.user.id;
+
+    const assignRow = await db
+      .select()
+      .from(schema.assignments)
+      .where(eq(schema.assignments.id, data.assignmentId))
+      .limit(1);
+
+    if (!assignRow.length) {
+      throw new Error("Assignment not found");
+    }
+
+    const teacherId = assignRow[0]!.teacherId;
+
+    const existing = await db
+      .select()
+      .from(schema.submissions)
+      .where(
+        and(
+          eq(schema.submissions.assignmentId, data.assignmentId),
+          eq(schema.submissions.studentId, studentId),
+        ),
+      )
+      .limit(1);
+
+    let submissionId: number;
+    const answersJson = JSON.stringify(data.answers);
+
+    if (existing.length > 0) {
+      submissionId = existing[0]!.id;
+      await db
+        .update(schema.submissions)
+        .set({
+          code: answersJson,
+          status: "SUBMITTED",
+          notes: `MCQ Quiz: ${data.correctCount}/${data.totalQuestions} correct (${data.score}%)`,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.submissions.id, submissionId));
+    } else {
+      const inserted = await db
+        .insert(schema.submissions)
+        .values({
+          assignmentId: data.assignmentId,
+          studentId,
+          status: "SUBMITTED",
+          code: answersJson,
+          notes: `MCQ Quiz: ${data.correctCount}/${data.totalQuestions} correct (${data.score}%)`,
+        })
+        .returning({ id: schema.submissions.id });
+      submissionId = inserted[0]!.id;
+    }
+
+    const existingReview = await db
+      .select()
+      .from(schema.reviews)
+      .where(eq(schema.reviews.submissionId, submissionId))
+      .limit(1);
+
+    const feedback = `Auto-graded MCQ Assessment: ${data.correctCount} of ${data.totalQuestions} questions correct (${data.score}%). Result: ${data.passed ? "PASSED" : "NEEDS PRACTICE"}.`;
+
+    if (existingReview.length > 0) {
+      await db
+        .update(schema.reviews)
+        .set({
+          score: data.score,
+          reviewedAt: new Date(),
+          feedback,
+        })
+        .where(eq(schema.reviews.id, existingReview[0]!.id));
+    } else {
+      await db.insert(schema.reviews).values({
+        submissionId,
+        teacherId,
+        score: data.score,
+        maxScore: 100,
+        status: "COMPLETED",
+        feedback,
+      });
+    }
+
+    if (data.earnedXp > 0) {
+      const profile = await db
+        .select()
+        .from(schema.studentProfiles)
+        .where(eq(schema.studentProfiles.userId, studentId))
+        .limit(1);
+      if (profile.length > 0) {
+        await db
+          .update(schema.studentProfiles)
+          .set({ xpTotal: profile[0]!.xpTotal + data.earnedXp })
+          .where(eq(schema.studentProfiles.userId, studentId));
+      }
+    }
+
+    return {
+      success: true,
+      submissionId,
+      score: data.score,
+      xpEarned: data.earnedXp,
     };
   });

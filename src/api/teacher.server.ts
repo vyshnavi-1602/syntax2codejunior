@@ -961,6 +961,21 @@ export const createAssignmentFn = createServerFn({ method: "POST" })
       inputFormat?: string | undefined;
       outputFormat?: string | undefined;
       constraints?: string | undefined;
+      isMcqTest?: boolean | undefined;
+      subject?: string | undefined;
+      mcqQuestions?:
+        | Array<{
+            id: string;
+            questionText: string;
+            options: string[];
+            correctAnswer: string;
+            explanation?: string | undefined;
+            difficulty?: string | undefined;
+            xp?: number | undefined;
+          }>
+        | undefined;
+      passingScore?: number | undefined;
+      timeLimitMinutes?: number | undefined;
     }) => data,
   )
   .handler(async ({ data, context }) => {
@@ -1009,7 +1024,20 @@ export const createAssignmentFn = createServerFn({ method: "POST" })
     if (classRecords.length === 0) throw new Error("Class not found");
 
     let finalInstructions = data.instructions || "";
-    if (data.questions && data.questions.length > 0) {
+    if (data.isMcqTest && data.mcqQuestions && data.mcqQuestions.length > 0) {
+      finalInstructions = JSON.stringify({
+        isMcqTest: true,
+        subject: data.subject || "General",
+        description: data.instructions || `${data.subject || "Course"} MCQ Assessment`,
+        prompt: data.instructions || `${data.subject || "Course"} MCQ Assessment`,
+        difficulty: data.difficulty || "Medium",
+        xp: data.xp ?? data.mcqQuestions.reduce((sum, q) => sum + (q.xp || 20), 0),
+        mcqQuestions: data.mcqQuestions,
+        questionCount: data.mcqQuestions.length,
+        passingScore: data.passingScore || 70,
+        timeLimitMinutes: data.timeLimitMinutes || 15,
+      });
+    } else if (data.questions && data.questions.length > 0) {
       finalInstructions = JSON.stringify({
         isCodingRound: true,
         description: data.instructions || data.questions[0]?.prompt || "",
@@ -1091,6 +1119,21 @@ export const updateAssignmentFn = createServerFn({ method: "POST" })
       inputFormat?: string | undefined;
       outputFormat?: string | undefined;
       constraints?: string | undefined;
+      isMcqTest?: boolean | undefined;
+      subject?: string | undefined;
+      mcqQuestions?:
+        | Array<{
+            id: string;
+            questionText: string;
+            options: string[];
+            correctAnswer: string;
+            explanation?: string | undefined;
+            difficulty?: string | undefined;
+            xp?: number | undefined;
+          }>
+        | undefined;
+      passingScore?: number | undefined;
+      timeLimitMinutes?: number | undefined;
     }) => data,
   )
   .handler(async ({ data }) => {
@@ -1110,7 +1153,20 @@ export const updateAssignmentFn = createServerFn({ method: "POST" })
     }
 
     let finalInstructions = data.instructions || "";
-    if (data.questions && data.questions.length > 0) {
+    if (data.isMcqTest && data.mcqQuestions && data.mcqQuestions.length > 0) {
+      finalInstructions = JSON.stringify({
+        isMcqTest: true,
+        subject: data.subject || "General",
+        description: data.instructions || `${data.subject || "Course"} MCQ Assessment`,
+        prompt: data.instructions || `${data.subject || "Course"} MCQ Assessment`,
+        difficulty: data.difficulty || "Medium",
+        xp: data.xp ?? data.mcqQuestions.reduce((sum, q) => sum + (q.xp || 20), 0),
+        mcqQuestions: data.mcqQuestions,
+        questionCount: data.mcqQuestions.length,
+        passingScore: data.passingScore || 70,
+        timeLimitMinutes: data.timeLimitMinutes || 15,
+      });
+    } else if (data.questions && data.questions.length > 0) {
       finalInstructions = JSON.stringify({
         isCodingRound: true,
         description: data.instructions || data.questions[0]?.prompt || "",

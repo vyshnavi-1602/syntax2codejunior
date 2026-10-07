@@ -48,6 +48,7 @@ export const navByRole: Record<RoleId, NavGroup[]> = {
         { label: "Dashboard", to: "/teacher", icon: "Home" },
         { label: "My Classes", to: "/teacher/classes", icon: "Users" },
         { label: "Assignments", to: "/teacher/assignments", icon: "ClipboardList" },
+        { label: "Question Bank & MCQs", to: "/teacher/questions", icon: "HelpCircle" },
         { label: "Project Reviews", to: "/teacher/reviews", icon: "CheckCircle2" },
       ],
     },

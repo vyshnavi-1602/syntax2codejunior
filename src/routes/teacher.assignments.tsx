@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import {
   Plus,
@@ -19,9 +19,16 @@ import {
   Check,
   AlertCircle,
   HelpCircle,
+  ChevronRight,
+  BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Bar, FilterChips, PageHeader, Panel, Pill } from "@/client/components/app/primitives";
+import {
+  loadQuestionBank,
+  type SubjectItem,
+  type McqQuestionItem,
+} from "@/client/components/app/questionBank";
 import {
   Bar as RBar,
   BarChart,
@@ -102,7 +109,13 @@ export interface AssignmentQuestionItem {
 }
 
 interface ParsedCodingRound {
-  isCodingRound: boolean;
+  isCodingRound?: boolean;
+  isMcqTest?: boolean;
+  subject?: string;
+  subjectId?: string;
+  mcqQuestions?: McqQuestionItem[];
+  passingScore?: number;
+  timeLimitMinutes?: number;
   description: string;
   prompt?: string;
   difficulty?: "Easy" | "Medium" | "Hard";
@@ -221,6 +234,14 @@ function AssignmentsPage() {
     xp: 60,
   });
 
+  // Assessment Format: "coding" or "mcq"
+  const [assessmentFormat, setAssessmentFormat] = useState<"coding" | "mcq">("coding");
+  const [questionBankSubjects, setQuestionBankSubjects] = useState<SubjectItem[]>([]);
+  const [selectedBankSubjectId, setSelectedBankSubjectId] = useState<string>("");
+  const [selectedMcqIds, setSelectedMcqIds] = useState<string[]>([]);
+  const [passingScore, setPassingScore] = useState(70);
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState(20);
+
   // Multiple Questions Support in Coding Rounds
   const [isCodingRound, setIsCodingRound] = useState(true);
   const [questions, setQuestions] = useState<AssignmentQuestionItem[]>([createInitialQuestion(1)]);
@@ -295,6 +316,10 @@ function AssignmentsPage() {
       difficulty: "Easy",
       xp: 60,
     });
+    setAssessmentFormat("coding");
+    setSelectedMcqIds([]);
+    setPassingScore(70);
+    setTimeLimitMinutes(20);
     setIsCodingRound(true);
     setQuestions([createInitialQuestion(1)]);
     setActiveQIndex(0);
@@ -303,6 +328,17 @@ function AssignmentsPage() {
     setTitleError("");
     setEditingId(null);
   };
+
+  useEffect(() => {
+    if (creating) {
+      const qb = loadQuestionBank();
+      setQuestionBankSubjects(qb);
+      if (qb.length > 0 && !selectedBankSubjectId) {
+        setSelectedBankSubjectId(qb[0]!.id);
+        setSelectedMcqIds(qb[0]!.questions.map((q) => q.id));
+      }
+    }
+  }, [creating, selectedBankSubjectId]);
 
   const loadPresetIntoCurrentQ = (
     presetType: "sum" | "even_odd" | "average" | "palindrome" | "max_of_three" | "fizzbuzz",
@@ -465,7 +501,11 @@ function AssignmentsPage() {
       const parsed = JSON.parse(instructions);
       if (
         parsed &&
-        (parsed.isCodingRound || Array.isArray(parsed.testCases) || Array.isArray(parsed.questions))
+        (parsed.isCodingRound ||
+          Array.isArray(parsed.testCases) ||
+          Array.isArray(parsed.questions) ||
+          parsed.isMcqTest ||
+          Array.isArray(parsed.mcqQuestions))
       ) {
         return parsed;
       }
@@ -543,6 +583,27 @@ function AssignmentsPage() {
       }
     } else {
       setIsCodingRound(false);
+    }
+
+    if (a.type === "MCQ Test" || parsed?.isMcqTest) {
+      setAssessmentFormat("mcq");
+      setIsCodingRound(false);
+      const qb = loadQuestionBank();
+      setQuestionBankSubjects(qb);
+      if (parsed?.passingScore) setPassingScore(parsed.passingScore);
+      if (parsed?.timeLimitMinutes) setTimeLimitMinutes(parsed.timeLimitMinutes);
+      const matched =
+        qb.find((s) => s.name === parsed?.subject || s.id === parsed?.subjectId) || qb[0];
+      if (matched) {
+        setSelectedBankSubjectId(matched.id);
+        if (Array.isArray(parsed?.mcqQuestions) && parsed.mcqQuestions.length > 0) {
+          setSelectedMcqIds(parsed.mcqQuestions.map((q) => q.id));
+        } else {
+          setSelectedMcqIds(matched.questions.map((q) => q.id));
+        }
+      }
+    } else {
+      setAssessmentFormat("coding");
     }
 
     setCreating(true);
@@ -1060,51 +1121,318 @@ function AssignmentsPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Assignment Category
-                </label>
-                <select
-                  value={form.type}
-                  onChange={(e) => {
-                    const newType = e.target.value;
-                    setForm({ ...form, type: newType });
-                    if (newType === "Coding task" || newType === "Assessment") {
+              {/* ASSESSMENT FORMAT SELECTOR */}
+              <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 space-y-2.5">
+                <div>
+                  <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+                    Assessment Evaluation Format
+                  </label>
+                  <p className="text-[11px] text-slate-500">
+                    Select whether students solve interactive coding problems or take an MCQ quiz
+                    pulled from your subject question bank.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAssessmentFormat("coding");
+                      setForm((f) => ({ ...f, type: "Coding task" }));
                       setIsCodingRound(true);
-                    }
-                  }}
-                  className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
-                >
-                  <option value="Coding task">Coding task (IDE & Test cases)</option>
-                  <option value="Assessment">Assessment (Coding evaluation round)</option>
-                  <option value="Practice set">Practice set</option>
-                  <option value="Project milestone">Project milestone</option>
-                </select>
-              </div>
-
-              {/* CODING ROUND & TEST CASES TOGGLE */}
-              <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Code2 className="h-4 w-4 text-indigo-600" />
-                    <div>
-                      <p className="text-xs font-bold text-slate-900">
-                        Include Automated Test Cases (Interactive Coding Round)
-                      </p>
-                      <p className="text-[11px] text-slate-500">
-                        Add one or more coding problems evaluated automatically against sample &
-                        hidden test cases
-                      </p>
-                    </div>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={isCodingRound}
-                    onChange={(e) => setIsCodingRound(e.target.checked)}
-                    className="h-4 w-4 rounded accent-indigo-600 cursor-pointer"
-                  />
+                    }}
+                    className={cn(
+                      "flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-xs font-bold transition-all border",
+                      assessmentFormat === "coding"
+                        ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                        : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50",
+                    )}
+                  >
+                    <Code2 className="h-4 w-4" />
+                    Coding Assessment (IDE & Test Cases)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAssessmentFormat("mcq");
+                      setForm((f) => ({ ...f, type: "MCQ Test" }));
+                      setIsCodingRound(false);
+                      const qb = loadQuestionBank();
+                      setQuestionBankSubjects(qb);
+                      if (qb.length > 0 && !selectedBankSubjectId) {
+                        setSelectedBankSubjectId(qb[0]!.id);
+                        setSelectedMcqIds(qb[0]!.questions.map((q) => q.id));
+                      }
+                    }}
+                    className={cn(
+                      "flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-xs font-bold transition-all border",
+                      assessmentFormat === "mcq"
+                        ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                        : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50",
+                    )}
+                  >
+                    <HelpCircle className="h-4 w-4" />
+                    MCQ Test (Question Bank & Documents)
+                  </button>
                 </div>
               </div>
+
+              {assessmentFormat === "mcq" ? (
+                <div className="space-y-4 rounded-xl border border-indigo-100 bg-indigo-50/20 p-4">
+                  {/* Subject Selection */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <BookOpen className="h-4 w-4 text-indigo-600" />
+                          Select Subject from Question Bank
+                        </label>
+                        <p className="text-[11px] text-slate-500">
+                          Questions created manually or extracted from your uploaded documents under
+                          this subject
+                        </p>
+                      </div>
+                      <Link
+                        to="/teacher/questions"
+                        target="_blank"
+                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 hover:underline"
+                      >
+                        Manage Questions / Upload Docs
+                        <ChevronRight className="h-3 w-3" />
+                      </Link>
+                    </div>
+
+                    <select
+                      value={selectedBankSubjectId}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        setSelectedBankSubjectId(id);
+                        const subj = questionBankSubjects.find((s) => s.id === id);
+                        if (subj) {
+                          setSelectedMcqIds(subj.questions.map((q) => q.id));
+                        }
+                      }}
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-indigo-400 font-medium"
+                    >
+                      {questionBankSubjects.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({s.questions.length} questions available)
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Quiz Settings */}
+                    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">
+                          Passing Score (%)
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={passingScore}
+                          onChange={(e) => setPassingScore(Number(e.target.value) || 70)}
+                          className="h-9 w-full rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-indigo-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">
+                          Time Limit (minutes)
+                        </label>
+                        <input
+                          type="number"
+                          min={5}
+                          max={180}
+                          value={timeLimitMinutes}
+                          onChange={(e) => setTimeLimitMinutes(Number(e.target.value) || 20)}
+                          className="h-9 w-full rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-indigo-400"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Question Checklist */}
+                  {(() => {
+                    const activeSub =
+                      questionBankSubjects.find((s) => s.id === selectedBankSubjectId) ||
+                      questionBankSubjects[0];
+                    const activeQuestions = activeSub?.questions || [];
+
+                    return (
+                      <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div>
+                            <span className="text-xs font-bold text-slate-900">
+                              Questions in Quiz ({selectedMcqIds.length} of {activeQuestions.length}{" "}
+                              selected)
+                            </span>
+                            <p className="text-[11px] text-slate-500">
+                              Total Quiz XP:{" "}
+                              {activeQuestions
+                                .filter((q) => selectedMcqIds.includes(q.id))
+                                .reduce((s, q) => s + (q.xp || 25), 0)}{" "}
+                              XP
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedMcqIds(activeQuestions.map((q) => q.id))}
+                              className="text-xs font-medium text-indigo-600 hover:text-indigo-700 px-2 py-1 rounded bg-indigo-50"
+                            >
+                              Select All
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedMcqIds([])}
+                              className="text-xs font-medium text-slate-600 hover:text-slate-700 px-2 py-1 rounded bg-slate-100"
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        </div>
+
+                        {activeQuestions.length === 0 ? (
+                          <div className="text-center py-6 border border-dashed border-slate-200 rounded-xl">
+                            <HelpCircle className="h-8 w-8 text-slate-300 mx-auto mb-1.5" />
+                            <p className="text-xs font-medium text-slate-600">
+                              No questions in this subject yet.
+                            </p>
+                            <Link
+                              to="/teacher/questions"
+                              target="_blank"
+                              className="inline-flex items-center gap-1 text-xs text-indigo-600 font-bold mt-2"
+                            >
+                              Upload Document or Add MCQs in Question Bank
+                            </Link>
+                          </div>
+                        ) : (
+                          <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                            {activeQuestions.map((q, idx) => {
+                              const isChecked = selectedMcqIds.includes(q.id);
+                              return (
+                                <div
+                                  key={q.id}
+                                  onClick={() => {
+                                    setSelectedMcqIds((prev) =>
+                                      prev.includes(q.id)
+                                        ? prev.filter((id) => id !== q.id)
+                                        : [...prev, q.id],
+                                    );
+                                  }}
+                                  className={cn(
+                                    "p-3 rounded-xl border text-xs cursor-pointer transition-all",
+                                    isChecked
+                                      ? "border-indigo-300 bg-indigo-50/30"
+                                      : "border-slate-200 hover:border-slate-300 bg-white opacity-70",
+                                  )}
+                                >
+                                  <div className="flex items-start gap-2.5">
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={() => {}}
+                                      className="mt-0.5 h-4 w-4 rounded accent-indigo-600 cursor-pointer"
+                                    />
+                                    <div className="flex-1 space-y-1">
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="font-semibold text-slate-900">
+                                          Q{idx + 1}. {q.questionText}
+                                        </span>
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                          <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/50">
+                                            +{q.xp || 25} XP
+                                          </span>
+                                          <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                                            {q.difficulty}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-1 pt-1 text-[11px] text-slate-600">
+                                        {q.options.map((opt, optIdx) => {
+                                          const isCorrect = opt === q.correctAnswer;
+                                          return (
+                                            <div
+                                              key={optIdx}
+                                              className={cn(
+                                                "px-2 py-0.5 rounded border",
+                                                isCorrect
+                                                  ? "bg-emerald-50 border-emerald-200 font-bold text-emerald-800"
+                                                  : "border-slate-100 text-slate-600",
+                                              )}
+                                            >
+                                              {String.fromCharCode(65 + optIdx)}. {opt}{" "}
+                                              {isCorrect && "✓"}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                      {q.sourceDoc && (
+                                        <p className="text-[10px] text-indigo-600 font-medium pt-0.5">
+                                          📄 Extracted from: {q.sourceDoc}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">
+                      Assignment Category
+                    </label>
+                    <select
+                      value={form.type}
+                      onChange={(e) => {
+                        const newType = e.target.value;
+                        setForm({ ...form, type: newType });
+                        if (newType === "Coding task" || newType === "Assessment") {
+                          setIsCodingRound(true);
+                        }
+                      }}
+                      className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                    >
+                      <option value="Coding task">Coding task (IDE & Test cases)</option>
+                      <option value="Assessment">Assessment (Coding evaluation round)</option>
+                      <option value="Practice set">Practice set</option>
+                      <option value="Project milestone">Project milestone</option>
+                    </select>
+                  </div>
+
+                  {/* CODING ROUND & TEST CASES TOGGLE */}
+                  <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <Code2 className="h-4 w-4 text-indigo-600" />
+                        <div>
+                          <p className="text-xs font-bold text-slate-900">
+                            Include Automated Test Cases (Interactive Coding Round)
+                          </p>
+                          <p className="text-[11px] text-slate-500">
+                            Add one or more coding problems evaluated automatically against sample &
+                            hidden test cases
+                          </p>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={isCodingRound}
+                        onChange={(e) => setIsCodingRound(e.target.checked)}
+                        className="h-4 w-4 rounded accent-indigo-600 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               {isCodingRound ? (
                 <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
@@ -1502,25 +1830,82 @@ function AssignmentsPage() {
 
                   setIsSubmittingForm(true);
                   try {
-                    const totalXp = questions.reduce((sum, q) => sum + (q.xp || 50), 0);
-                    const primaryQ = questions[0] || createInitialQuestion(1);
-
-                    const payload = {
-                      title: form.title,
-                      className: form.className,
-                      due: form.due || "",
-                      type: form.type,
-                      status: form.status,
-                      difficulty: primaryQ.difficulty || form.difficulty,
-                      xp: totalXp || form.xp,
-                      instructions: form.instructions || primaryQ.prompt,
-                      starters: isCodingRound ? starters : undefined,
-                      questions: isCodingRound ? questions : undefined,
-                      testCases: isCodingRound ? primaryQ.testCases : undefined,
-                      inputFormat: isCodingRound ? primaryQ.inputFormat : undefined,
-                      outputFormat: isCodingRound ? primaryQ.outputFormat : undefined,
-                      constraints: isCodingRound ? primaryQ.constraints : undefined,
+                    let payload: {
+                      title: string;
+                      className: string;
+                      due: string;
+                      type: string;
+                      status: string;
+                      difficulty: "Easy" | "Medium" | "Hard";
+                      xp: number;
+                      instructions: string;
+                      starters?: Record<string, string> | undefined;
+                      questions?: AssignmentQuestionItem[] | undefined;
+                      testCases?: CodingTestCase[] | undefined;
+                      inputFormat?: string | undefined;
+                      outputFormat?: string | undefined;
+                      constraints?: string | undefined;
+                      isMcqTest?: boolean | undefined;
+                      subject?: string | undefined;
+                      mcqQuestions?: McqQuestionItem[] | undefined;
+                      passingScore?: number | undefined;
+                      timeLimitMinutes?: number | undefined;
                     };
+
+                    if (assessmentFormat === "mcq") {
+                      const activeSubj =
+                        questionBankSubjects.find((s) => s.id === selectedBankSubjectId) ||
+                        questionBankSubjects[0];
+                      const selectedQuestions = activeSubj
+                        ? activeSubj.questions.filter((q) => selectedMcqIds.includes(q.id))
+                        : [];
+
+                      if (selectedQuestions.length === 0) {
+                        toast.error("Please select at least one MCQ question for the assessment.");
+                        setIsSubmittingForm(false);
+                        return;
+                      }
+
+                      const totalXp = selectedQuestions.reduce((sum, q) => sum + (q.xp || 25), 0);
+
+                      payload = {
+                        title: form.title,
+                        className: form.className,
+                        due: form.due || "",
+                        type: "MCQ Test",
+                        status: form.status,
+                        difficulty: form.difficulty,
+                        xp: totalXp || 50,
+                        instructions:
+                          form.instructions ||
+                          `MCQ assessment covering ${activeSubj?.name || "curriculum topics"}.`,
+                        isMcqTest: true,
+                        subject: activeSubj?.name || "General",
+                        mcqQuestions: selectedQuestions,
+                        passingScore,
+                        timeLimitMinutes,
+                      };
+                    } else {
+                      const totalXp = questions.reduce((sum, q) => sum + (q.xp || 50), 0);
+                      const primaryQ = questions[0] || createInitialQuestion(1);
+
+                      payload = {
+                        title: form.title,
+                        className: form.className,
+                        due: form.due || "",
+                        type: form.type,
+                        status: form.status,
+                        difficulty: primaryQ.difficulty || form.difficulty,
+                        xp: totalXp || form.xp,
+                        instructions: form.instructions || primaryQ.prompt,
+                        starters: isCodingRound ? starters : undefined,
+                        questions: isCodingRound ? questions : undefined,
+                        testCases: isCodingRound ? primaryQ.testCases : undefined,
+                        inputFormat: isCodingRound ? primaryQ.inputFormat : undefined,
+                        outputFormat: isCodingRound ? primaryQ.outputFormat : undefined,
+                        constraints: isCodingRound ? primaryQ.constraints : undefined,
+                      };
+                    }
 
                     if (editingId) {
                       await updateAssignmentFn({
@@ -1530,14 +1915,20 @@ function AssignmentsPage() {
                         },
                       });
                       toast.success("Assignment updated successfully!", {
-                        description: `${form.title} · ${form.className} (${questions.length} questions)`,
+                        description:
+                          assessmentFormat === "mcq"
+                            ? `${form.title} · ${form.className} (${selectedMcqIds.length} MCQs)`
+                            : `${form.title} · ${form.className} (${questions.length} questions)`,
                       });
                     } else {
                       await createAssignmentFn({ data: payload });
                       toast.success("Assignment published successfully!", {
-                        description: `${form.title} · ${form.className} ${
-                          isCodingRound ? `(${questions.length} question(s) configured)` : ""
-                        }`,
+                        description:
+                          assessmentFormat === "mcq"
+                            ? `${form.title} · ${form.className} (${selectedMcqIds.length} MCQs configured)`
+                            : `${form.title} · ${form.className} ${
+                                isCodingRound ? `(${questions.length} question(s) configured)` : ""
+                              }`,
                       });
                     }
 
