@@ -355,4 +355,3 @@ export const parentReportLogs = pgTable("parent_report_logs", {
   status: text("status").default("delivered").notNull(),
   sentAt: timestamp("sent_at").defaultNow().notNull(),
 });
-

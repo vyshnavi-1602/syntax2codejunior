@@ -26,6 +26,7 @@ import { Route as AdminSchoolsRouteImport } from './routes/admin.schools'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as SchoolIndexRouteImport } from './routes/school.index'
 import { Route as SchoolClassesRouteImport } from './routes/school.classes'
+import { Route as SchoolDispatchesRouteImport } from './routes/school.dispatches'
 import { Route as SchoolReadinessRouteImport } from './routes/school.readiness'
 import { Route as SchoolReportsRouteImport } from './routes/school.reports'
 import { Route as SchoolScheduleRouteImport } from './routes/school.schedule'
@@ -35,6 +36,7 @@ import { Route as StudentIndexRouteImport } from './routes/student.index'
 import { Route as StudentCertificatesRouteImport } from './routes/student.certificates'
 import { Route as StudentClubsRouteImport } from './routes/student.clubs'
 import { Route as StudentCompeteRouteImport } from './routes/student.compete'
+import { Route as StudentCompetitionsRouteImport } from './routes/student.competitions'
 import { Route as StudentLabRouteImport } from './routes/student.lab'
 import { Route as StudentLeaderboardRouteImport } from './routes/student.leaderboard'
 import { Route as StudentPortfolioRouteImport } from './routes/student.portfolio'
@@ -44,7 +46,9 @@ import { Route as TeacherIndexRouteImport } from './routes/teacher.index'
 import { Route as TeacherAnalyticsRouteImport } from './routes/teacher.analytics'
 import { Route as TeacherAnnouncementsRouteImport } from './routes/teacher.announcements'
 import { Route as TeacherAssignmentsRouteImport } from './routes/teacher.assignments'
+import { Route as TeacherGuardrailsRouteImport } from './routes/teacher.guardrails'
 import { Route as TeacherReviewsRouteImport } from './routes/teacher.reviews'
+import { Route as TeacherSupportRouteImport } from './routes/teacher.support'
 import { Route as StudentBuildIndexRouteImport } from './routes/student.build.index'
 import { Route as StudentBuildProjectIdRouteImport } from './routes/student.build.$projectId'
 import { Route as StudentLearnIndexRouteImport } from './routes/student.learn.index'
@@ -159,6 +163,11 @@ const SchoolClassesRoute = SchoolClassesRouteImport.update({
   path: '/classes',
   getParentRoute: () => SchoolRoute,
 } as any)
+const SchoolDispatchesRoute = SchoolDispatchesRouteImport.update({
+  id: '/dispatches',
+  path: '/dispatches',
+  getParentRoute: () => SchoolRoute,
+} as any)
 const SchoolReadinessRoute = SchoolReadinessRouteImport.update({
   id: '/readiness',
   path: '/readiness',
@@ -202,6 +211,11 @@ const StudentClubsRoute = StudentClubsRouteImport.update({
 const StudentCompeteRoute = StudentCompeteRouteImport.update({
   id: '/compete',
   path: '/compete',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentCompetitionsRoute = StudentCompetitionsRouteImport.update({
+  id: '/competitions',
+  path: '/competitions',
   getParentRoute: () => StudentRoute,
 } as any)
 const StudentLabRoute = StudentLabRouteImport.update({
@@ -249,9 +263,19 @@ const TeacherAssignmentsRoute = TeacherAssignmentsRouteImport.update({
   path: '/assignments',
   getParentRoute: () => TeacherRoute,
 } as any)
+const TeacherGuardrailsRoute = TeacherGuardrailsRouteImport.update({
+  id: '/guardrails',
+  path: '/guardrails',
+  getParentRoute: () => TeacherRoute,
+} as any)
 const TeacherReviewsRoute = TeacherReviewsRouteImport.update({
   id: '/reviews',
   path: '/reviews',
+  getParentRoute: () => TeacherRoute,
+} as any)
+const TeacherSupportRoute = TeacherSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
   getParentRoute: () => TeacherRoute,
 } as any)
 const StudentBuildIndexRoute = StudentBuildIndexRouteImport.update({
@@ -316,6 +340,7 @@ export interface FileRoutesByFullPath {
   '/admin/schools': typeof AdminSchoolsRoute
   '/admin/users': typeof AdminUsersRoute
   '/school/classes': typeof SchoolClassesRoute
+  '/school/dispatches': typeof SchoolDispatchesRoute
   '/school/readiness': typeof SchoolReadinessRoute
   '/school/reports': typeof SchoolReportsRoute
   '/school/schedule': typeof SchoolScheduleRoute
@@ -324,6 +349,7 @@ export interface FileRoutesByFullPath {
   '/student/certificates': typeof StudentCertificatesRoute
   '/student/clubs': typeof StudentClubsRoute
   '/student/compete': typeof StudentCompeteRoute
+  '/student/competitions': typeof StudentCompetitionsRoute
   '/student/lab': typeof StudentLabRoute
   '/student/leaderboard': typeof StudentLeaderboardRoute
   '/student/portfolio': typeof StudentPortfolioRoute
@@ -332,7 +358,9 @@ export interface FileRoutesByFullPath {
   '/teacher/analytics': typeof TeacherAnalyticsRoute
   '/teacher/announcements': typeof TeacherAnnouncementsRoute
   '/teacher/assignments': typeof TeacherAssignmentsRoute
+  '/teacher/guardrails': typeof TeacherGuardrailsRoute
   '/teacher/reviews': typeof TeacherReviewsRoute
+  '/teacher/support': typeof TeacherSupportRoute
   '/admin/': typeof AdminIndexRoute
   '/school/': typeof SchoolIndexRoute
   '/student/': typeof StudentIndexRoute
@@ -362,6 +390,7 @@ export interface FileRoutesByTo {
   '/admin/schools': typeof AdminSchoolsRoute
   '/admin/users': typeof AdminUsersRoute
   '/school/classes': typeof SchoolClassesRoute
+  '/school/dispatches': typeof SchoolDispatchesRoute
   '/school/readiness': typeof SchoolReadinessRoute
   '/school/reports': typeof SchoolReportsRoute
   '/school/schedule': typeof SchoolScheduleRoute
@@ -370,6 +399,7 @@ export interface FileRoutesByTo {
   '/student/certificates': typeof StudentCertificatesRoute
   '/student/clubs': typeof StudentClubsRoute
   '/student/compete': typeof StudentCompeteRoute
+  '/student/competitions': typeof StudentCompetitionsRoute
   '/student/lab': typeof StudentLabRoute
   '/student/leaderboard': typeof StudentLeaderboardRoute
   '/student/portfolio': typeof StudentPortfolioRoute
@@ -378,7 +408,9 @@ export interface FileRoutesByTo {
   '/teacher/analytics': typeof TeacherAnalyticsRoute
   '/teacher/announcements': typeof TeacherAnnouncementsRoute
   '/teacher/assignments': typeof TeacherAssignmentsRoute
+  '/teacher/guardrails': typeof TeacherGuardrailsRoute
   '/teacher/reviews': typeof TeacherReviewsRoute
+  '/teacher/support': typeof TeacherSupportRoute
   '/admin': typeof AdminIndexRoute
   '/school': typeof SchoolIndexRoute
   '/student': typeof StudentIndexRoute
@@ -413,6 +445,7 @@ export interface FileRoutesById {
   '/admin/schools': typeof AdminSchoolsRoute
   '/admin/users': typeof AdminUsersRoute
   '/school/classes': typeof SchoolClassesRoute
+  '/school/dispatches': typeof SchoolDispatchesRoute
   '/school/readiness': typeof SchoolReadinessRoute
   '/school/reports': typeof SchoolReportsRoute
   '/school/schedule': typeof SchoolScheduleRoute
@@ -421,6 +454,7 @@ export interface FileRoutesById {
   '/student/certificates': typeof StudentCertificatesRoute
   '/student/clubs': typeof StudentClubsRoute
   '/student/compete': typeof StudentCompeteRoute
+  '/student/competitions': typeof StudentCompetitionsRoute
   '/student/lab': typeof StudentLabRoute
   '/student/leaderboard': typeof StudentLeaderboardRoute
   '/student/portfolio': typeof StudentPortfolioRoute
@@ -429,7 +463,9 @@ export interface FileRoutesById {
   '/teacher/analytics': typeof TeacherAnalyticsRoute
   '/teacher/announcements': typeof TeacherAnnouncementsRoute
   '/teacher/assignments': typeof TeacherAssignmentsRoute
+  '/teacher/guardrails': typeof TeacherGuardrailsRoute
   '/teacher/reviews': typeof TeacherReviewsRoute
+  '/teacher/support': typeof TeacherSupportRoute
   '/admin/': typeof AdminIndexRoute
   '/school/': typeof SchoolIndexRoute
   '/student/': typeof StudentIndexRoute
@@ -465,6 +501,7 @@ export interface FileRouteTypes {
     | '/admin/schools'
     | '/admin/users'
     | '/school/classes'
+    | '/school/dispatches'
     | '/school/readiness'
     | '/school/reports'
     | '/school/schedule'
@@ -473,6 +510,7 @@ export interface FileRouteTypes {
     | '/student/certificates'
     | '/student/clubs'
     | '/student/compete'
+    | '/student/competitions'
     | '/student/lab'
     | '/student/leaderboard'
     | '/student/portfolio'
@@ -481,7 +519,9 @@ export interface FileRouteTypes {
     | '/teacher/analytics'
     | '/teacher/announcements'
     | '/teacher/assignments'
+    | '/teacher/guardrails'
     | '/teacher/reviews'
+    | '/teacher/support'
     | '/admin/'
     | '/school/'
     | '/student/'
@@ -511,6 +551,7 @@ export interface FileRouteTypes {
     | '/admin/schools'
     | '/admin/users'
     | '/school/classes'
+    | '/school/dispatches'
     | '/school/readiness'
     | '/school/reports'
     | '/school/schedule'
@@ -519,6 +560,7 @@ export interface FileRouteTypes {
     | '/student/certificates'
     | '/student/clubs'
     | '/student/compete'
+    | '/student/competitions'
     | '/student/lab'
     | '/student/leaderboard'
     | '/student/portfolio'
@@ -527,7 +569,9 @@ export interface FileRouteTypes {
     | '/teacher/analytics'
     | '/teacher/announcements'
     | '/teacher/assignments'
+    | '/teacher/guardrails'
     | '/teacher/reviews'
+    | '/teacher/support'
     | '/admin'
     | '/school'
     | '/student'
@@ -561,6 +605,7 @@ export interface FileRouteTypes {
     | '/admin/schools'
     | '/admin/users'
     | '/school/classes'
+    | '/school/dispatches'
     | '/school/readiness'
     | '/school/reports'
     | '/school/schedule'
@@ -569,6 +614,7 @@ export interface FileRouteTypes {
     | '/student/certificates'
     | '/student/clubs'
     | '/student/compete'
+    | '/student/competitions'
     | '/student/lab'
     | '/student/leaderboard'
     | '/student/portfolio'
@@ -577,7 +623,9 @@ export interface FileRouteTypes {
     | '/teacher/analytics'
     | '/teacher/announcements'
     | '/teacher/assignments'
+    | '/teacher/guardrails'
     | '/teacher/reviews'
+    | '/teacher/support'
     | '/admin/'
     | '/school/'
     | '/student/'
@@ -752,6 +800,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SchoolClassesRouteImport
       parentRoute: typeof SchoolRoute
     }
+    '/school/dispatches': {
+      id: '/school/dispatches'
+      path: '/dispatches'
+      fullPath: '/school/dispatches'
+      preLoaderRoute: typeof SchoolDispatchesRouteImport
+      parentRoute: typeof SchoolRoute
+    }
     '/school/readiness': {
       id: '/school/readiness'
       path: '/readiness'
@@ -813,6 +868,13 @@ declare module '@tanstack/react-router' {
       path: '/compete'
       fullPath: '/student/compete'
       preLoaderRoute: typeof StudentCompeteRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/competitions': {
+      id: '/student/competitions'
+      path: '/competitions'
+      fullPath: '/student/competitions'
+      preLoaderRoute: typeof StudentCompetitionsRouteImport
       parentRoute: typeof StudentRoute
     }
     '/student/lab': {
@@ -878,11 +940,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TeacherAssignmentsRouteImport
       parentRoute: typeof TeacherRoute
     }
+    '/teacher/guardrails': {
+      id: '/teacher/guardrails'
+      path: '/guardrails'
+      fullPath: '/teacher/guardrails'
+      preLoaderRoute: typeof TeacherGuardrailsRouteImport
+      parentRoute: typeof TeacherRoute
+    }
     '/teacher/reviews': {
       id: '/teacher/reviews'
       path: '/reviews'
       fullPath: '/teacher/reviews'
       preLoaderRoute: typeof TeacherReviewsRouteImport
+      parentRoute: typeof TeacherRoute
+    }
+    '/teacher/support': {
+      id: '/teacher/support'
+      path: '/support'
+      fullPath: '/teacher/support'
+      preLoaderRoute: typeof TeacherSupportRouteImport
       parentRoute: typeof TeacherRoute
     }
     '/student/build/': {
@@ -976,6 +1052,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface SchoolRouteChildren {
   SchoolClassesRoute: typeof SchoolClassesRoute
+  SchoolDispatchesRoute: typeof SchoolDispatchesRoute
   SchoolReadinessRoute: typeof SchoolReadinessRoute
   SchoolReportsRoute: typeof SchoolReportsRoute
   SchoolScheduleRoute: typeof SchoolScheduleRoute
@@ -986,6 +1063,7 @@ interface SchoolRouteChildren {
 
 const SchoolRouteChildren: SchoolRouteChildren = {
   SchoolClassesRoute: SchoolClassesRoute,
+  SchoolDispatchesRoute: SchoolDispatchesRoute,
   SchoolReadinessRoute: SchoolReadinessRoute,
   SchoolReportsRoute: SchoolReportsRoute,
   SchoolScheduleRoute: SchoolScheduleRoute,
@@ -1001,6 +1079,7 @@ interface StudentRouteChildren {
   StudentCertificatesRoute: typeof StudentCertificatesRoute
   StudentClubsRoute: typeof StudentClubsRoute
   StudentCompeteRoute: typeof StudentCompeteRoute
+  StudentCompetitionsRoute: typeof StudentCompetitionsRoute
   StudentLabRoute: typeof StudentLabRoute
   StudentLeaderboardRoute: typeof StudentLeaderboardRoute
   StudentPortfolioRoute: typeof StudentPortfolioRoute
@@ -1017,6 +1096,7 @@ const StudentRouteChildren: StudentRouteChildren = {
   StudentCertificatesRoute: StudentCertificatesRoute,
   StudentClubsRoute: StudentClubsRoute,
   StudentCompeteRoute: StudentCompeteRoute,
+  StudentCompetitionsRoute: StudentCompetitionsRoute,
   StudentLabRoute: StudentLabRoute,
   StudentLeaderboardRoute: StudentLeaderboardRoute,
   StudentPortfolioRoute: StudentPortfolioRoute,
@@ -1036,7 +1116,9 @@ interface TeacherRouteChildren {
   TeacherAnalyticsRoute: typeof TeacherAnalyticsRoute
   TeacherAnnouncementsRoute: typeof TeacherAnnouncementsRoute
   TeacherAssignmentsRoute: typeof TeacherAssignmentsRoute
+  TeacherGuardrailsRoute: typeof TeacherGuardrailsRoute
   TeacherReviewsRoute: typeof TeacherReviewsRoute
+  TeacherSupportRoute: typeof TeacherSupportRoute
   TeacherIndexRoute: typeof TeacherIndexRoute
   TeacherClassesClassIdRoute: typeof TeacherClassesClassIdRoute
   TeacherStudentsStudentIdRoute: typeof TeacherStudentsStudentIdRoute
@@ -1048,7 +1130,9 @@ const TeacherRouteChildren: TeacherRouteChildren = {
   TeacherAnalyticsRoute: TeacherAnalyticsRoute,
   TeacherAnnouncementsRoute: TeacherAnnouncementsRoute,
   TeacherAssignmentsRoute: TeacherAssignmentsRoute,
+  TeacherGuardrailsRoute: TeacherGuardrailsRoute,
   TeacherReviewsRoute: TeacherReviewsRoute,
+  TeacherSupportRoute: TeacherSupportRoute,
   TeacherIndexRoute: TeacherIndexRoute,
   TeacherClassesClassIdRoute: TeacherClassesClassIdRoute,
   TeacherStudentsStudentIdRoute: TeacherStudentsStudentIdRoute,

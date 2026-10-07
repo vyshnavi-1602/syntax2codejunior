@@ -13,6 +13,7 @@ import {
 
 import { getStudentBadgesFn, addCertificateFn } from "@/api/student.server";
 import { useSession } from "@/client/lib/session";
+import { printIsolatedHtml } from "@/client/lib/school-reports";
 
 export const Route = createFileRoute("/student/certificates")({
   head: () => ({
@@ -264,18 +265,84 @@ function CertificatesPage() {
               </p>
               <div className="flex gap-2">
                 <button
-                  onClick={() =>
-                    toast.success("Download started", { description: `${open.credential}.pdf` })
-                  }
+                  onClick={() => {
+                    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Certificate of Achievement - ${open.title}</title>
+  <style>
+    @page { size: A4 landscape; margin: 12mm; }
+    body { font-family: "Georgia", serif; color: #1e1b4b; margin: 0; padding: 32px; background: #fff; text-align: center; }
+    .border-outer { border: 8px double #4f46e5; padding: 24px; border-radius: 12px; background: #faf5ff; }
+    .border-inner { border: 2px solid #c7d2fe; padding: 32px 24px; border-radius: 8px; background: #ffffff; }
+    .logo { font-size: 13px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; color: #4338ca; }
+    h1 { font-size: 32px; margin: 14px 0 6px 0; color: #1e1b4b; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .tagline { font-size: 13px; color: #64748b; font-style: italic; }
+    .awardee-label { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: #6b7280; margin-top: 24px; }
+    .awardee-name { font-size: 30px; font-weight: bold; color: #312e81; margin: 6px 0; text-decoration: underline; text-decoration-color: #6366f1; text-underline-offset: 6px; }
+    .course-text { font-size: 14px; color: #475569; max-width: 620px; margin: 12px auto; line-height: 1.6; }
+    .credential-box { margin-top: 24px; display: inline-block; padding: 8px 16px; background: #e0e7ff; border-radius: 6px; font-family: monospace; font-size: 12px; color: #3730a3; font-weight: bold; }
+    .footer { margin-top: 36px; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 32px; font-size: 12px; color: #4b5563; font-family: -apple-system, sans-serif; }
+    .signature { border-top: 1px solid #94a3b8; width: 170px; padding-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="border-outer">
+    <div class="border-inner">
+      <div class="logo">Syntax2Code Junior Foundation</div>
+      <h1>Certificate of Achievement</h1>
+      <div class="tagline">Official Computer Science & AI Accreditation</div>
+
+      <div class="awardee-label">This certificate is proudly awarded to</div>
+      <div class="awardee-name">${user?.name || "Aarav Sharma"}</div>
+
+      <div class="course-text">
+        For successfully completing all interactive laboratory modules, test suites, and capstone challenge requirements for <strong>${open.title}</strong> with distinction.
+      </div>
+
+      <div class="credential-box">
+        Verified Credential ID: ${open.credential} · Issued: ${open.issued}
+      </div>
+
+      <div class="footer">
+        <div class="signature">
+          <strong>Academic Director</strong><br>
+          Syntax2Code Global Council
+        </div>
+        <div style="font-size: 11px; color: #6b7280;">
+          Verify at syntax2code.org/verify<br>
+          ISO/IEC 17024 Standard
+        </div>
+        <div class="signature">
+          <strong>Head of Faculty</strong><br>
+          ${user?.school || "Greenfield International School"}
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+                    printIsolatedHtml(html);
+                    toast.success("Opening printable certificate…");
+                  }}
                   className="inline-flex h-9 items-center gap-2 rounded-lg bg-indigo-600 px-3.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors shadow-sm"
                 >
-                  <Download className="h-3.5 w-3.5" /> Download
+                  <Download className="h-3.5 w-3.5" /> Download (PDF)
                 </button>
                 <button
-                  onClick={() => toast.success("Share link copied to clipboard")}
+                  onClick={async () => {
+                    const url = `https://syntax2code.org/verify/${open.credential}`;
+                    try {
+                      await navigator.clipboard.writeText(url);
+                      toast.success("Verification link copied to clipboard!", { description: url });
+                    } catch {
+                      toast.success("Verification link ready", { description: url });
+                    }
+                  }}
                   className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
                 >
-                  <Share2 className="h-3.5 w-3.5" /> Share
+                  <Share2 className="h-3.5 w-3.5" /> Share Link
                 </button>
                 <button
                   onClick={() => setOpen(null)}

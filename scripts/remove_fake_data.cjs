@@ -1,11 +1,11 @@
-const postgres = require('postgres');
-require('dotenv').config();
+const postgres = require("postgres");
+require("dotenv").config();
 
 const sql = postgres(process.env.DATABASE_URL);
 
 async function cleanData() {
-  console.log('--- Purging Fake / Mock Student Accounts ---');
-  
+  console.log("--- Purging Fake / Mock Student Accounts ---");
+
   // Find all students EXCEPT vyshnavichinna2@gmail.com
   const fakeStudents = await sql`
     SELECT id, name, email 
@@ -15,12 +15,12 @@ async function cleanData() {
   `;
 
   console.log(`Identified ${fakeStudents.length} fake students to remove.`);
-  
-  if (fakeStudents.length > 0) {
-    const fakeIds = fakeStudents.map(s => s.id);
 
-    console.log('Deleting associated relational records in sequence...');
-    
+  if (fakeStudents.length > 0) {
+    const fakeIds = fakeStudents.map((s) => s.id);
+
+    console.log("Deleting associated relational records in sequence...");
+
     // 1. Delete reviews for student submissions
     await sql`
       DELETE FROM reviews 
@@ -70,7 +70,7 @@ async function cleanData() {
   // Clean duplicate classes - keep only 3-4 distinct clean classes
   const classes = await sql`SELECT id, name, school_id FROM classes ORDER BY id ASC`;
   console.log(`Current classes: ${classes.length}`);
-  
+
   const seenNames = new Set();
   const classesToDelete = [];
 
@@ -90,23 +90,23 @@ async function cleanData() {
       await sql`DELETE FROM assignments WHERE class_id = ${dupId}`;
       await sql`DELETE FROM classes WHERE id = ${dupId}`;
     }
-    console.log('Duplicate classes removed.');
+    console.log("Duplicate classes removed.");
   }
 
   // Check remaining student profiles & users
   const remaining = await sql`SELECT id, name, email, role FROM "user" WHERE role = 'student'`;
   console.log(`\nRemaining students in system (${remaining.length}):`);
-  remaining.forEach(r => console.log(` - ${r.name} (${r.email})`));
+  remaining.forEach((r) => console.log(` - ${r.name} (${r.email})`));
 
   const remainingClasses = await sql`SELECT id, name, grade FROM classes`;
   console.log(`\nRemaining classes (${remainingClasses.length}):`);
-  remainingClasses.forEach(c => console.log(` - [${c.id}] ${c.name}`));
+  remainingClasses.forEach((c) => console.log(` - [${c.id}] ${c.name}`));
 
   await sql.end();
-  console.log('\n--- Cleanup Finished Successfully! ---');
+  console.log("\n--- Cleanup Finished Successfully! ---");
 }
 
-cleanData().catch(err => {
-  console.error('Error during cleanup:', err);
+cleanData().catch((err) => {
+  console.error("Error during cleanup:", err);
   process.exit(1);
 });

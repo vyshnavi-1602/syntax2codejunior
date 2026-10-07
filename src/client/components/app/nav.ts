@@ -20,7 +20,7 @@ export const navByRole: Record<RoleId, NavGroup[]> = {
         { label: "Learn", to: "/student/learn", icon: "BookOpen" },
         { label: "Practice", to: "/student/practice", icon: "Target" },
         { label: "Build", to: "/student/build", icon: "Hammer" },
-        { label: "Coding Lab", to: "/student/lab", icon: "Terminal" },
+        { label: "Coding", to: "/student/lab", icon: "Terminal" },
       ],
     },
     {

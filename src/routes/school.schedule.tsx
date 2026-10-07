@@ -211,8 +211,8 @@ function SchoolSchedulePage() {
       }
       setOpenModal(false);
       router.invalidate();
-    } catch (err: any) {
-      const msg = err?.message || "Failed to save schedule slot";
+    } catch (err: unknown) {
+      const msg = (err as Error)?.message || "Failed to save schedule slot";
       toast.error(msg);
     } finally {
       setIsSubmitting(false);

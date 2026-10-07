@@ -106,8 +106,7 @@ function ReportsPage() {
   const router = useRouter();
   const loaderData = Route.useLoaderData();
   const { school, announcements } = loaderData;
-  const parentLogs: ParentReportLog[] =
-    (loaderData.parentReportLogs as ParentReportLog[]) || [];
+  const parentLogs: ParentReportLog[] = (loaderData.parentReportLogs as ParentReportLog[]) || [];
 
   const [tab, setTab] = useState<(typeof tabs)[number]>("Reports");
   const [title, setTitle] = useState("");
@@ -476,9 +475,7 @@ function ReportsPage() {
                         {log.recipientCount} Recipients
                       </span>
                       <span>
-                        {log.sentAt
-                          ? new Date(log.sentAt).toLocaleDateString()
-                          : "Recently"}
+                        {log.sentAt ? new Date(log.sentAt).toLocaleDateString() : "Recently"}
                       </span>
                     </div>
                   </div>

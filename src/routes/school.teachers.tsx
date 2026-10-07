@@ -259,7 +259,9 @@ function SchoolTeachers() {
 
                     {t.trainings && t.trainings.length > 0 && (
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        <span className="text-[11px] font-semibold text-slate-500">Enablement:</span>
+                        <span className="text-[11px] font-semibold text-slate-500">
+                          Enablement:
+                        </span>
                         {t.trainings.map((tr) => (
                           <span
                             key={tr.id}

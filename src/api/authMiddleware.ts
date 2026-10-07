@@ -47,3 +47,5 @@ export const roleMiddleware = (allowedRoles: string[]) => {
     });
   });
 };
+
+export { classIsolationMiddleware } from "./auth.server";

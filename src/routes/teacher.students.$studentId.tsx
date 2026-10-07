@@ -1,10 +1,35 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Send, Sparkles, FileText, Download } from "lucide-react";
+import {
+  ArrowLeft,
+  Send,
+  Sparkles,
+  FileText,
+  Download,
+  Shield,
+  Activity,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  Terminal,
+  Settings2,
+  Users,
+  Bell,
+  Lock,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { Avatar, Bar, PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 import { getStudentProfileFn, getStudentProjectsFn } from "@/api/student.server";
+import {
+  updateStudentSupportFn,
+  updateStudentGuardrailsFn,
+  getStudentExecutionsPipelineFn,
+  sendStudentNotificationFn,
+  type StudentSupportData,
+  type StudentGuardrailsData,
+  type PipelineExecutionLog,
+} from "@/api/teacher.server";
 import {
   Dialog,
   DialogContent,
@@ -16,41 +41,175 @@ import { Button } from "@/client/components/ui/button";
 import { Input } from "@/client/components/ui/input";
 import { Textarea } from "@/client/components/ui/textarea";
 import { Label } from "@/client/components/ui/label";
+import { cn } from "@/client/lib/utils";
 
 export const Route = createFileRoute("/teacher/students/$studentId")({
   head: () => ({
     meta: [
-      { title: "Student profile · Syntax2Code" },
+      { title: "Student Profile & Rights · Syntax2Code" },
       {
         name: "description",
-        content: "Student-level progress, skills, attendance, projects and support tags.",
+        content:
+          "Student-level progress, skills, support tags, class-scoped guardrails and execution telemetry.",
       },
-      { property: "og:title", content: "Student profile · Syntax2Code" },
-      { property: "og:description", content: "A full learning profile for one student." },
+      { property: "og:title", content: "Student Profile & Rights · Syntax2Code" },
+      {
+        property: "og:description",
+        content: "Full learning profile and rights management for one student.",
+      },
     ],
   }),
   loader: async ({ params }) => {
-    const [profileData, projects] = await Promise.all([
+    const [profileData, projects, pipelineData] = await Promise.all([
       getStudentProfileFn({ data: params.studentId }),
       getStudentProjectsFn({ data: params.studentId }),
+      getStudentExecutionsPipelineFn({ data: params.studentId }),
     ]);
-    return { profile: profileData.currentStudent, projects, studentId: params.studentId };
+    return {
+      profile: profileData.currentStudent,
+      projects,
+      studentId: params.studentId,
+      pipeline: pipelineData,
+    };
   },
   component: StudentDetail,
 });
 
 function StudentDetail() {
-  const { profile: s, projects } = Route.useLoaderData();
+  const { profile: s, projects, studentId, pipeline } = Route.useLoaderData();
+  const studentMeta = s as unknown as Record<string, string | undefined>;
 
+  // Support state
+  const [supportTag, setSupportTag] = useState<StudentSupportData["tag"]>(
+    (s.tag === "Needs support"
+      ? "Needs support"
+      : s.tag === "Accelerated"
+        ? "Accelerated"
+        : "On track") as StudentSupportData["tag"],
+  );
+  const [mentorName, setMentorName] = useState(studentMeta.assignedMentor || "Priya Raman");
+  const [interventionNotes, setInterventionNotes] = useState(
+    studentMeta.interventionPlan ||
+      "Student consistently completes assignments on time. Recommended for advanced hackathon team.",
+  );
+  const [isSavingSupport, setIsSavingSupport] = useState(false);
+
+  // Guardrails state
+  const [allowedLangs, setAllowedLangs] = useState<string[]>(
+    pipeline?.activeGuardrails?.allowedLanguages || ["Python", "JavaScript", "HTML/CSS"],
+  );
+  const [loopTimeout, setLoopTimeout] = useState<number>(
+    pipeline?.activeGuardrails?.maxLoopTimeoutMs || 2500,
+  );
+  const [blockNetwork, setBlockNetwork] = useState<boolean>(
+    pipeline?.activeGuardrails?.blockExternalNetwork ?? true,
+  );
+  const [sandboxMode, setSandboxMode] = useState<"strict" | "standard" | "relaxed">(
+    pipeline?.activeGuardrails?.sandboxMode || "strict",
+  );
+  const [isSavingGuardrails, setIsSavingGuardrails] = useState(false);
+
+  // Direct In-App Notification Modal
+  const [notifModalOpen, setNotifModalOpen] = useState(false);
+  const [notifTitle, setNotifTitle] = useState("");
+  const [notifMessage, setNotifMessage] = useState("");
+  const [notifyParentCheck, setNotifyParentCheck] = useState(true);
+  const [isSendingNotif, setIsSendingNotif] = useState(false);
+
+  // Parent report & modal
   const [parentModalOpen, setParentModalOpen] = useState(false);
   const [parentNote, setParentNote] = useState("");
   const [parentSending, setParentSending] = useState(false);
 
+  // Practice modal
   const [practiceModalOpen, setPracticeModalOpen] = useState(false);
   const [practiceTopic, setPracticeTopic] = useState("Debugging & Logic");
   const [problemCount, setProblemCount] = useState("5");
   const [practiceDueDate, setPracticeDueDate] = useState("Friday");
   const [practiceAssigning, setPracticeAssigning] = useState(false);
+
+  // Official report preview
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+
+  // Handle Support Plan save
+  const handleSaveSupport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSupport(true);
+    try {
+      await updateStudentSupportFn({
+        data: {
+          studentId,
+          tag: supportTag,
+          interventionPlan: interventionNotes,
+          assignedMentor: mentorName,
+          notes: interventionNotes,
+        },
+      });
+      toast.success("Student support plan updated!", {
+        description: `Support tag updated to '${supportTag}' with mentor ${mentorName}.`,
+      });
+    } catch {
+      toast.error("Failed to update student support plan.");
+    } finally {
+      setIsSavingSupport(false);
+    }
+  };
+
+  // Handle Guardrails save
+  const handleSaveGuardrails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingGuardrails(true);
+    try {
+      await updateStudentGuardrailsFn({
+        data: {
+          studentId,
+          allowedLanguages: allowedLangs,
+          maxLoopTimeoutMs: Number(loopTimeout),
+          blockExternalNetwork: blockNetwork,
+          requireCodeApproval: false,
+          sandboxMode,
+        },
+      });
+      toast.success("Class-scoped guardrails updated!", {
+        description: `Enforced ${sandboxMode} sandbox isolation with ${loopTimeout}ms loop execution limit.`,
+      });
+    } catch {
+      toast.error("Failed to update student guardrails.");
+    } finally {
+      setIsSavingGuardrails(false);
+    }
+  };
+
+  // Handle Direct Notification Dispatch
+  const handleSendNotification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!notifTitle.trim() || !notifMessage.trim()) {
+      toast.error("Please enter a title and message.");
+      return;
+    }
+    setIsSendingNotif(true);
+    try {
+      await sendStudentNotificationFn({
+        data: {
+          studentId,
+          title: notifTitle,
+          message: notifMessage,
+          notifyParent: notifyParentCheck,
+          channels: notifyParentCheck ? ["in_app", "email"] : ["in_app"],
+        },
+      });
+      toast.success("Notification delivered successfully!", {
+        description: `Dispatched to student ${s.name} ${notifyParentCheck ? "and parent/guardian" : ""}.`,
+      });
+      setNotifModalOpen(false);
+      setNotifTitle("");
+      setNotifMessage("");
+    } catch {
+      toast.error("Failed to send notification.");
+    } finally {
+      setIsSendingNotif(false);
+    }
+  };
 
   const handleNotifyParent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,8 +236,6 @@ function StudentDetail() {
     }, 400);
   };
 
-  const [reportModalOpen, setReportModalOpen] = useState(false);
-
   const getOfficialReportHtml = () => {
     return `
       <!DOCTYPE html>
@@ -98,28 +255,28 @@ function StudentDetail() {
           .field { font-size: 12px; margin-bottom: 4px; }
           .field strong { color: #334155; }
           .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
-          .stat-box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center; }
-          .stat-val { font-size: 18px; font-weight: bold; color: #4f46e5; }
-          .stat-lbl { font-size: 10px; color: #64748b; text-transform: uppercase; margin-top: 2px; }
-          .section-title { font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-          th { background: #f1f5f9; text-align: left; padding: 6px 10px; font-size: 11px; color: #475569; font-weight: 600; border-bottom: 1px solid #cbd5e1; }
-          td { padding: 6px 10px; font-size: 11px; border-bottom: 1px solid #e2e8f0; }
-          .bar-container { background: #e2e8f0; border-radius: 9999px; height: 6px; width: 90px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 8px; }
-          .bar-fill { height: 100%; background: #4f46e5; border-radius: 9999px; }
-          .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; margin-top: 32px; }
-          .sig-line { border-top: 1px solid #94a3b8; padding-top: 6px; font-size: 11px; color: #64748b; }
+          .stat-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; text-align: center; }
+          .stat-val { font-size: 18px; font-weight: 700; color: #4338ca; }
+          .stat-lbl { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 600; margin-top: 2px; }
+          .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; color: #334155; margin-bottom: 8px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; }
+          th, td { border: 1px solid #cbd5e1; padding: 7px 10px; text-align: left; }
+          th { background: #f1f5f9; color: #334155; font-weight: 600; }
+          .bar-container { background: #e2e8f0; border-radius: 4px; height: 8px; width: 80px; display: inline-block; vertical-align: middle; margin-right: 8px; }
+          .bar-fill { background: #4f46e5; height: 8px; border-radius: 4px; }
+          .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; padding-top: 20px; border-top: 1px dashed #cbd5e1; font-size: 11px; }
+          .sig-line { border-top: 1px solid #94a3b8; padding-top: 6px; text-align: center; }
         </style>
       </head>
       <body>
         <div class="header">
           <div>
-            <div class="logo">Syntax2Code Academic Platform</div>
-            <div class="title">Official Student Progress & Parent Report</div>
-            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">School: ${s.schoolName || "Global Tech High"} · Academic Term: 2026-2027</div>
+            <div class="logo">SYNTAX2CODE · SCHOOLS</div>
+            <div class="title">Official Student Progress & Academic Diagnostic Dossier</div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">School: ${s.schoolName || "Global Tech High"} · Academic Term 2026-2027</div>
           </div>
           <div>
-            <span class="badge">Official Academic Record</span>
+            <span class="badge">CONFIDENTIAL ACADEMIC RECORD</span>
           </div>
         </div>
 
@@ -127,24 +284,23 @@ function StudentDetail() {
           <div class="card">
             <div class="card-title">Student Information</div>
             <div class="field"><strong>Full Name:</strong> ${s.name}</div>
-            <div class="field"><strong>Class & Section:</strong> ${s.className} ${s.gradeName ? `(${s.gradeName})` : ""}</div>
-            <div class="field"><strong>Student ID:</strong> S2C-${s.id.slice(0, 8)}</div>
-            <div class="field"><strong>Current Status:</strong> ${s.tag}</div>
+            <div class="field"><strong>Classroom:</strong> ${s.className}</div>
+            <div class="field"><strong>Student ID:</strong> ${s.id}</div>
+            <div class="field"><strong>Academic Status:</strong> ${supportTag}</div>
           </div>
-
           <div class="card">
             <div class="card-title">Parent / Guardian Information</div>
-            <div class="field"><strong>Guardian Name:</strong> ${s.parent?.guardianName || "Sunita & Rajesh Sharma"}</div>
+            <div class="field"><strong>Primary Guardian:</strong> ${s.parent?.guardianName || "Sunita & Rajesh Sharma"}</div>
             <div class="field"><strong>Relationship:</strong> ${s.parent?.relation || "Parents / Primary Guardians"}</div>
             <div class="field"><strong>Contact Email:</strong> ${s.parent?.email || `parent.${s.name.toLowerCase().replace(/\s+/g, ".")}@gmail.com`}</div>
-            <div class="field"><strong>Contact Phone:</strong> ${s.parent?.phone || "+1 (555) 381-9042"}</div>
+            <div class="field"><strong>Emergency Contact:</strong> ${s.parent?.phone || "+1 (555) 381-9042"}</div>
           </div>
         </div>
 
         <div class="stats-grid">
           <div class="stat-box">
             <div class="stat-val">${s.score}</div>
-            <div class="stat-lbl">S2C Score</div>
+            <div class="stat-lbl">S2C Readiness Index</div>
           </div>
           <div class="stat-box">
             <div class="stat-val">${s.completion}%</div>
@@ -189,44 +345,18 @@ function StudentDetail() {
           </tbody>
         </table>
 
-        <div class="section-title">Recent Project Submissions & Coding Work</div>
-        <table>
-          <thead>
-            <tr>
-              <th>Project Title</th>
-              <th>Status</th>
-              <th>Evaluation</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${projects
-              .slice(0, 4)
-              .map(
-                (p: { title: string; status: string }) => `
-              <tr>
-                <td>${p.title}</td>
-                <td>${p.status}</td>
-                <td>Completed & Verified by Faculty</td>
-              </tr>
-            `,
-              )
-              .join("")}
-          </tbody>
-        </table>
-
         <div class="card" style="margin-top: 10px;">
-          <div class="card-title">Instructor Remarks & Learning Recommendations for Parents</div>
+          <div class="card-title">Instructor Remarks & Learning Recommendations</div>
           <div style="font-size: 11px; line-height: 1.5; color: #334155;">
             ${s.name} demonstrates exemplary consistency and problem-solving capability in computer science. 
-            Curriculum milestone benchmarks are actively met with high attendance (${s.attendance}%). 
-            Parents/guardians are encouraged to maintain active monitoring and acknowledge weekly achievements.
+            Curriculum milestone benchmarks are actively met with high attendance (${s.attendance}%).
           </div>
         </div>
 
         <div class="signatures">
           <div class="sig-line">
             <strong>Instructor / Faculty Signature</strong><br>
-            Priya Raman (Computer Science Department)
+            ${mentorName} (Computer Science Department)
           </div>
           <div class="sig-line">
             <strong>Parent / Guardian Signature & Date</strong><br>
@@ -248,141 +378,96 @@ function StudentDetail() {
     iframe.style.height = "0";
     iframe.style.border = "0";
     document.body.appendChild(iframe);
-
     const doc = iframe.contentWindow?.document;
     if (doc) {
       doc.open();
       doc.write(html);
       doc.close();
+      iframe.contentWindow?.focus();
       setTimeout(() => {
-        iframe.contentWindow?.focus();
         iframe.contentWindow?.print();
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-        }, 1000);
-      }, 350);
-    } else {
-      const win = window.open("", "_blank");
-      if (win) {
-        win.document.open();
-        win.document.write(html);
-        win.document.close();
-        win.focus();
-        setTimeout(() => win.print(), 350);
-      }
+        setTimeout(() => document.body.removeChild(iframe), 1000);
+      }, 300);
     }
   };
 
   const downloadReportFile = () => {
     const html = getOfficialReportHtml();
-    const blob = new Blob([html], { type: "text/html;charset=utf-8;" });
+    const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `${s.name.replace(/\s+/g, "_")}_Official_Parent_Report.html`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("Parent report downloaded", {
-      description: `${s.name.replace(/\s+/g, "_")}_Official_Parent_Report.html`,
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${s.name.replace(/\s+/g, "_")}_Official_Report.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Progress report file downloaded", {
+      description: "Saved as an offline printable HTML report.",
     });
   };
 
   return (
     <>
+      <Link
+        to="/teacher/students"
+        className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-600 mb-2"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" /> Back to student roster
+      </Link>
+
       <PageHeader
         title={s.name}
-        subtitle={`${s.className} · Level ${s.level} · last active ${s.lastActive}`}
+        subtitle={`${s.className} · ${s.email} · Last active ${s.lastActive}`}
         actions={
-          <>
-            <Link
-              to="/teacher/classes/$classId"
-              params={{ classId: s.classId?.toString() || "" }}
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setNotifModalOpen(true)}
+              className="gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50"
             >
-              <ArrowLeft className="h-4 w-4" /> Back to class
-            </Link>
-            <button
-              onClick={() =>
-                toast.success("Support tag updated", {
-                  description: `${s.name} flagged for weekly mentoring.`,
-                })
-              }
-              className="inline-flex h-10 items-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+              <Bell className="h-4 w-4 text-indigo-600" /> Send Notification
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setReportModalOpen(true)}
+              className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
             >
-              Add support tag
-            </button>
-          </>
+              <FileText className="h-4 w-4" /> Progress Dossier
+            </Button>
+          </div>
         }
       />
 
-      <Panel bodyClassName="p-6">
-        <div className="flex flex-wrap items-center gap-5">
-          <Avatar
-            initials={s.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")}
-            size="lg"
-          />
-          <div className="flex-1">
-            <p className="text-lg font-semibold tracking-tight text-slate-900">{s.name}</p>
-            <p className="text-sm text-slate-500">
-              {s.className} · {s.schoolName || "Global Tech High"}
-            </p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
+      {/* Header Profile Card */}
+      <Panel className="p-6">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+          <Avatar initials={s.name.substring(0, 2).toUpperCase()} size="lg" />
+          <div className="flex-1 space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-xl font-bold tracking-tight text-slate-900">{s.name}</h2>
               <Pill
                 tone={
-                  s.tag === "Needs support" ? "rose" : s.tag === "Accelerated" ? "emerald" : "sky"
+                  supportTag === "Needs support"
+                    ? "rose"
+                    : supportTag === "Accelerated"
+                      ? "violet"
+                      : "emerald"
                 }
               >
-                {s.tag}
+                {supportTag}
               </Pill>
-              <Pill tone="violet">{s.badges} badges</Pill>
               <Pill tone="amber">{s.streak}-day streak</Pill>
             </div>
+            <p className="text-xs text-slate-500">
+              Grade 8 · Section B · Assigned Faculty Mentor: <strong>{mentorName}</strong>
+            </p>
           </div>
         </div>
       </Panel>
 
-      <Panel
-        title="Parent & Guardian Information"
-        description="Primary contact and communication profile"
-      >
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 p-1">
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
-            <p className="text-xs font-medium text-slate-500">Parent / Guardian Name</p>
-            <p className="mt-1 font-semibold text-slate-900">
-              {s.parent?.guardianName || "Sunita & Rajesh Sharma"}
-            </p>
-            <p className="text-[11px] text-slate-400">
-              {s.parent?.relation || "Parents / Primary Guardians"}
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
-            <p className="text-xs font-medium text-slate-500">Parent Email Address</p>
-            <p className="mt-1 font-semibold text-slate-900 truncate">
-              {s.parent?.email || `parent.${s.name.toLowerCase().replace(/\s+/g, ".")}@gmail.com`}
-            </p>
-            <p className="text-[11px] text-emerald-600 font-medium">Verified for progress alerts</p>
-          </div>
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
-            <p className="text-xs font-medium text-slate-500">Primary Contact Phone</p>
-            <p className="mt-1 font-semibold text-slate-900">
-              {s.parent?.phone || "+1 (555) 381-9042"}
-            </p>
-            <p className="text-[11px] text-slate-400">SMS notifications active</p>
-          </div>
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
-            <p className="text-xs font-medium text-slate-500">Emergency Contact</p>
-            <p className="mt-1 font-semibold text-slate-900">
-              {s.parent?.emergencyContact || "+1 (555) 381-9049"}
-            </p>
-            <p className="text-[11px] text-slate-400">Available during school hours</p>
-          </div>
-        </div>
-      </Panel>
-
+      {/* Core KPIs */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="S2C Score" value={s.score} sub="Class avg 806" tone="emerald" />
         <Stat label="Curriculum" value={`${s.completion}%`} sub="Completed" tone="sky" />
@@ -395,6 +480,7 @@ function StudentDetail() {
         />
       </div>
 
+      {/* Radar & Progress */}
       <div className="grid gap-6 lg:grid-cols-3">
         <Panel title="Skill radar" description="Relative strengths and gaps">
           <div className="h-64">
@@ -423,55 +509,365 @@ function StudentDetail() {
               </div>
             ))}
           </div>
-          <div className="mt-6 border-t border-slate-100 pt-5">
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-              Recent projects
-            </p>
-            <div className="mt-3 space-y-2">
-              {projects.slice(0, 3).map((p: { id: string; title: string; status: string }) => (
-                <div
-                  key={p.id}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-2.5"
-                >
-                  <span className="text-sm text-slate-800">{p.title}</span>
-                  <Pill
-                    tone={
-                      p.status === "Approved"
-                        ? "emerald"
-                        : p.status === "Needs Changes"
-                          ? "amber"
-                          : "sky"
-                    }
-                  >
-                    {p.status}
-                  </Pill>
-                </div>
-              ))}
-            </div>
-          </div>
+
           <div className="mt-6 flex flex-wrap gap-2 border-t border-slate-100 pt-5">
             <button
+              type="button"
               onClick={() => setParentModalOpen(true)}
-              className="inline-flex items-center gap-2 h-10 rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 h-9 rounded-xl border border-slate-200 px-3.5 text-xs font-medium text-slate-700 hover:bg-slate-50 cursor-pointer"
             >
-              <Send className="h-4 w-4 text-slate-500" /> Notify parent
+              <Send className="h-3.5 w-3.5 text-slate-500" /> Notify Parent
             </button>
             <button
+              type="button"
               onClick={() => setPracticeModalOpen(true)}
-              className="inline-flex items-center gap-2 h-10 rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 h-9 rounded-xl border border-slate-200 px-3.5 text-xs font-medium text-slate-700 hover:bg-slate-50 cursor-pointer"
             >
-              <Sparkles className="h-4 w-4 text-slate-500" /> Assign practice
+              <Sparkles className="h-3.5 w-3.5 text-slate-500" /> Assign Practice
             </button>
             <button
+              type="button"
               onClick={() => setReportModalOpen(true)}
-              className="inline-flex items-center gap-2 h-10 rounded-xl bg-indigo-600 px-4 text-sm font-medium text-white hover:bg-indigo-700 shadow-sm"
+              className="inline-flex items-center gap-2 h-9 rounded-xl bg-indigo-600 px-3.5 text-xs font-medium text-white hover:bg-indigo-700 shadow-sm cursor-pointer"
             >
-              <FileText className="h-4 w-4" /> Download report
+              <FileText className="h-3.5 w-3.5" /> Official Report
             </button>
           </div>
         </Panel>
       </div>
 
+      {/* STUDENT SUPPORT & MENTORING SECTION */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel
+          title="Student Support & Intervention Plan"
+          description="Assign personalized mentoring tags and intervention strategies"
+          action={
+            <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+              Class Scoped
+            </span>
+          }
+        >
+          <form onSubmit={handleSaveSupport} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Academic Support Tag</Label>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {[
+                  {
+                    tag: "On track",
+                    label: "On Track",
+                    color: "text-emerald-700 border-emerald-200 bg-emerald-50",
+                  },
+                  {
+                    tag: "Needs support",
+                    label: "Needs Help",
+                    color: "text-rose-700 border-rose-200 bg-rose-50",
+                  },
+                  {
+                    tag: "Accelerated",
+                    label: "Accelerated",
+                    color: "text-violet-700 border-violet-200 bg-violet-50",
+                  },
+                  {
+                    tag: "Mentoring required",
+                    label: "Mentoring",
+                    color: "text-amber-700 border-amber-200 bg-amber-50",
+                  },
+                ].map((item) => (
+                  <button
+                    key={item.tag}
+                    type="button"
+                    onClick={() => setSupportTag(item.tag as StudentSupportData["tag"])}
+                    className={cn(
+                      "rounded-xl border p-2 text-xs font-semibold text-center transition-all cursor-pointer",
+                      supportTag === item.tag
+                        ? cn(item.color, "ring-2 ring-indigo-200")
+                        : "border-slate-200 text-slate-600 hover:bg-slate-50",
+                    )}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="mentor-name">Assigned Faculty Mentor</Label>
+              <Input
+                id="mentor-name"
+                value={mentorName}
+                onChange={(e) => setMentorName(e.target.value)}
+                placeholder="Faculty mentor name"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="intervention-notes">Intervention Strategy & Academic Notes</Label>
+              <Textarea
+                id="intervention-notes"
+                rows={3}
+                value={interventionNotes}
+                onChange={(e) => setInterventionNotes(e.target.value)}
+                placeholder="Add pedagogical intervention goals, challenge recommendations, or follow-ups..."
+              />
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <Button
+                type="submit"
+                disabled={isSavingSupport}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
+              >
+                {isSavingSupport ? "Saving Changes..." : "Save Support Plan"}
+              </Button>
+            </div>
+          </form>
+        </Panel>
+
+        {/* CLASS-SCOPED STUDENT RIGHTS & GUARDRAILS */}
+        <Panel
+          title="Class-Scoped Rights & Guardrails"
+          description="Configure coding lab sandbox limits and execution boundaries"
+          action={
+            <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500">
+              <Shield className="h-3.5 w-3.5 text-indigo-600" /> Active Protection
+            </div>
+          }
+        >
+          <form onSubmit={handleSaveGuardrails} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Allowed Programming Languages in Lab</Label>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {["Python", "JavaScript", "HTML/CSS", "Java"].map((lang) => {
+                  const isAllowed = allowedLangs.includes(lang);
+                  return (
+                    <button
+                      key={lang}
+                      type="button"
+                      onClick={() =>
+                        setAllowedLangs((prev) =>
+                          isAllowed ? prev.filter((l) => l !== lang) : [...prev, lang],
+                        )
+                      }
+                      className={cn(
+                        "rounded-xl border p-2 text-xs font-semibold text-center transition-all cursor-pointer",
+                        isAllowed
+                          ? "border-indigo-400 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200"
+                          : "border-slate-200 text-slate-400 line-through bg-slate-50",
+                      )}
+                    >
+                      {lang}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="loop-timeout">Max Loop Timeout (ms)</Label>
+                <Input
+                  id="loop-timeout"
+                  type="number"
+                  min={500}
+                  max={10000}
+                  step={500}
+                  value={loopTimeout}
+                  onChange={(e) => setLoopTimeout(Number(e.target.value))}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="sandbox-mode">Sandbox Isolation Mode</Label>
+                <select
+                  id="sandbox-mode"
+                  value={sandboxMode}
+                  onChange={(e) =>
+                    setSandboxMode(e.target.value as "strict" | "standard" | "relaxed")
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800"
+                >
+                  <option value="strict">Strict (Web Worker + Iframe)</option>
+                  <option value="standard">Standard (Isolated Iframe)</option>
+                  <option value="relaxed">Relaxed (Dev Sandbox)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 space-y-2">
+              <label className="flex items-center justify-between text-xs text-slate-700 cursor-pointer">
+                <span>Block External Network & Web Fetch</span>
+                <input
+                  type="checkbox"
+                  checked={blockNetwork}
+                  onChange={(e) => setBlockNetwork(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+              </label>
+              <p className="text-[11px] text-slate-400">
+                Prevents outbound HTTP calls from student scripts to prevent data leaks or
+                unmoderated access.
+              </p>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <Button
+                type="submit"
+                disabled={isSavingGuardrails}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
+              >
+                {isSavingGuardrails ? "Updating Guardrails..." : "Save Sandbox Rights"}
+              </Button>
+            </div>
+          </form>
+        </Panel>
+      </div>
+
+      {/* STUDENT EXECUTIONS PIPELINE MONITOR */}
+      <Panel
+        title="Student Executions Pipeline Telemetry"
+        description="Real-time execution telemetry, runtime errors, and sandbox security compliance"
+        action={
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Pipeline Score: {pipeline?.safetyScore || 98}
+              %
+            </span>
+          </div>
+        }
+      >
+        <div className="grid gap-3 sm:grid-cols-4 mb-4">
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
+            <p className="text-lg font-bold text-indigo-600">{pipeline?.totalRuns || 48}</p>
+            <p className="text-[10px] uppercase tracking-wider text-slate-500">Total Code Runs</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
+            <p className="text-lg font-bold text-emerald-600">{pipeline?.passRate || 92}%</p>
+            <p className="text-[10px] uppercase tracking-wider text-slate-500">Test Pass Rate</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
+            <p className="text-lg font-bold text-sky-600">0</p>
+            <p className="text-[10px] uppercase tracking-wider text-slate-500">Security Flags</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
+            <p className="text-lg font-bold text-purple-600">142ms</p>
+            <p className="text-[10px] uppercase tracking-wider text-slate-500">Avg Run Time</p>
+          </div>
+        </div>
+
+        {/* Execution Logs Table */}
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="w-full text-left text-xs">
+            <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500 uppercase">
+              <tr>
+                <th className="px-4 py-2.5">Challenge & Language</th>
+                <th className="px-4 py-2.5">Timestamp</th>
+                <th className="px-4 py-2.5">Execution & Memory</th>
+                <th className="px-4 py-2.5">Exit Code</th>
+                <th className="px-4 py-2.5">Sandbox Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {(pipeline?.logs || []).map((log: PipelineExecutionLog) => (
+                <tr key={log.id} className="hover:bg-slate-50/70 transition-colors">
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-slate-900">{log.challenge}</p>
+                    <p className="text-[11px] text-slate-500 font-mono">{log.language}</p>
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">{log.timestamp}</td>
+                  <td className="px-4 py-3 font-mono text-slate-600">
+                    {log.executionTimeMs}ms · {log.memoryUsedMb}MB
+                  </td>
+                  <td className="px-4 py-3">
+                    {log.exitCode === 0 ? (
+                      <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> 0 (Success)
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 font-semibold text-rose-600">
+                        <AlertTriangle className="h-3.5 w-3.5" /> {log.exitCode} (Failed)
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="space-y-0.5">
+                      {log.logs?.map((l: string, idx: number) => (
+                        <p key={idx} className="font-mono text-[10px] text-slate-500">
+                          › {l}
+                        </p>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+
+      {/* DIRECT IN-APP NOTIFICATION DIALOG */}
+      <Dialog open={notifModalOpen} onOpenChange={setNotifModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-indigo-600" /> Send Notification to {s.name}
+            </DialogTitle>
+            <DialogDescription>
+              Direct dispatch to the student's dashboard inbox with optional parent notification.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSendNotification} className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="notif-title">Notification Subject</Label>
+              <Input
+                id="notif-title"
+                placeholder="e.g. Code Review Feedback: Loops Practice"
+                value={notifTitle}
+                onChange={(e) => setNotifTitle(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="notif-message">Message Content</Label>
+              <Textarea
+                id="notif-message"
+                placeholder="Write specific feedback, upcoming assignment reminders, or positive praise..."
+                rows={4}
+                value={notifMessage}
+                onChange={(e) => setNotifMessage(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3">
+              <label className="flex items-center justify-between text-xs text-slate-700 cursor-pointer">
+                <span>Also notify parent / guardian via email</span>
+                <input
+                  type="checkbox"
+                  checked={notifyParentCheck}
+                  onChange={(e) => setNotifyParentCheck(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setNotifModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSendingNotif}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                {isSendingNotif ? "Dispatching..." : "Dispatch Notification"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Notify Parent Modal */}
       <Dialog open={parentModalOpen} onOpenChange={setParentModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -486,12 +882,6 @@ function StudentDetail() {
                 <span className="text-slate-500">Guardian Name:</span>
                 <span className="font-semibold text-slate-800">
                   {s.parent?.guardianName || "Sunita & Rajesh Sharma"}
-                </span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Relationship:</span>
-                <span className="text-slate-700">
-                  {s.parent?.relation || "Parents / Primary Guardians"}
                 </span>
               </div>
               <div className="flex justify-between text-xs">
@@ -533,12 +923,13 @@ function StudentDetail() {
         </DialogContent>
       </Dialog>
 
+      {/* Assign Remedial Practice Modal */}
       <Dialog open={practiceModalOpen} onOpenChange={setPracticeModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Assign Remedial Practice</DialogTitle>
+            <DialogTitle>Assign Targeted Practice</DialogTitle>
             <DialogDescription>
-              Create a targeted practice problem set for {s.name}.
+              Create a custom practice problem set for {s.name}.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAssignPractice} className="space-y-4 py-2">
@@ -587,15 +978,16 @@ function StudentDetail() {
         </DialogContent>
       </Dialog>
 
+      {/* Progress Dossier Preview Modal */}
       <Dialog open={reportModalOpen} onOpenChange={setReportModalOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-indigo-600" />
-              Official Student & Parent Progress Report
+              Official Student & Parent Progress Dossier
             </DialogTitle>
             <DialogDescription>
-              Academic evaluation and parent progress summary for {s.name}.
+              Academic diagnostic evaluation and progress summary for {s.name}.
             </DialogDescription>
           </DialogHeader>
 
@@ -624,34 +1016,22 @@ function StudentDetail() {
                   <span className="text-slate-500">Class:</span> {s.className}
                 </p>
                 <p>
-                  <span className="text-slate-500">School:</span>{" "}
-                  {s.schoolName || "Global Tech High"}
-                </p>
-                <p>
-                  <span className="text-slate-500">Status:</span> {s.tag}
+                  <span className="text-slate-500">Support Tag:</span> {supportTag}
                 </p>
               </div>
 
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                 <p className="font-bold text-slate-800 uppercase tracking-wider text-[10px] mb-1">
-                  Parent / Guardian Details
+                  Guardian Contact
                 </p>
                 <p>
                   <span className="text-slate-500">Guardian:</span>{" "}
                   <strong>{s.parent?.guardianName || "Sunita & Rajesh Sharma"}</strong>
                 </p>
                 <p>
-                  <span className="text-slate-500">Relation:</span>{" "}
-                  {s.parent?.relation || "Parents / Primary Guardians"}
-                </p>
-                <p>
                   <span className="text-slate-500">Email:</span>{" "}
                   {s.parent?.email ||
                     `parent.${s.name.toLowerCase().replace(/\s+/g, ".")}@gmail.com`}
-                </p>
-                <p>
-                  <span className="text-slate-500">Phone:</span>{" "}
-                  {s.parent?.phone || "+1 (555) 381-9042"}
                 </p>
               </div>
             </div>
@@ -671,36 +1051,8 @@ function StudentDetail() {
               </div>
               <div className="border border-slate-200 p-2.5 rounded-xl">
                 <p className="text-base font-bold text-amber-600">{s.level}</p>
-                <p className="text-[10px] text-slate-500 uppercase">Current Level</p>
+                <p className="text-[10px] text-slate-500 uppercase">Level</p>
               </div>
-            </div>
-
-            <div>
-              <p className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">
-                Core Skill Competency Matrix
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {s.skills.map((sk: { skill: string; value: number }) => (
-                  <div
-                    key={sk.skill}
-                    className="flex justify-between items-center p-2 rounded-lg border border-slate-100 bg-slate-50/50"
-                  >
-                    <span className="text-slate-700 font-medium">{sk.skill}</span>
-                    <span className="font-bold text-slate-900">{sk.value}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
-              <p className="font-bold text-slate-800 uppercase tracking-wider text-[10px] mb-1">
-                Faculty Evaluation & Next Steps
-              </p>
-              <p className="text-slate-600 leading-relaxed">
-                {s.name} is progressing ahead of curriculum benchmarks. Regular coding habit and
-                laboratory participation are exemplary. Parents/guardians are encouraged to review
-                ongoing weekly homework submissions.
-              </p>
             </div>
           </div>
 

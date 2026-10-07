@@ -4,13 +4,17 @@ import { cn } from "@/client/lib/utils";
 export type Tone = "slate" | "sky" | "violet" | "amber" | "emerald" | "teal" | "rose";
 
 const toneMap: Record<Tone, string> = {
-  slate: "bg-slate-100 text-slate-700 border-slate-200",
-  sky: "bg-sky-50 text-sky-700 border-sky-200",
-  violet: "bg-violet-50 text-violet-700 border-violet-200",
-  amber: "bg-amber-50 text-amber-700 border-amber-200",
-  emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  teal: "bg-teal-50 text-teal-700 border-teal-200",
-  rose: "bg-rose-50 text-rose-700 border-rose-200",
+  slate:
+    "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
+  sky: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800",
+  violet:
+    "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/60 dark:text-violet-300 dark:border-violet-800",
+  amber:
+    "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800",
+  emerald:
+    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800",
+  teal: "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800",
+  rose: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800",
 };
 
 export function Pill({
@@ -53,22 +57,26 @@ export function Panel({
   return (
     <section
       className={cn(
-        "rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-16px_rgba(15,23,42,0.18)]",
+        "rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-16px_rgba(15,23,42,0.18)] transition-colors",
         className,
       )}
     >
       {(title || action) && (
-        <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+        <header className="flex items-start justify-between gap-4 border-b border-slate-100 dark:border-slate-800 px-5 py-4">
           <div>
             {title && (
-              <h2 className="text-sm font-semibold tracking-tight text-slate-900">{title}</h2>
+              <h2 className="text-sm font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+                {title}
+              </h2>
             )}
-            {description && <p className="mt-0.5 text-xs text-slate-500">{description}</p>}
+            {description && (
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</p>
+            )}
           </div>
           {action}
         </header>
       )}
-      <div className={cn("p-5", bodyClassName)}>{children}</div>
+      <div className={cn("p-5 text-slate-800 dark:text-slate-200", bodyClassName)}>{children}</div>
     </section>
   );
 }
@@ -87,13 +95,17 @@ export function Stat({
   icon?: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+    <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">{label}</p>
+        <p className="text-xs font-medium tracking-wide text-slate-500 dark:text-slate-400 uppercase">
+          {label}
+        </p>
         {icon && <span className={cn("rounded-lg border p-1.5", toneMap[tone])}>{icon}</span>}
       </div>
-      <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{value}</p>
-      {sub && <p className="mt-1 text-xs text-slate-500">{sub}</p>}
+      <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+        {value}
+      </p>
+      {sub && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{sub}</p>}
     </div>
   );
 }
@@ -112,7 +124,7 @@ export function Bar({
     sky: "bg-sky-500",
   };
   return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
       <div
         className={cn("h-full rounded-full transition-all", colors[tone])}
         style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
@@ -133,10 +145,10 @@ export function PageHeader({
   return (
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900">
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
           {title}
         </h1>
-        {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+        {subtitle && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>

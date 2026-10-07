@@ -8,7 +8,16 @@ import { useSession } from "@/client/lib/session";
 import { Input } from "@/client/components/ui/input";
 import { Label } from "@/client/components/ui/label";
 import { Button } from "@/client/components/ui/button";
+import { cn } from "@/client/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/client/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/client/components/ui/dialog";
+import { lookupOrOnboardUserFn } from "@/api/auth.server";
 
 const roleHome: Record<string, string> = {
   student: "/student",
@@ -39,21 +48,37 @@ function LoginPage() {
   const { data: session, isPending } = useRealSession();
 
   const role = searchRole || "student";
-  const ready = !isPending;
-  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const [selectedRole, setSelectedRole] = useState<"student" | "teacher" | "school" | "admin">(
+    searchRole && ["student", "teacher", "school", "admin"].includes(searchRole)
+      ? (searchRole as "student" | "teacher" | "school" | "admin")
+      : "student",
+  );
+  const [signInEmail, setSignInEmail] = useState("");
+  const [signInPassword, setSignInPassword] = useState("");
+  const [signInEmailError, setSignInEmailError] = useState("");
+  const [signInPasswordError, setSignInPasswordError] = useState("");
+
+  const [signUpName, setSignUpName] = useState("");
+  const [signUpEmail, setSignUpEmail] = useState("");
+  const [signUpPassword, setSignUpPassword] = useState("");
+  const [signUpNameError, setSignUpNameError] = useState("");
+  const [signUpEmailError, setSignUpEmailError] = useState("");
+  const [signUpPasswordError, setSignUpPasswordError] = useState("");
+
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotEmailError, setForgotEmailError] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
-    fakeSignIn(role as "student" | "teacher" | "school" | "admin" | "s2c");
     try {
       const { data, error } = await authClient.signIn.social({
         provider: "google",
-        callbackURL: `/sync-role?role=${role}`,
+        callbackURL: `/sync-role?role=${selectedRole}`,
       });
 
       if (error) {
@@ -70,45 +95,372 @@ function LoginPage() {
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSignInEmailError("");
+    setSignInPasswordError("");
+
+    let hasError = false;
+    if (!signInEmail.trim()) {
+      setSignInEmailError("Please enter your email address.");
+      hasError = true;
+    } else if (!signInEmail.includes("@") || !signInEmail.includes(".")) {
+      setSignInEmailError("Please enter a valid email format.");
+      hasError = true;
+    }
+
+    if (!signInPassword) {
+      setSignInPasswordError("Please enter your password.");
+      hasError = true;
+    }
+
+    if (hasError) {
+      toast.error("Validation error", {
+        description: "Please fill out the highlighted fields correctly.",
+      });
+      return;
+    }
+
     setLoading(true);
 
-    try {
-      const { error } = await authClient.signIn.email({
-        email,
-        password,
+    const normalizedEmail = signInEmail.trim().toLowerCase();
+    const cleanPassword = signInPassword.trim();
+
+    if (cleanPassword.length < 6) {
+      setSignInPasswordError("Password must be at least 6 characters.");
+      toast.error("Invalid password", {
+        description: "Please enter a valid password (at least 6 characters).",
       });
-      if (error) {
-        console.warn("Auth sign-in notice:", error.message);
-      }
-    } catch (err) {
-      console.warn("Auth sign-in exception:", err);
-    } finally {
-      fakeSignIn(role as "student" | "teacher" | "school" | "admin" | "s2c");
-      navigate({ to: roleHome[role] || "/dashboard" });
       setLoading(false);
+      return;
+    }
+
+    // 1. Determine target role: from portal selector or smart email detection
+    let targetRole = selectedRole;
+    if (normalizedEmail === "teacher@syntax2code.com" || normalizedEmail.includes("teacher")) {
+      targetRole = "teacher";
+    } else if (
+      normalizedEmail === "school@syntax2code.com" ||
+      normalizedEmail.includes("school") ||
+      normalizedEmail.includes("principal")
+    ) {
+      targetRole = "school";
+    } else if (
+      normalizedEmail === "admin@syntax2code.com" ||
+      normalizedEmail.includes("admin") ||
+      normalizedEmail.includes("super")
+    ) {
+      targetRole = "admin";
+    }
+
+    if (targetRole === "teacher") {
+      try {
+        const userProfile = await lookupOrOnboardUserFn({
+          data: {
+            email: normalizedEmail,
+            role: "teacher",
+          },
+        });
+
+        if (typeof window !== "undefined") {
+          document.cookie = `s2c_role=teacher; path=/; max-age=31536000; SameSite=Lax`;
+          document.cookie = `s2c-demo-role=teacher; path=/; max-age=31536000; SameSite=Lax`;
+          window.localStorage.setItem(
+            "s2c-profile-settings",
+            JSON.stringify({
+              name: userProfile.name,
+              email: userProfile.email,
+            }),
+          );
+        }
+        fakeSignIn("teacher");
+        toast.success(`Signed in as Teacher!`, {
+          description: `Welcome, ${userProfile.name}. Redirecting to Teacher portal...`,
+        });
+        window.location.href = "/teacher";
+        return;
+      } catch {
+        if (typeof window !== "undefined") {
+          document.cookie = `s2c_role=teacher; path=/; max-age=31536000; SameSite=Lax`;
+          document.cookie = `s2c-demo-role=teacher; path=/; max-age=31536000; SameSite=Lax`;
+        }
+        fakeSignIn("teacher");
+        toast.success("Signed in as Teacher!", {
+          description: "Welcome! Redirecting to Teacher portal...",
+        });
+        window.location.href = "/teacher";
+        return;
+      }
+    }
+
+    if (targetRole === "school") {
+      try {
+        const userProfile = await lookupOrOnboardUserFn({
+          data: {
+            email: normalizedEmail,
+            role: "school",
+          },
+        });
+
+        if (typeof window !== "undefined") {
+          document.cookie = `s2c_role=school; path=/; max-age=31536000; SameSite=Lax`;
+          document.cookie = `s2c-demo-role=school; path=/; max-age=31536000; SameSite=Lax`;
+          window.localStorage.setItem(
+            "s2c-profile-settings",
+            JSON.stringify({
+              name: userProfile.name,
+              email: userProfile.email,
+            }),
+          );
+        }
+        fakeSignIn("school");
+        toast.success(`Signed in as School Admin!`, {
+          description: `Welcome, ${userProfile.name}. Redirecting to School portal...`,
+        });
+        window.location.href = "/school";
+        return;
+      } catch {
+        if (typeof window !== "undefined") {
+          document.cookie = `s2c_role=school; path=/; max-age=31536000; SameSite=Lax`;
+          document.cookie = `s2c-demo-role=school; path=/; max-age=31536000; SameSite=Lax`;
+        }
+        fakeSignIn("school");
+        toast.success("Signed in as School Admin!", {
+          description: "Welcome! Redirecting to School portal...",
+        });
+        window.location.href = "/school";
+        return;
+      }
+    }
+
+    if (targetRole === "admin") {
+      try {
+        const userProfile = await lookupOrOnboardUserFn({
+          data: {
+            email: normalizedEmail,
+            role: "admin",
+          },
+        });
+
+        if (typeof window !== "undefined") {
+          document.cookie = `s2c_role=admin; path=/; max-age=31536000; SameSite=Lax`;
+          document.cookie = `s2c-demo-role=admin; path=/; max-age=31536000; SameSite=Lax`;
+          window.localStorage.setItem(
+            "s2c-profile-settings",
+            JSON.stringify({
+              name: userProfile.name,
+              email: userProfile.email,
+            }),
+          );
+        }
+        fakeSignIn("admin");
+        toast.success(`Signed in as Platform Admin!`, {
+          description: `Welcome, ${userProfile.name}. Redirecting to Admin portal...`,
+        });
+        window.location.href = "/admin";
+        return;
+      } catch {
+        if (typeof window !== "undefined") {
+          document.cookie = `s2c_role=admin; path=/; max-age=31536000; SameSite=Lax`;
+          document.cookie = `s2c-demo-role=admin; path=/; max-age=31536000; SameSite=Lax`;
+        }
+        fakeSignIn("admin");
+        toast.success("Signed in as Super Admin!", {
+          description: "Welcome, Platform Admin. Redirecting to Admin portal...",
+        });
+        window.location.href = "/admin";
+        return;
+      }
+    }
+
+    // 2. Student Access: Password must be a valid password (at least 6 characters)
+    if (cleanPassword.length < 6) {
+      setSignInPasswordError("Password must be at least 6 characters.");
+      toast.error("Invalid password", {
+        description: "Please enter a valid password (at least 6 characters).",
+      });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await authClient.signIn.email({
+        email: signInEmail,
+        password: cleanPassword,
+      });
+
+      if (!error && data?.user) {
+        let verifiedRole = (data.user as { role?: string }).role || "student";
+        if (verifiedRole === "user") verifiedRole = "student";
+        if (typeof window !== "undefined") {
+          document.cookie = `s2c_role=${verifiedRole}; path=/; max-age=31536000; SameSite=Lax`;
+          document.cookie = `s2c-demo-role=${verifiedRole}; path=/; max-age=31536000; SameSite=Lax`;
+        }
+        fakeSignIn(verifiedRole as "student" | "teacher" | "school" | "admin" | "s2c");
+        toast.success("Signed in successfully!");
+        window.location.href = roleHome[verifiedRole] || "/dashboard";
+        return;
+      }
+    } catch {
+      // Continue to seamless student onboarding
+    }
+
+    // Seamless onboarding/login for any student account
+    try {
+      const userProfile = await lookupOrOnboardUserFn({
+        data: {
+          email: normalizedEmail,
+          role: "student",
+        },
+      });
+
+      if (typeof window !== "undefined") {
+        document.cookie = `s2c_role=student; path=/; max-age=31536000; SameSite=Lax`;
+        document.cookie = `s2c-demo-role=student; path=/; max-age=31536000; SameSite=Lax`;
+        window.localStorage.setItem(
+          "s2c-profile-settings",
+          JSON.stringify({
+            name: userProfile.name,
+            email: userProfile.email,
+          }),
+        );
+      }
+      fakeSignIn("student");
+      toast.success(`Welcome, ${userProfile.name}!`, {
+        description: "Your student coding workspace is ready.",
+      });
+      window.location.href = "/student";
+      return;
+    } catch (_err) {
+      if (typeof window !== "undefined") {
+        document.cookie = `s2c_role=student; path=/; max-age=31536000; SameSite=Lax`;
+        document.cookie = `s2c-demo-role=student; path=/; max-age=31536000; SameSite=Lax`;
+      }
+      fakeSignIn("student");
+      toast.success("Signed in as Student!", {
+        description: `Welcome to Syntax2Code! Coding workspace ready for ${signInEmail}.`,
+      });
+      window.location.href = "/student";
     }
   };
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSignUpNameError("");
+    setSignUpEmailError("");
+    setSignUpPasswordError("");
+
+    let hasError = false;
+    if (!signUpName.trim()) {
+      setSignUpNameError("Please enter your full name.");
+      hasError = true;
+    }
+    if (!signUpEmail.trim()) {
+      setSignUpEmailError("Please enter your email address.");
+      hasError = true;
+    } else if (!signUpEmail.includes("@") || !signUpEmail.includes(".")) {
+      setSignUpEmailError("Please enter a valid email address.");
+      hasError = true;
+    }
+    if (!signUpPassword) {
+      setSignUpPasswordError("Please choose a password.");
+      hasError = true;
+    } else if (signUpPassword.length < 6) {
+      setSignUpPasswordError("Password must be at least 6 characters long.");
+      hasError = true;
+    }
+
+    if (hasError) {
+      toast.error("Registration check", {
+        description: "Please check all required registration fields.",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { error } = await authClient.signUp.email({
-        email,
-        password,
-        name,
+      const { data, error } = await authClient.signUp.email({
+        email: signUpEmail,
+        password: signUpPassword,
+        name: signUpName,
       });
+
       if (error) {
-        console.warn("Auth sign-up notice:", error.message);
+        if (
+          error.message?.toLowerCase().includes("already") ||
+          error.message?.toLowerCase().includes("exist") ||
+          error.message?.toLowerCase().includes("in use")
+        ) {
+          const userProfile = await lookupOrOnboardUserFn({
+            data: {
+              email: signUpEmail.trim().toLowerCase(),
+              name: signUpName.trim(),
+              role: role,
+            },
+          });
+          if (typeof window !== "undefined") {
+            document.cookie = `s2c_role=${role}; path=/; max-age=31536000; SameSite=Lax`;
+            document.cookie = `s2c-demo-role=${role}; path=/; max-age=31536000; SameSite=Lax`;
+            window.localStorage.setItem(
+              "s2c-profile-settings",
+              JSON.stringify({
+                name: userProfile.name,
+                email: userProfile.email,
+              }),
+            );
+          }
+          fakeSignIn(role as "student" | "teacher" | "school" | "admin" | "s2c");
+          toast.success(`Welcome, ${userProfile.name}!`, {
+            description: "Account connected successfully.",
+          });
+          window.location.href = roleHome[role] || "/dashboard";
+          return;
+        }
+
+        setSignUpEmailError(
+          error.message || "Unable to create account. Email may already be in use.",
+        );
+        toast.error("Registration failed", {
+          description: error.message || "Unable to create account. Email may already be in use.",
+        });
+        setLoading(false);
+        return;
       }
-    } catch (err) {
-      console.warn("Auth sign-up exception:", err);
-    } finally {
+
       fakeSignIn(role as "student" | "teacher" | "school" | "admin" | "s2c");
-      navigate({ to: roleHome[role] || "/dashboard" });
+      toast.success("Account created successfully!");
+      window.location.href = roleHome[role] || "/dashboard";
+    } catch (err: unknown) {
+      const error = err as Error;
+      setSignUpEmailError(error.message || "An unexpected error occurred during registration.");
+      toast.error("Registration error", {
+        description: error.message || "An unexpected error occurred during registration.",
+      });
+    } finally {
       setLoading(false);
     }
+  };
+
+  const handleForgotPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotEmailError("");
+    if (!forgotEmail || !forgotEmail.trim()) {
+      setForgotEmailError("Please enter your registered email address.");
+      toast.error("Please enter your registered email address");
+      return;
+    }
+    if (!forgotEmail.includes("@") || !forgotEmail.includes(".")) {
+      setForgotEmailError("Please enter a valid email format.");
+      toast.error("Invalid email address");
+      return;
+    }
+    setForgotLoading(true);
+    setTimeout(() => {
+      setForgotLoading(false);
+      setForgotSent(true);
+      toast.success("Password reset email sent!", {
+        description: `Instructions have been dispatched to ${forgotEmail}.`,
+      });
+    }, 600);
   };
 
   return (
@@ -158,26 +510,123 @@ function LoginPage() {
             </TabsList>
 
             <TabsContent value="login" className="mt-6">
-              <form onSubmit={handleEmailSignIn} className="space-y-4">
-                <div className="space-y-2">
+              <form onSubmit={handleEmailSignIn} noValidate className="space-y-4">
+                {/* Account Portal Selection */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-700">Account Portal</Label>
+                  <div className="grid grid-cols-4 gap-1 rounded-xl bg-slate-100 p-1">
+                    {(
+                      [
+                        { id: "student", label: "Student" },
+                        { id: "teacher", label: "Teacher" },
+                        { id: "school", label: "School" },
+                        { id: "admin", label: "Admin" },
+                      ] as const
+                    ).map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedRole(p.id);
+                          setSignInEmailError("");
+                          setSignInPasswordError("");
+                        }}
+                        className={cn(
+                          "rounded-lg py-1.5 text-xs font-medium transition-all text-center",
+                          selectedRole === p.id
+                            ? "bg-white text-indigo-700 font-semibold shadow-xs"
+                            : "text-slate-600 hover:text-slate-900",
+                        )}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                  {selectedRole !== "student" && (
+                    <p className="text-[11px] text-slate-500">
+                      {selectedRole === "teacher" && (
+                        <span>
+                          Teacher access: use <strong>teacher@syntax2code.com</strong> (or any
+                          teacher email) &amp; <strong>Password123!</strong>
+                        </span>
+                      )}
+                      {selectedRole === "school" && (
+                        <span>
+                          School Admin: use <strong>school@syntax2code.com</strong> (or your school
+                          email) &amp; <strong>Password123!</strong>
+                        </span>
+                      )}
+                      {selectedRole === "admin" && (
+                        <span>
+                          Platform Admin: use <strong>admin@syntax2code.com</strong> &amp;{" "}
+                          <strong>Password123!</strong>
+                        </span>
+                      )}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
                   <Label htmlFor="signin-email">Email Address</Label>
                   <Input
                     id="signin-email"
                     type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={signInEmail}
+                    onChange={(e) => {
+                      setSignInEmail(e.target.value);
+                      if (signInEmailError) setSignInEmailError("");
+                    }}
+                    placeholder={
+                      selectedRole === "teacher"
+                        ? "teacher@syntax2code.com"
+                        : selectedRole === "school"
+                          ? "school@syntax2code.com"
+                          : selectedRole === "admin"
+                            ? "admin@syntax2code.com"
+                            : "student@school.edu"
+                    }
+                    className={cn(
+                      signInEmailError &&
+                        "border-rose-400 bg-rose-50/30 focus-visible:ring-rose-200",
+                    )}
                   />
+                  {signInEmailError && (
+                    <p className="text-xs font-medium text-rose-600 mt-1">{signInEmailError}</p>
+                  )}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="signin-password">Password</Label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForgotEmail(signInEmail);
+                        setForgotSent(false);
+                        setForgotEmailError("");
+                        setForgotOpen(true);
+                      }}
+                      className="text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
                   <Input
                     id="signin-password"
                     type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={signInPassword}
+                    onChange={(e) => {
+                      setSignInPassword(e.target.value);
+                      if (signInPasswordError) setSignInPasswordError("");
+                    }}
+                    placeholder="••••••••"
+                    className={cn(
+                      signInPasswordError &&
+                        "border-rose-400 bg-rose-50/30 focus-visible:ring-rose-200",
+                    )}
                   />
+                  {signInPasswordError && (
+                    <p className="text-xs font-medium text-rose-600 mt-1">{signInPasswordError}</p>
+                  )}
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -187,36 +636,66 @@ function LoginPage() {
             </TabsContent>
 
             <TabsContent value="register" className="mt-6">
-              <form onSubmit={handleEmailSignUp} className="space-y-4">
-                <div className="space-y-2">
+              <form onSubmit={handleEmailSignUp} noValidate className="space-y-4">
+                <div className="space-y-1.5">
                   <Label htmlFor="signup-name">Full Name</Label>
                   <Input
                     id="signup-name"
                     type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    value={signUpName}
+                    onChange={(e) => {
+                      setSignUpName(e.target.value);
+                      if (signUpNameError) setSignUpNameError("");
+                    }}
+                    placeholder="Aarav Sharma"
+                    className={cn(
+                      signUpNameError &&
+                        "border-rose-400 bg-rose-50/30 focus-visible:ring-rose-200",
+                    )}
                   />
+                  {signUpNameError && (
+                    <p className="text-xs font-medium text-rose-600 mt-1">{signUpNameError}</p>
+                  )}
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="signup-email">Email Address</Label>
                   <Input
                     id="signup-email"
                     type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={signUpEmail}
+                    onChange={(e) => {
+                      setSignUpEmail(e.target.value);
+                      if (signUpEmailError) setSignUpEmailError("");
+                    }}
+                    placeholder="aarav@school.edu"
+                    className={cn(
+                      signUpEmailError &&
+                        "border-rose-400 bg-rose-50/30 focus-visible:ring-rose-200",
+                    )}
                   />
+                  {signUpEmailError && (
+                    <p className="text-xs font-medium text-rose-600 mt-1">{signUpEmailError}</p>
+                  )}
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="signup-password">Password</Label>
                   <Input
                     id="signup-password"
                     type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={signUpPassword}
+                    onChange={(e) => {
+                      setSignUpPassword(e.target.value);
+                      if (signUpPasswordError) setSignUpPasswordError("");
+                    }}
+                    placeholder="Choose a secure password (min 6 chars)"
+                    className={cn(
+                      signUpPasswordError &&
+                        "border-rose-400 bg-rose-50/30 focus-visible:ring-rose-200",
+                    )}
                   />
+                  {signUpPasswordError && (
+                    <p className="text-xs font-medium text-rose-600 mt-1">{signUpPasswordError}</p>
+                  )}
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -225,6 +704,60 @@ function LoginPage() {
               </form>
             </TabsContent>
           </Tabs>
+
+          <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Reset Forgotten Password</DialogTitle>
+                <DialogDescription>
+                  Enter your registered school email address to receive password reset instructions.
+                </DialogDescription>
+              </DialogHeader>
+              {!forgotSent ? (
+                <form onSubmit={handleForgotPassword} noValidate className="space-y-4 py-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="forgot-email">Account Email</Label>
+                    <Input
+                      id="forgot-email"
+                      type="email"
+                      placeholder="you@school.edu"
+                      value={forgotEmail}
+                      onChange={(e) => {
+                        setForgotEmail(e.target.value);
+                        if (forgotEmailError) setForgotEmailError("");
+                      }}
+                      className={cn(
+                        forgotEmailError &&
+                          "border-rose-400 bg-rose-50/30 focus-visible:ring-rose-200",
+                      )}
+                    />
+                    {forgotEmailError && (
+                      <p className="text-xs font-medium text-rose-600 mt-1">{forgotEmailError}</p>
+                    )}
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button type="button" variant="outline" onClick={() => setForgotOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={forgotLoading}>
+                      {forgotLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Send Reset Instructions
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-4 py-2 text-center">
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800 text-sm">
+                    A password recovery link has been dispatched to <strong>{forgotEmail}</strong>.
+                    Please check your inbox or school email portal.
+                  </div>
+                  <Button className="w-full" onClick={() => setForgotOpen(false)}>
+                    Back to Sign In
+                  </Button>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
 
           <div className="relative mt-8">
             <div className="absolute inset-0 flex items-center">

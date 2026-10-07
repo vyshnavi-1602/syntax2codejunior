@@ -54,10 +54,16 @@ export default {
         }
 
         const authUrl = new URL(request.url);
-        authUrl.host = "localhost:8080";
-        authUrl.protocol = "http:";
+        const hostHeader = request.headers.get("x-forwarded-host") || request.headers.get("host");
+        if (hostHeader) {
+          authUrl.host = hostHeader;
+        }
+        const protoHeader =
+          request.headers.get("x-forwarded-proto") ||
+          (url.protocol ? url.protocol.replace(":", "") : "http");
+        authUrl.protocol = `${protoHeader}:`;
 
-        console.log(`[AUTH] ${request.method} ${authUrl.pathname}`);
+        console.log(`[AUTH] ${request.method} ${authUrl.pathname} on ${authUrl.host}`);
         if (authUrl.pathname.includes("callback")) {
           console.log("[AUTH] Callback cookies:", request.headers.get("cookie"));
         }

@@ -60,7 +60,7 @@ function StudentHome() {
 
   const quick = [
     { label: "Practice Hub", to: "/student/practice", icon: Target, desc: "New problems" },
-    { label: "Coding Lab", to: "/student/lab", icon: Terminal, desc: "Open the IDE" },
+    { label: "Coding", to: "/student/lab", icon: Terminal, desc: "Open the IDE" },
     { label: "My Projects", to: "/student/build", icon: Hammer, desc: "Active projects" },
     { label: "Certificates", to: "/student/certificates", icon: Award, desc: "Earned" },
   ];
@@ -267,28 +267,64 @@ function StudentHome() {
                     type: string;
                     instructions: string | null;
                     className: string;
-                  }) => (
-                    <div
-                      key={task.id}
-                      className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-indigo-900">{task.title}</span>
-                        <Pill tone="violet">{task.type}</Pill>
-                      </div>
-                      {task.instructions && (
-                        <p className="mt-1 line-clamp-2 text-xs text-slate-600">
-                          {task.instructions}
-                        </p>
-                      )}
-                      <Link
-                        to="/student/practice"
-                        className="mt-2 inline-flex h-7 items-center rounded-lg bg-indigo-600 px-3 text-[11px] font-medium text-white hover:bg-indigo-700"
+                  }) => {
+                    let desc = task.instructions || "";
+                    let isCoding = task.type === "Coding task" || task.type === "Assessment";
+                    let tcCount = 0;
+                    if (task.instructions) {
+                      try {
+                        const parsed = JSON.parse(task.instructions);
+                        if (parsed && (parsed.isCodingRound || Array.isArray(parsed.testCases))) {
+                          desc = parsed.description || "";
+                          isCoding = true;
+                          tcCount = parsed.testCases?.length || 0;
+                        }
+                      } catch {}
+                    }
+
+                    return (
+                      <div
+                        key={task.id}
+                        className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 space-y-2"
                       >
-                        Solve task
-                      </Link>
-                    </div>
-                  ),
+                        <div className="flex items-center justify-between flex-wrap gap-1">
+                          <span className="text-xs font-bold text-slate-900">{task.title}</span>
+                          <div className="flex items-center gap-1.5">
+                            <Pill tone="violet">{task.type}</Pill>
+                            {isCoding && tcCount > 0 && (
+                              <span className="inline-flex items-center gap-1 rounded bg-indigo-100/80 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-800">
+                                {tcCount} Test Cases
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {desc && (
+                          <p className="line-clamp-2 text-xs text-slate-600 leading-relaxed">
+                            {desc}
+                          </p>
+                        )}
+                        <div className="pt-1">
+                          {isCoding ? (
+                            <Link
+                              to="/student/lab"
+                              search={{ assignmentId: task.id }}
+                              className="inline-flex h-7.5 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-[11px] font-semibold text-white hover:bg-indigo-700 shadow-2xs transition-colors"
+                            >
+                              <Terminal className="h-3 w-3" />
+                              Solve in IDE
+                            </Link>
+                          ) : (
+                            <Link
+                              to="/student/practice"
+                              className="inline-flex h-7.5 items-center rounded-lg bg-indigo-600 px-3 text-[11px] font-medium text-white hover:bg-indigo-700 transition-colors"
+                            >
+                              Solve task
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  },
                 )}
               </div>
             ) : (

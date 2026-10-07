@@ -100,9 +100,21 @@ async function seedTeacherData() {
       .where(eq(schema.assignments.teacherId, teacher.id));
 
     const authenticNames = [
-      "Aarav Sharma", "Maya Patel", "Ethan Walker", "Zoe Chen", "Liam O'Connor",
-      "Ananya Roy", "Lucas Miller", "Sophia Williams", "Daniel Kim", "Emma Johnson",
-      "Noah Garcia", "Isabella Martinez", "Oliver Brown", "Ava Davis", "Leo Anderson"
+      "Aarav Sharma",
+      "Maya Patel",
+      "Ethan Walker",
+      "Zoe Chen",
+      "Liam O'Connor",
+      "Ananya Roy",
+      "Lucas Miller",
+      "Sophia Williams",
+      "Daniel Kim",
+      "Emma Johnson",
+      "Noah Garcia",
+      "Isabella Martinez",
+      "Oliver Brown",
+      "Ava Davis",
+      "Leo Anderson",
     ];
     let nameIdx = 0;
 

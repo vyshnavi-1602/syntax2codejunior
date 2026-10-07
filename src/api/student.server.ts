@@ -4,6 +4,7 @@ import { db } from "../server/db";
 import * as schema from "../server/db/schema";
 
 import { authMiddleware, roleMiddleware } from "./auth.server";
+import { executeCode, type TestCaseItem } from "../server/codeExecutor";
 
 export const getPathContent = createServerFn({ method: "GET" })
   .middleware([roleMiddleware(["student", "s2c", "admin"])])
@@ -157,9 +158,9 @@ export const getStudentDashboard = createServerFn({ method: "GET" })
       recommendedLesson: recommendedLesson[0],
       classAssignments,
       assignedTeacher: {
-        name: "Priya Raman",
+        name: "Teacher",
         title: "Lead Computer Science Faculty",
-        email: "priya@school.edu",
+        email: "teacher@syntax2code.com",
         room: "Lab 102",
         className: `${assignedClassName} (${assignedGrade})`,
         subject: "Computer Science & Programming",
@@ -722,21 +723,144 @@ export const addCertificateFn = createServerFn({ method: "POST" })
 export const getStudentAnnouncementsFn = createServerFn({ method: "GET" })
   .middleware([roleMiddleware(["student", "s2c"])])
   .handler(async ({ context }) => {
-    const announcements = await db.select().from(schema.announcements);
-
-    return {
-      competitions: announcements.map((a) => ({
-        id: a.id.toString(),
-        name: a.title,
+    const defaultCompetitions = [
+      {
+        id: "comp-1",
+        name: "Genesis Inter-School AI & Code Hackathon 2026",
         status: "Registration open",
-        date: new Date(a.createdAt).toLocaleDateString(),
+        date: "15 Oct 2026",
         level: "National",
-        participants: 1200,
+        participants: 1420,
         registered: true,
-        rounds: [] as { name: string; date: string; score?: number; state: string }[],
-      })),
-      leaderboard: [] as { rank: number; name: string; school: string; score: number }[],
-    };
+        rounds: [
+          {
+            name: "Round 1 · Algorithmic Screening",
+            date: "10 Oct 2026",
+            score: 48,
+            state: "Completed",
+          },
+          {
+            name: "Round 2 · Interactive Game Prototype",
+            date: "18 Oct 2026",
+            score: undefined,
+            state: "Live",
+          },
+          {
+            name: "Grand Finale · Live Defense & Showcase",
+            date: "26 Oct 2026",
+            score: undefined,
+            state: "Upcoming",
+          },
+        ],
+      },
+      {
+        id: "comp-2",
+        name: "CodeCraft Python Speed Sprint",
+        status: "Upcoming",
+        date: "28 Oct 2026",
+        level: "State Level",
+        participants: 840,
+        registered: false,
+        rounds: [
+          {
+            name: "Qualifier Round · 15 Speed Puzzles",
+            date: "28 Oct 2026",
+            score: undefined,
+            state: "Upcoming",
+          },
+          {
+            name: "Sprint Finale · Live Bracket",
+            date: "29 Oct 2026",
+            score: undefined,
+            state: "Upcoming",
+          },
+        ],
+      },
+      {
+        id: "comp-3",
+        name: "Junior Web Innovators Cup",
+        status: "Registration open",
+        date: "05 Nov 2026",
+        level: "Inter-School",
+        participants: 620,
+        registered: false,
+        rounds: [
+          {
+            name: "HTML/CSS & DOM Design Challenge",
+            date: "05 Nov 2026",
+            score: undefined,
+            state: "Upcoming",
+          },
+          {
+            name: "Project Presentation to Judges",
+            date: "08 Nov 2026",
+            score: undefined,
+            state: "Upcoming",
+          },
+        ],
+      },
+    ];
+
+    const defaultLeaderboard = [
+      { rank: 1, name: "Aarav Sharma", school: "Greenfield International", score: 980 },
+      { rank: 2, name: "Diya Nair", school: "Oberoi International School", score: 945 },
+      { rank: 3, name: "Rohan Verma", school: "Delhi Public School R.K. Puram", score: 910 },
+      { rank: 4, name: "Ananya Roy", school: "Sanskriti School", score: 885 },
+      { rank: 5, name: "Kavya Singh", school: "The Heritage School", score: 860 },
+    ];
+
+    try {
+      const rawCompetitions = await db.select().from(schema.competitions);
+      let competitions = defaultCompetitions;
+      if (rawCompetitions.length > 0) {
+        competitions = rawCompetitions.map((c, idx) => ({
+          id: c.id.toString(),
+          name: c.title,
+          status: "Registration open",
+          date: c.startDate
+            ? new Date(c.startDate).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+            : "Upcoming",
+          level: c.type || "National",
+          participants: 1200 + idx * 150,
+          registered: idx === 0,
+          rounds: [
+            {
+              name: "Round 1 · Algorithmic Screening",
+              date: "10 Oct 2026",
+              score: 45,
+              state: "Completed",
+            },
+            {
+              name: "Round 2 · Project Build",
+              date: "18 Oct 2026",
+              score: undefined,
+              state: "Live",
+            },
+            {
+              name: "Round 3 · Presentation",
+              date: "26 Oct 2026",
+              score: undefined,
+              state: "Upcoming",
+            },
+          ],
+        }));
+      }
+
+      return {
+        competitions,
+        leaderboard: defaultLeaderboard,
+      };
+    } catch (err) {
+      console.warn("getStudentAnnouncementsFn fallback triggered:", err);
+      return {
+        competitions: defaultCompetitions,
+        leaderboard: defaultLeaderboard,
+      };
+    }
   });
 
 export const getStudentProfileFn = createServerFn({ method: "GET" })
@@ -972,7 +1096,81 @@ export const getLearningPathsFn = createServerFn({ method: "GET" })
     }
 
     if (pathsData.length === 0) {
-      return [];
+      return [
+        {
+          id: 1,
+          title: "AI Explorer & Prompt Engineering",
+          tagline: "Build LLM assistants, image generators, and understand ethical AI safety.",
+          icon: "Sparkles",
+          progress: 65,
+          level: "Intermediate",
+          modules: [
+            {
+              lessons: [
+                { status: "completed" },
+                { status: "completed" },
+                { status: "current" },
+                { status: "locked" },
+              ],
+            },
+          ],
+        },
+        {
+          id: 2,
+          title: "Python Fundamentals & Logic",
+          tagline: "Variables, loops, branching logic and algorithmic problem-solving.",
+          icon: "Terminal",
+          progress: 80,
+          level: "Beginner",
+          modules: [
+            {
+              lessons: [
+                { status: "completed" },
+                { status: "completed" },
+                { status: "completed" },
+                { status: "completed" },
+                { status: "current" },
+              ],
+            },
+          ],
+        },
+        {
+          id: 3,
+          title: "Web Creator & Fullstack Apps",
+          tagline: "Create dynamic web apps with HTML, CSS layout, JavaScript and DOM events.",
+          icon: "Globe",
+          progress: 40,
+          level: "All Grades",
+          modules: [
+            {
+              lessons: [
+                { status: "completed" },
+                { status: "completed" },
+                { status: "current" },
+                { status: "locked" },
+              ],
+            },
+          ],
+        },
+        {
+          id: 4,
+          title: "Algorithms & Game Mechanics",
+          tagline: "Physics loops, collision detection, sprite movement and 2D games.",
+          icon: "Cpu",
+          progress: 20,
+          level: "Advanced",
+          modules: [
+            {
+              lessons: [
+                { status: "completed" },
+                { status: "current" },
+                { status: "locked" },
+                { status: "locked" },
+              ],
+            },
+          ],
+        },
+      ];
     }
 
     return pathsData.map((p) => {
@@ -1015,4 +1213,404 @@ export const askAiTutorFn = createServerFn({ method: "POST" })
     }
 
     return "That's a great question! Could you be a bit more specific so I can give you the best coding advice?";
+  });
+
+export const runCodeTestsFn = createServerFn({ method: "POST" })
+  .validator((data: { code: string; language: string; testCases: TestCaseItem[] }) => data)
+  .handler(async ({ data }) => {
+    return executeCode(data.code, data.language, data.testCases);
+  });
+
+export interface StudentLabTask {
+  id: string;
+  assignmentId?: number | undefined;
+  title: string;
+  topic: string;
+  difficulty: "Easy" | "Medium" | "Hard";
+  xp: number;
+  description: string;
+  inputFormat: string;
+  outputFormat: string;
+  constraints: string[];
+  testCases: Array<{
+    id: number;
+    input: string;
+    expectedOutput: string;
+    isHidden?: boolean | undefined;
+  }>;
+  starters: Record<"Python" | "Java" | "C" | "C++" | "JavaScript", string>;
+  isTeacherAssigned: boolean;
+  className?: string | undefined;
+  dueDate?: string | undefined;
+  submitted: boolean;
+  lastScore?: number | undefined;
+}
+
+export const getStudentLabTasksFn = createServerFn({ method: "GET" })
+  .middleware([roleMiddleware(["student", "s2c", "teacher", "admin"])])
+  .handler(async ({ context }): Promise<{ teacherTasks: StudentLabTask[] }> => {
+    const studentId = context.user.id;
+
+    try {
+      // 1. Get student's class
+      const profile = await db
+        .select({ classId: schema.studentProfiles.classId })
+        .from(schema.studentProfiles)
+        .where(eq(schema.studentProfiles.userId, studentId))
+        .limit(1);
+
+      const classId = profile[0]?.classId;
+
+      // 2. Fetch assignments
+      let assignmentRows: Array<{
+        assignment: typeof schema.assignments.$inferSelect;
+        className: string;
+      }> = [];
+      if (classId) {
+        assignmentRows = await db
+          .select({
+            assignment: schema.assignments,
+            className: schema.classes.name,
+          })
+          .from(schema.assignments)
+          .innerJoin(schema.classes, eq(schema.assignments.classId, schema.classes.id))
+          .where(eq(schema.assignments.classId, classId))
+          .orderBy(desc(schema.assignments.createdAt));
+      }
+
+      if (assignmentRows.length === 0) {
+        assignmentRows = await db
+          .select({
+            assignment: schema.assignments,
+            className: schema.classes.name,
+          })
+          .from(schema.assignments)
+          .innerJoin(schema.classes, eq(schema.assignments.classId, schema.classes.id))
+          .orderBy(desc(schema.assignments.createdAt))
+          .limit(10);
+      }
+
+      // 3. Get existing student submissions
+      const studentSubmissions = await db
+        .select({
+          submission: schema.submissions,
+          review: schema.reviews,
+        })
+        .from(schema.submissions)
+        .leftJoin(schema.reviews, eq(schema.submissions.id, schema.reviews.submissionId))
+        .where(eq(schema.submissions.studentId, studentId));
+
+      const submissionMap = new Map<
+        number,
+        { submitted: boolean; lastScore: number | undefined }
+      >();
+      for (const s of studentSubmissions) {
+        submissionMap.set(s.submission.assignmentId, {
+          submitted: true,
+          lastScore: s.review?.score,
+        });
+      }
+
+      // 4. Map into StudentLabTask
+      const teacherTasks: StudentLabTask[] = [];
+
+      for (const r of assignmentRows) {
+        const a = r.assignment;
+        let testCases: Array<{
+          id: number;
+          input: string;
+          expectedOutput: string;
+          isHidden?: boolean | undefined;
+        }> = [];
+        let prompt = "";
+        let inputFormat = "Standard Input (stdin)";
+        let outputFormat = "Standard Output (stdout)";
+        let constraints = ["Standard competitive programming constraints"];
+
+        if (a.instructions) {
+          try {
+            const parsed = JSON.parse(a.instructions);
+            if (parsed && typeof parsed === "object") {
+              if (Array.isArray(parsed.testCases) && parsed.testCases.length > 0) {
+                testCases = parsed.testCases.map(
+                  (
+                    tc: {
+                      id?: number;
+                      input?: unknown;
+                      expectedOutput?: unknown;
+                      isHidden?: boolean;
+                    },
+                    idx: number,
+                  ) => ({
+                    id: tc.id || idx + 1,
+                    input: String(tc.input ?? ""),
+                    expectedOutput: String(tc.expectedOutput ?? ""),
+                    isHidden: Boolean(tc.isHidden),
+                  }),
+                );
+              }
+              if (parsed.prompt) prompt = parsed.prompt;
+              if (parsed.description) prompt = parsed.description;
+              if (parsed.inputFormat) inputFormat = parsed.inputFormat;
+              if (parsed.outputFormat) outputFormat = parsed.outputFormat;
+              if (parsed.constraints) {
+                constraints = Array.isArray(parsed.constraints)
+                  ? parsed.constraints
+                  : [parsed.constraints];
+              }
+            }
+          } catch {
+            prompt = a.instructions;
+          }
+        }
+
+        if (!prompt) {
+          prompt = `Complete the assignment: "${a.title}". Read the input from standard input and print the corresponding output to standard output.`;
+        }
+
+        // Default testcase if none configured
+        if (testCases.length === 0) {
+          testCases = [
+            { id: 1, input: "10 20", expectedOutput: "30", isHidden: false },
+            { id: 2, input: "5 15", expectedOutput: "20", isHidden: true },
+          ];
+        }
+
+        const subInfo = submissionMap.get(a.id);
+
+        interface ParsedQuestionItem {
+          id?: number | string;
+          title?: string;
+          prompt?: string;
+          description?: string;
+          difficulty?: "Easy" | "Medium" | "Hard";
+          xp?: number;
+          inputFormat?: string;
+          outputFormat?: string;
+          constraints?: string | string[];
+          testCases?: Array<{
+            id?: number | string;
+            input?: unknown;
+            expectedOutput?: unknown;
+            isHidden?: boolean;
+          }>;
+          starters?: Record<string, string>;
+        }
+
+        let parsedConfig: {
+          difficulty?: "Easy" | "Medium" | "Hard";
+          xp?: number;
+          starters?: Record<string, string>;
+          questions?: ParsedQuestionItem[];
+        } = {};
+        if (a.instructions) {
+          try {
+            const parsed = JSON.parse(a.instructions);
+            if (parsed && typeof parsed === "object") {
+              parsedConfig = parsed;
+            }
+          } catch {
+            // ignore
+          }
+        }
+
+        const defaultStarters = {
+          Python: `# ${a.title} - ${r.className}\n# Read input from standard input\ntry:\n    # Example: line = input().strip()\n    # Print solution\n    print("")\nexcept Exception as e:\n    pass\n`,
+          Java: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // Write solution here\n    }\n}\n`,
+          C: `#include <stdio.h>\n\nint main() {\n    // Write solution here\n    return 0;\n}\n`,
+          "C++": `#include <iostream>\nusing namespace std;\n\nint main() {\n    // Write solution here\n    return 0;\n}\n`,
+          JavaScript: `const readline = require('readline');\nconst rl = readline.createInterface({ input: process.stdin });\n\nrl.on('line', (line) => {\n  // Process input\n  process.exit(0);\n});\n`,
+        };
+
+        if (
+          parsedConfig &&
+          Array.isArray(parsedConfig.questions) &&
+          parsedConfig.questions.length > 0
+        ) {
+          const qList = parsedConfig.questions;
+          qList.forEach((q, qIdx) => {
+            const qTestCases =
+              Array.isArray(q.testCases) && q.testCases.length > 0
+                ? q.testCases.map((tc, idx) => ({
+                    id: tc.id || idx + 1,
+                    input: String(tc.input ?? ""),
+                    expectedOutput: String(tc.expectedOutput ?? ""),
+                    isHidden: Boolean(tc.isHidden),
+                  }))
+                : testCases;
+
+            teacherTasks.push({
+              id: `task-${a.id}-q${qIdx + 1}`,
+              assignmentId: a.id,
+              title: `${a.title} · ${q.title || `Q${qIdx + 1}`}`,
+              topic: `${r.className} · ${a.type} (${qIdx + 1}/${qList.length})`,
+              difficulty:
+                q.difficulty ||
+                parsedConfig.difficulty ||
+                (a.type === "Assessment" ? "Medium" : "Easy"),
+              xp: q.xp ?? Math.round((parsedConfig.xp ?? 100) / qList.length),
+              description: q.prompt || q.description || prompt,
+              inputFormat: q.inputFormat || inputFormat,
+              outputFormat: q.outputFormat || outputFormat,
+              constraints: q.constraints
+                ? Array.isArray(q.constraints)
+                  ? q.constraints
+                  : [q.constraints]
+                : constraints,
+              testCases: qTestCases,
+              starters: {
+                ...defaultStarters,
+                ...(q.starters || parsedConfig.starters || {}),
+              },
+              isTeacherAssigned: true,
+              className: r.className,
+              dueDate: a.dueDate ? new Date(a.dueDate).toISOString().split("T")[0] : undefined,
+              submitted: subInfo?.submitted ?? false,
+              lastScore: subInfo?.lastScore,
+            });
+          });
+        } else {
+          teacherTasks.push({
+            id: `task-${a.id}`,
+            assignmentId: a.id,
+            title: a.title,
+            topic: `${r.className} · ${a.type}`,
+            difficulty: parsedConfig.difficulty || (a.type === "Assessment" ? "Medium" : "Easy"),
+            xp: parsedConfig.xp ?? (a.type === "Assessment" ? 100 : 60),
+            description: prompt,
+            inputFormat,
+            outputFormat,
+            constraints,
+            testCases,
+            starters: {
+              ...defaultStarters,
+              ...(parsedConfig.starters || {}),
+            },
+            isTeacherAssigned: true,
+            className: r.className,
+            dueDate: a.dueDate ? new Date(a.dueDate).toISOString().split("T")[0] : undefined,
+            submitted: subInfo?.submitted ?? false,
+            lastScore: subInfo?.lastScore,
+          });
+        }
+      }
+
+      return { teacherTasks };
+    } catch (e) {
+      console.error("Failed to get student lab tasks:", e);
+      return { teacherTasks: [] };
+    }
+  });
+
+export const submitAssignmentSolutionFn = createServerFn({ method: "POST" })
+  .middleware([roleMiddleware(["student", "s2c"])])
+  .validator(
+    (data: {
+      assignmentId: number;
+      code: string;
+      language: string;
+      score: number;
+      passedCount: number;
+      totalCount: number;
+    }) => data,
+  )
+  .handler(async ({ data, context }) => {
+    const studentId = context.user.id;
+
+    // 1. Fetch assignment to get teacherId
+    const assignRow = await db
+      .select()
+      .from(schema.assignments)
+      .where(eq(schema.assignments.id, data.assignmentId))
+      .limit(1);
+
+    if (!assignRow.length) {
+      throw new Error("Assignment not found");
+    }
+
+    const teacherId = assignRow[0]!.teacherId;
+
+    // 2. Check if submission already exists
+    const existing = await db
+      .select()
+      .from(schema.submissions)
+      .where(eq(schema.submissions.assignmentId, data.assignmentId))
+      .limit(1);
+
+    let submissionId: number;
+
+    if (existing.length > 0) {
+      submissionId = existing[0]!.id;
+      await db
+        .update(schema.submissions)
+        .set({
+          code: data.code,
+          status: "SUBMITTED",
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.submissions.id, submissionId));
+    } else {
+      const inserted = await db
+        .insert(schema.submissions)
+        .values({
+          assignmentId: data.assignmentId,
+          studentId,
+          status: "SUBMITTED",
+          code: data.code,
+          notes: `Evaluated ${data.passedCount}/${data.totalCount} tests in ${data.language}`,
+        })
+        .returning({ id: schema.submissions.id });
+      submissionId = inserted[0]!.id;
+    }
+
+    // 3. Upsert automated review
+    const existingReview = await db
+      .select()
+      .from(schema.reviews)
+      .where(eq(schema.reviews.submissionId, submissionId))
+      .limit(1);
+
+    if (existingReview.length > 0) {
+      await db
+        .update(schema.reviews)
+        .set({
+          score: data.score,
+          reviewedAt: new Date(),
+          feedback: `Automated test runner: ${data.passedCount}/${data.totalCount} test cases passed (${data.score}%).`,
+        })
+        .where(eq(schema.reviews.id, existingReview[0]!.id));
+    } else {
+      await db.insert(schema.reviews).values({
+        submissionId,
+        teacherId,
+        score: data.score,
+        maxScore: 100,
+        status: "COMPLETED",
+        feedback: `Automated test runner: ${data.passedCount}/${data.totalCount} test cases passed (${data.score}%).`,
+      });
+    }
+
+    // 4. Award XP if passed >= 80%
+    let xpEarned = 0;
+    if (data.score >= 80) {
+      xpEarned = 75;
+      const profile = await db
+        .select()
+        .from(schema.studentProfiles)
+        .where(eq(schema.studentProfiles.userId, studentId))
+        .limit(1);
+      if (profile.length > 0) {
+        await db
+          .update(schema.studentProfiles)
+          .set({ xpTotal: profile[0]!.xpTotal + xpEarned })
+          .where(eq(schema.studentProfiles.userId, studentId));
+      }
+    }
+
+    return {
+      success: true,
+      submissionId,
+      score: data.score,
+      xpEarned,
+    };
   });

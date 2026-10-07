@@ -65,8 +65,8 @@ async function ensureSchoolSeedData(schoolId: number) {
       .insert(schema.user)
       .values({
         id: randomUUID(),
-        name: "Priya Raman",
-        email: "priya.raman@school.edu",
+        name: "Teacher",
+        email: "teacher@school.edu",
         role: "teacher",
         schoolId,
         active: true,
@@ -486,9 +486,7 @@ export const deleteTeacherFn = createServerFn({ method: "POST" })
       await db
         .delete(schema.schoolSchedules)
         .where(eq(schema.schoolSchedules.teacherId, teacherId));
-      await db
-        .delete(schema.reviews)
-        .where(eq(schema.reviews.teacherId, teacherId));
+      await db.delete(schema.reviews).where(eq(schema.reviews.teacherId, teacherId));
 
       const teacherAssignments = await db
         .select({ id: schema.assignments.id })
@@ -504,17 +502,11 @@ export const deleteTeacherFn = createServerFn({ method: "POST" })
 
         if (subs.length > 0) {
           const subIds = subs.map((s) => s.id);
-          await db
-            .delete(schema.reviews)
-            .where(inArray(schema.reviews.submissionId, subIds));
-          await db
-            .delete(schema.submissions)
-            .where(inArray(schema.submissions.id, subIds));
+          await db.delete(schema.reviews).where(inArray(schema.reviews.submissionId, subIds));
+          await db.delete(schema.submissions).where(inArray(schema.submissions.id, subIds));
         }
 
-        await db
-          .delete(schema.assignments)
-          .where(inArray(schema.assignments.id, assignmentIds));
+        await db.delete(schema.assignments).where(inArray(schema.assignments.id, assignmentIds));
       }
 
       const sessions = await db
@@ -781,18 +773,12 @@ export const deleteStudentFn = createServerFn({ method: "POST" })
 
     if (studentSubs.length > 0) {
       const subIds = studentSubs.map((s) => s.id);
-      await db
-        .delete(schema.reviews)
-        .where(inArray(schema.reviews.submissionId, subIds));
-      await db
-        .delete(schema.submissions)
-        .where(eq(schema.submissions.studentId, studentId));
+      await db.delete(schema.reviews).where(inArray(schema.reviews.submissionId, subIds));
+      await db.delete(schema.submissions).where(eq(schema.submissions.studentId, studentId));
     }
 
     // 2. Delete student flags
-    await db
-      .delete(schema.studentFlags)
-      .where(eq(schema.studentFlags.studentId, studentId));
+    await db.delete(schema.studentFlags).where(eq(schema.studentFlags.studentId, studentId));
 
     // 3. Delete attendance records
     await db
@@ -810,32 +796,20 @@ export const deleteStudentFn = createServerFn({ method: "POST" })
       .where(eq(schema.completedLessons.studentId, studentId));
 
     // 6. Delete projects
-    await db
-      .delete(schema.projects)
-      .where(eq(schema.projects.studentId, studentId));
+    await db.delete(schema.projects).where(eq(schema.projects.studentId, studentId));
 
     // 7. Delete earned badges
-    await db
-      .delete(schema.earnedBadges)
-      .where(eq(schema.earnedBadges.studentId, studentId));
+    await db.delete(schema.earnedBadges).where(eq(schema.earnedBadges.studentId, studentId));
 
     // 8. Delete student profile
-    await db
-      .delete(schema.studentProfiles)
-      .where(eq(schema.studentProfiles.userId, studentId));
+    await db.delete(schema.studentProfiles).where(eq(schema.studentProfiles.userId, studentId));
 
     // 9. Delete session and account
-    await db
-      .delete(schema.session)
-      .where(eq(schema.session.userId, studentId));
-    await db
-      .delete(schema.account)
-      .where(eq(schema.account.userId, studentId));
+    await db.delete(schema.session).where(eq(schema.session.userId, studentId));
+    await db.delete(schema.account).where(eq(schema.account.userId, studentId));
 
     // 10. Delete user
-    await db
-      .delete(schema.user)
-      .where(eq(schema.user.id, studentId));
+    await db.delete(schema.user).where(eq(schema.user.id, studentId));
 
     return { success: true };
   });
@@ -1162,11 +1136,7 @@ export const getSchoolReportsFn = createServerFn({ method: "GET" })
 export const dispatchParentReportsFn = createServerFn({ method: "POST" })
   .middleware([roleMiddleware(["school", "s2c", "admin"])])
   .validator(
-    (data: {
-      reportType: string;
-      subject: string;
-      customNote?: string | undefined;
-    }) => data,
+    (data: { reportType: string; subject: string; customNote?: string | undefined }) => data,
   )
   .handler(async ({ data, context }) => {
     const school = await getEffectiveSchool(context);

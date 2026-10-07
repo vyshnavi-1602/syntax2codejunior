@@ -36,21 +36,30 @@ function ReviewsPage() {
   const [feedback, setFeedback] = useState("");
 
   const activeItem = pendingProjects.find((p) => p.project.id === activeId) ?? pendingProjects[0];
+  const [emptyFeedbackWarning, setEmptyFeedbackWarning] = useState<
+    "approved" | "needs_changes" | null
+  >(null);
 
-  const handleGrade = async (status: "approved" | "needs_changes") => {
+  const handleGrade = async (status: "approved" | "needs_changes", force = false) => {
     if (!activeItem) return;
+
+    if (!feedback.trim() && !force) {
+      setEmptyFeedbackWarning(status);
+      return;
+    }
 
     try {
       await gradeProjectFn({
         data: {
           projectId: activeItem.project.id,
           status,
-          feedback: feedback || "Reviewed by teacher.",
+          feedback: feedback.trim() || "Approved without additional notes.",
         },
       });
 
       setStatuses((m) => ({ ...m, [activeItem.project.id]: status }));
       setFeedback("");
+      setEmptyFeedbackWarning(null);
       router.invalidate();
       toast.success(`${activeItem.project.title} → ${status}`, {
         description: `${activeItem.student.name} has been notified.`,
@@ -223,6 +232,48 @@ function ReviewsPage() {
           </Panel>
         </div>
       </div>
+
+      {emptyFeedbackWarning && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
+          onClick={() => setEmptyFeedbackWarning(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                <CheckCircle2 className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">No Feedback Provided</h3>
+                <p className="text-xs text-slate-500">Confirm submission</p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-slate-600 leading-relaxed">
+              You haven't left any written feedback for{" "}
+              <strong className="font-semibold text-slate-800">{activeStudent.name}</strong>.
+              Writing constructive feedback helps students improve their code.
+            </p>
+            <p className="mt-2 text-xs text-slate-500">Do you want to submit anyway?</p>
+            <div className="mt-6 flex justify-end gap-2.5">
+              <button
+                onClick={() => setEmptyFeedbackWarning(null)}
+                className="h-9 rounded-xl border border-slate-200 px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Add Feedback First
+              </button>
+              <button
+                onClick={() => handleGrade(emptyFeedbackWarning, true)}
+                className="h-9 rounded-xl bg-indigo-600 px-4 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+              >
+                Submit Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
