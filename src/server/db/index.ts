@@ -3,7 +3,6 @@ import postgres from "postgres";
 import * as schema from "./schema";
 import "dotenv/config";
 
-console.log("DATABASE_URL IS:", process.env.DATABASE_URL);
 const globalForDb = globalThis as unknown as {
   conn: postgres.Sql | undefined;
 };

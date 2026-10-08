@@ -133,145 +133,45 @@ function LoginPage() {
       return;
     }
 
-    // 1. Determine target role: from portal selector or smart email detection
-    let targetRole = selectedRole;
-    if (normalizedEmail === "teacher@syntax2code.com" || normalizedEmail.includes("teacher")) {
-      targetRole = "teacher";
-    } else if (
-      normalizedEmail === "school@syntax2code.com" ||
-      normalizedEmail.includes("school") ||
-      normalizedEmail.includes("principal")
-    ) {
-      targetRole = "school";
-    } else if (
-      normalizedEmail === "admin@syntax2code.com" ||
-      normalizedEmail.includes("admin") ||
-      normalizedEmail.includes("super")
-    ) {
-      targetRole = "admin";
-    }
+    // Enforce proper authentication through better-auth for all roles
+    try {
+      const { data, error } = await authClient.signIn.email({
+        email: normalizedEmail,
+        password: cleanPassword,
+      });
 
-    if (targetRole === "teacher") {
-      try {
-        const userProfile = await lookupOrOnboardUserFn({
-          data: {
-            email: normalizedEmail,
-            role: "teacher",
-          },
-        });
-
+      if (!error && data?.user) {
+        let verifiedRole = (data.user as { role?: string }).role || "student";
+        if (verifiedRole === "user") verifiedRole = "student";
         if (typeof window !== "undefined") {
-          document.cookie = `s2c_role=teacher; path=/; max-age=31536000; SameSite=Lax`;
-          document.cookie = `s2c-demo-role=teacher; path=/; max-age=31536000; SameSite=Lax`;
-          window.localStorage.setItem(
-            "s2c-profile-settings",
-            JSON.stringify({
-              name: userProfile.name,
-              email: userProfile.email,
-            }),
-          );
+          document.cookie = `s2c_role=${verifiedRole}; path=/; max-age=31536000; SameSite=Lax`;
+          document.cookie = `s2c-demo-role=${verifiedRole}; path=/; max-age=31536000; SameSite=Lax`;
         }
-        fakeSignIn("teacher");
-        toast.success(`Signed in as Teacher!`, {
-          description: `Welcome, ${userProfile.name}. Redirecting to Teacher portal...`,
-        });
-        window.location.href = "/teacher";
+        fakeSignIn(verifiedRole as "student" | "teacher" | "school" | "admin" | "s2c");
+        toast.success(`Signed in as ${verifiedRole.toUpperCase()}!`);
+        window.location.href = roleHome[verifiedRole] || "/dashboard";
         return;
-      } catch {
-        if (typeof window !== "undefined") {
-          document.cookie = `s2c_role=teacher; path=/; max-age=31536000; SameSite=Lax`;
-          document.cookie = `s2c-demo-role=teacher; path=/; max-age=31536000; SameSite=Lax`;
-        }
-        fakeSignIn("teacher");
-        toast.success("Signed in as Teacher!", {
-          description: "Welcome! Redirecting to Teacher portal...",
+      }
+
+      if (error) {
+        setSignInPasswordError(
+          error.message || "Invalid credentials. Please verify your password.",
+        );
+        toast.error("Authentication failed", {
+          description: error.message || "Invalid email or password. Please try again.",
         });
-        window.location.href = "/teacher";
+        setLoading(false);
+        return;
+      }
+    } catch (_err) {
+      // In development fallback, only allow student if not a production environment
+      if (process.env.NODE_ENV === "production") {
+        setSignInPasswordError("Authentication error. Please check your credentials.");
+        toast.error("Sign-in failed", { description: "Invalid email or password." });
+        setLoading(false);
         return;
       }
     }
-
-    if (targetRole === "school") {
-      try {
-        const userProfile = await lookupOrOnboardUserFn({
-          data: {
-            email: normalizedEmail,
-            role: "school",
-          },
-        });
-
-        if (typeof window !== "undefined") {
-          document.cookie = `s2c_role=school; path=/; max-age=31536000; SameSite=Lax`;
-          document.cookie = `s2c-demo-role=school; path=/; max-age=31536000; SameSite=Lax`;
-          window.localStorage.setItem(
-            "s2c-profile-settings",
-            JSON.stringify({
-              name: userProfile.name,
-              email: userProfile.email,
-            }),
-          );
-        }
-        fakeSignIn("school");
-        toast.success(`Signed in as School Admin!`, {
-          description: `Welcome, ${userProfile.name}. Redirecting to School portal...`,
-        });
-        window.location.href = "/school";
-        return;
-      } catch {
-        if (typeof window !== "undefined") {
-          document.cookie = `s2c_role=school; path=/; max-age=31536000; SameSite=Lax`;
-          document.cookie = `s2c-demo-role=school; path=/; max-age=31536000; SameSite=Lax`;
-        }
-        fakeSignIn("school");
-        toast.success("Signed in as School Admin!", {
-          description: "Welcome! Redirecting to School portal...",
-        });
-        window.location.href = "/school";
-        return;
-      }
-    }
-
-    if (targetRole === "admin") {
-      try {
-        const userProfile = await lookupOrOnboardUserFn({
-          data: {
-            email: normalizedEmail,
-            role: "admin",
-          },
-        });
-
-        if (typeof window !== "undefined") {
-          document.cookie = `s2c_role=admin; path=/; max-age=31536000; SameSite=Lax`;
-          document.cookie = `s2c-demo-role=admin; path=/; max-age=31536000; SameSite=Lax`;
-          window.localStorage.setItem(
-            "s2c-profile-settings",
-            JSON.stringify({
-              name: userProfile.name,
-              email: userProfile.email,
-            }),
-          );
-        }
-        fakeSignIn("admin");
-        toast.success(`Signed in as Platform Admin!`, {
-          description: `Welcome, ${userProfile.name}. Redirecting to Admin portal...`,
-        });
-        window.location.href = "/admin";
-        return;
-      } catch {
-        if (typeof window !== "undefined") {
-          document.cookie = `s2c_role=admin; path=/; max-age=31536000; SameSite=Lax`;
-          document.cookie = `s2c-demo-role=admin; path=/; max-age=31536000; SameSite=Lax`;
-        }
-        fakeSignIn("admin");
-        toast.success("Signed in as Super Admin!", {
-          description: "Welcome, Platform Admin. Redirecting to Admin portal...",
-        });
-        window.location.href = "/admin";
-        return;
-      }
-    }
-
-    // 2. Student Access: Password must be a valid password (at least 6 characters)
     if (cleanPassword.length < 6) {
       setSignInPasswordError("Password must be at least 6 characters.");
       toast.error("Invalid password", {

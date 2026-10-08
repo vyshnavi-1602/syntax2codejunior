@@ -54,33 +54,59 @@ export default {
         }
 
         const authUrl = new URL(request.url);
-        const hostHeader = request.headers.get("x-forwarded-host") || request.headers.get("host");
-        if (hostHeader) {
-          authUrl.host = hostHeader;
+        const configuredHost = process.env.BETTER_AUTH_URL
+          ? new URL(process.env.BETTER_AUTH_URL).host
+          : null;
+        const allowedHosts = new Set([
+          "localhost:8080",
+          "localhost:8081",
+          "127.0.0.1:8080",
+          "127.0.0.1:8081",
+          ...(configuredHost ? [configuredHost] : []),
+        ]);
+
+        const rawHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
+        if (rawHost && allowedHosts.has(rawHost.toLowerCase())) {
+          authUrl.host = rawHost;
+        } else if (configuredHost) {
+          authUrl.host = configuredHost;
         }
+
         const protoHeader =
           request.headers.get("x-forwarded-proto") ||
           (url.protocol ? url.protocol.replace(":", "") : "http");
         authUrl.protocol = `${protoHeader}:`;
 
-        console.log(`[AUTH] ${request.method} ${authUrl.pathname} on ${authUrl.host}`);
-        if (authUrl.pathname.includes("callback")) {
-          console.log("[AUTH] Callback cookies:", request.headers.get("cookie"));
-        }
-
         const authRequest = new Request(authUrl.toString(), request);
-        return auth.handler(authRequest);
+        const authResponse = await auth.handler(authRequest);
+        return applySecurityHeaders(authResponse);
       }
 
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      const normalized = await normalizeCatastrophicSsrResponse(response);
+      return applySecurityHeaders(normalized);
     } catch (error) {
       console.error(error);
-      return new Response(renderErrorPage(), {
-        status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" },
-      });
+      return applySecurityHeaders(
+        new Response(renderErrorPage(), {
+          status: 500,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        }),
+      );
     }
   },
 };
+
+function applySecurityHeaders(response: Response): Response {
+  const headers = new Headers(response.headers);
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("X-Frame-Options", "DENY");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}

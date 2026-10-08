@@ -2,10 +2,13 @@ const postgres = require("postgres");
 require("dotenv").config();
 
 async function run() {
-  const sql = postgres(
-    process.env.DATABASE_URL ||
-      "postgresql://neondb_owner:npg_cjJaGke6il1W@ep-twilight-union-b4x5ot8s.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require",
-  );
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    console.error("DATABASE_URL environment variable is required.");
+    process.exit(1);
+  }
+
+  const sql = postgres(dbUrl);
 
   console.log("Creating school_schedules and platform_schedules tables if they do not exist...");
 

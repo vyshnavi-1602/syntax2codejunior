@@ -1484,12 +1484,14 @@ export const askAiTutorFn = createServerFn({ method: "POST" })
   });
 
 export const runCodeTestsFn = createServerFn({ method: "POST" })
+  .middleware([roleMiddleware(["student", "teacher", "school", "admin", "s2c"])])
   .validator((data: { code: string; language: string; testCases: TestCaseItem[] }) => data)
   .handler(async ({ data }) => {
     return executeCode(data.code, data.language, data.testCases);
   });
 
 export const runCustomCodeFn = createServerFn({ method: "POST" })
+  .middleware([roleMiddleware(["student", "teacher", "school", "admin", "s2c"])])
   .validator((data: { code: string; language: string; stdin: string }) => data)
   .handler(async ({ data }) => {
     return executeCustomCode(data.code, data.language, data.stdin);
@@ -1917,6 +1919,42 @@ export const submitStudentMcqQuizFn = createServerFn({ method: "POST" })
 
     const teacherId = assignRow[0]!.teacherId;
 
+    // Server-side verification of answers and scoring (SEC-HIGH-04)
+    let totalQuestions = Math.max(1, data.totalQuestions || 1);
+    let correctCount = Math.max(0, Math.min(totalQuestions, data.correctCount || 0));
+    let verifiedScore = Math.min(100, Math.max(0, Math.round(Number(data.score) || 0)));
+
+    if (assignRow[0]!.instructions) {
+      try {
+        const parsed = JSON.parse(assignRow[0]!.instructions);
+        if (Array.isArray(parsed.mcqQuestions) && parsed.mcqQuestions.length > 0) {
+          totalQuestions = parsed.mcqQuestions.length;
+          let computedCorrect = 0;
+          parsed.mcqQuestions.forEach(
+            (q: { id?: string | number; correctAnswer?: string }, idx: number) => {
+              const key = String(q.id ?? idx);
+              const studentAns = data.answers[key] || data.answers[String(idx)];
+              if (
+                studentAns &&
+                q.correctAnswer &&
+                String(studentAns).trim().toLowerCase() ===
+                  String(q.correctAnswer).trim().toLowerCase()
+              ) {
+                computedCorrect++;
+              }
+            },
+          );
+          correctCount = computedCorrect;
+          verifiedScore = Math.round((computedCorrect / totalQuestions) * 100);
+        }
+      } catch {
+        // Fallback to bounded client score
+      }
+    }
+
+    const passed = verifiedScore >= 70;
+    const verifiedXp = passed ? Math.min(Math.max(0, data.earnedXp || 50), 75) : 0;
+
     const existing = await db
       .select()
       .from(schema.submissions)
@@ -1938,7 +1976,7 @@ export const submitStudentMcqQuizFn = createServerFn({ method: "POST" })
         .set({
           code: answersJson,
           status: "SUBMITTED",
-          notes: `MCQ Quiz: ${data.correctCount}/${data.totalQuestions} correct (${data.score}%)`,
+          notes: `MCQ Quiz: ${correctCount}/${totalQuestions} correct (${verifiedScore}%)`,
           updatedAt: new Date(),
         })
         .where(eq(schema.submissions.id, submissionId));
@@ -1950,7 +1988,7 @@ export const submitStudentMcqQuizFn = createServerFn({ method: "POST" })
           studentId,
           status: "SUBMITTED",
           code: answersJson,
-          notes: `MCQ Quiz: ${data.correctCount}/${data.totalQuestions} correct (${data.score}%)`,
+          notes: `MCQ Quiz: ${correctCount}/${totalQuestions} correct (${verifiedScore}%)`,
         })
         .returning({ id: schema.submissions.id });
       submissionId = inserted[0]!.id;
@@ -1962,13 +2000,13 @@ export const submitStudentMcqQuizFn = createServerFn({ method: "POST" })
       .where(eq(schema.reviews.submissionId, submissionId))
       .limit(1);
 
-    const feedback = `Auto-graded MCQ Assessment: ${data.correctCount} of ${data.totalQuestions} questions correct (${data.score}%). Result: ${data.passed ? "PASSED" : "NEEDS PRACTICE"}.`;
+    const feedback = `Auto-graded MCQ Assessment: ${correctCount} of ${totalQuestions} questions correct (${verifiedScore}%). Result: ${passed ? "PASSED" : "NEEDS PRACTICE"}.`;
 
     if (existingReview.length > 0) {
       await db
         .update(schema.reviews)
         .set({
-          score: data.score,
+          score: verifiedScore,
           reviewedAt: new Date(),
           feedback,
         })
@@ -1977,14 +2015,14 @@ export const submitStudentMcqQuizFn = createServerFn({ method: "POST" })
       await db.insert(schema.reviews).values({
         submissionId,
         teacherId,
-        score: data.score,
+        score: verifiedScore,
         maxScore: 100,
         status: "COMPLETED",
         feedback,
       });
     }
 
-    if (data.earnedXp > 0) {
+    if (verifiedXp > 0) {
       const profile = await db
         .select()
         .from(schema.studentProfiles)
@@ -1993,7 +2031,7 @@ export const submitStudentMcqQuizFn = createServerFn({ method: "POST" })
       if (profile.length > 0) {
         await db
           .update(schema.studentProfiles)
-          .set({ xpTotal: profile[0]!.xpTotal + data.earnedXp })
+          .set({ xpTotal: profile[0]!.xpTotal + verifiedXp })
           .where(eq(schema.studentProfiles.userId, studentId));
       }
     }
@@ -2001,7 +2039,7 @@ export const submitStudentMcqQuizFn = createServerFn({ method: "POST" })
     return {
       success: true,
       submissionId,
-      score: data.score,
-      xpEarned: data.earnedXp,
+      score: verifiedScore,
+      xpEarned: verifiedXp,
     };
   });

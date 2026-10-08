@@ -1,7 +1,8 @@
+require("dotenv").config();
 const postgres = require("postgres");
-const sql = postgres(
-  "postgresql://neondb_owner:npg_cjJaGke6il1W@ep-twilight-union-b4x5ot8s.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require",
-);
+const dbUrl =
+  process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/codecraft_kidz_hub";
+const sql = postgres(dbUrl);
 sql`SELECT 1`
   .then(() => {
     console.log("Connected!");

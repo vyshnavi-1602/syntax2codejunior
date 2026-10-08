@@ -23,6 +23,10 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Local Agent Skills
+.agents/
+skills-lock.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

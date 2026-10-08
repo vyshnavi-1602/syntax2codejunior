@@ -4,9 +4,7 @@ import { db } from "../db";
 import * as schema from "../db/schema";
 
 const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:8080";
-const trustedOrigins = (request?: Request) => {
-  const origin = request?.headers?.get("origin");
-  const host = request?.headers?.get("host");
+const trustedOrigins = () => {
   const list = [
     baseURL,
     "http://localhost:8080",
@@ -14,15 +12,6 @@ const trustedOrigins = (request?: Request) => {
     "http://127.0.0.1:8080",
     "http://127.0.0.1:8081",
   ];
-  if (origin && !list.includes(origin)) {
-    list.push(origin);
-  }
-  if (host) {
-    const httpHost = `http://${host}`;
-    const httpsHost = `https://${host}`;
-    if (!list.includes(httpHost)) list.push(httpHost);
-    if (!list.includes(httpsHost)) list.push(httpsHost);
-  }
   return list;
 };
 
@@ -62,7 +51,7 @@ export const auth = betterAuth({
     },
   },
   advanced: {
-    useSecureCookies: false,
+    useSecureCookies: process.env.NODE_ENV === "production",
   },
   trustedOrigins,
 });

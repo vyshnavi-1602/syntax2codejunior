@@ -65,38 +65,14 @@ async function getCachedSession(request: Request | undefined): Promise<CachedSes
   const url = request?.url || "";
   const referer = request?.headers instanceof Headers ? request.headers.get("referer") || "" : "";
 
-  // 1. Check for explicit role cookie or header
-  let roleCookie: string | null = null;
-  const match = cookie.match(/(?:^|;\s*)(?:s2c_role|s2c-demo-role)=([^;]+)/);
-  if (match && match[1]) {
-    roleCookie = decodeURIComponent(match[1]).trim().toLowerCase();
-  }
-  const roleHeader = request?.headers instanceof Headers ? request.headers.get("x-s2c-role") : null;
-  const specifiedRole = roleCookie || roleHeader;
-
-  // 2. Infer role from request URL or Referer header if no explicit role cookie/header
-  let targetRole = "student";
-  const pathTarget = `${url} ${referer}`;
-
-  if (specifiedRole && demoUsersByRole[specifiedRole]) {
-    targetRole = specifiedRole;
-  } else if (pathTarget.includes("/admin")) {
-    targetRole = "admin";
-  } else if (pathTarget.includes("/school")) {
-    targetRole = "school";
-  } else if (pathTarget.includes("/teacher")) {
-    targetRole = "teacher";
-  } else if (pathTarget.includes("/student")) {
-    targetRole = "student";
-  }
-
-  const fallbackUser: CachedUser = demoUsersByRole[targetRole] ?? demoUsersByRole["student"]!;
+  // 1. Do not elevate unauthenticated roles from untrusted headers/cookies
+  const fallbackUser: CachedUser = demoUsersByRole["student"]!;
 
   if (!cookie && !request) {
     return { user: fallbackUser, session: null };
   }
 
-  const cacheKey = `${cookie}:${targetRole}`;
+  const cacheKey = `${cookie}:session`;
   const cached = sessionCache.get(cacheKey);
   const now = Date.now();
   if (cached && cached.expiresAt > now) {
@@ -149,6 +125,9 @@ async function getCachedSession(request: Request | undefined): Promise<CachedSes
 export const authMiddleware = createMiddleware().server(async ({ next }) => {
   const request = getRequest();
   const context = await getCachedSession(request as Request | undefined);
+  if (!context.session && process.env.NODE_ENV === "production") {
+    throw new Error("Unauthorized: Active session required.");
+  }
   return next({ context });
 });
 
@@ -157,6 +136,15 @@ export const roleMiddleware = (allowedRoles: string[]) => {
     const request = getRequest();
     const context = await getCachedSession(request as Request | undefined);
     const userRole = context.user?.role || "student";
+
+    // Privileged roles require a verified session
+    const isPrivileged = allowedRoles.some((r) =>
+      ["admin", "s2c", "school", "teacher"].includes(r),
+    );
+    if (isPrivileged && !context.session && process.env.NODE_ENV === "production") {
+      throw new Error("Unauthorized: Verified authentication session required.");
+    }
+
     const isAllowed =
       allowedRoles.includes(userRole) ||
       userRole === "admin" ||
@@ -253,8 +241,7 @@ export const lookupOrOnboardUserFn = createServerFn({ method: "POST" })
       }
 
       const defaultName = data.name || email.split("@")[0] || "Student";
-      const formattedName =
-        defaultName.charAt(0).toUpperCase() + defaultName.slice(1);
+      const formattedName = defaultName.charAt(0).toUpperCase() + defaultName.slice(1);
       const newUserId = "user_" + Math.random().toString(36).substring(2, 12);
 
       const [inserted] = await db
@@ -279,8 +266,7 @@ export const lookupOrOnboardUserFn = createServerFn({ method: "POST" })
     } catch (e) {
       console.warn("lookupOrOnboardUserFn fallback:", e);
       const defaultName = data.name || email.split("@")[0] || "Student";
-      const formattedName =
-        defaultName.charAt(0).toUpperCase() + defaultName.slice(1);
+      const formattedName = defaultName.charAt(0).toUpperCase() + defaultName.slice(1);
       return {
         id: "demo-student-1",
         name: formattedName,
@@ -289,4 +275,3 @@ export const lookupOrOnboardUserFn = createServerFn({ method: "POST" })
       };
     }
   });
-

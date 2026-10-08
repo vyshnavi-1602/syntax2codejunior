@@ -206,7 +206,12 @@ function CertificatesPage() {
             className="w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            {open.fileUrl ? (
+            {open.fileUrl &&
+            (open.fileUrl.startsWith("data:application/pdf;") ||
+              open.fileUrl.startsWith("data:image/png;") ||
+              open.fileUrl.startsWith("data:image/jpeg;") ||
+              open.fileUrl.startsWith("data:image/webp;") ||
+              open.fileUrl.startsWith("https://")) ? (
               <div className="relative flex-1 overflow-auto bg-slate-100/50 p-4 flex items-center justify-center">
                 {open.fileUrl.startsWith("data:application/pdf") ? (
                   <object
