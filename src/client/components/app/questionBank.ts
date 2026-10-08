@@ -6,7 +6,17 @@ export interface McqQuestionItem {
   explanation: string;
   difficulty: "Easy" | "Medium" | "Hard";
   xp: number;
-  sourceDoc?: string;
+  sourceDoc?: string | undefined;
+}
+
+export interface TheoryQuestionItem {
+  id: string;
+  questionText: string;
+  expectedAnswer: string;
+  rubricOrGuidelines?: string | undefined;
+  difficulty: "Easy" | "Medium" | "Hard";
+  marks: number;
+  sourceDoc?: string | undefined;
 }
 
 export interface SubjectItem {
@@ -16,6 +26,7 @@ export interface SubjectItem {
   iconName: string;
   color: string;
   questions: McqQuestionItem[];
+  theoryQuestions?: TheoryQuestionItem[];
 }
 
 export const DEFAULT_SUBJECTS: SubjectItem[] = [
@@ -262,19 +273,126 @@ export const DEFAULT_SUBJECTS: SubjectItem[] = [
   },
 ];
 
-const STORAGE_KEY = "s2c_question_bank_v2";
+const STORAGE_KEY = "s2c_question_bank_v3";
+
+export const DEFAULT_THEORY_QUESTIONS: Record<string, TheoryQuestionItem[]> = {
+  sub_python: [
+    {
+      id: "py_th1",
+      questionText:
+        "Explain the difference between mutable and immutable data types in Python. Give two examples of each.",
+      expectedAnswer:
+        "Mutable objects (like lists, dictionaries, and sets) can be modified after creation without changing their identity in memory. Immutable objects (like integers, strings, and tuples) cannot be altered once created; any modification produces a new object.",
+      rubricOrGuidelines:
+        "Full marks for clearly defining memory mutability and naming lists/dicts (mutable) and strings/tuples (immutable).",
+      difficulty: "Easy",
+      marks: 5,
+    },
+    {
+      id: "py_th2",
+      questionText:
+        "Describe how list comprehensions work in Python and why they are preferred over traditional for-loops for mapping/filtering.",
+      expectedAnswer:
+        "List comprehensions provide a concise syntactic construct [expr for item in iterable if condition] that combines looping and conditional filtering in a single expressive expression, executing at optimized C-level speed.",
+      rubricOrGuidelines:
+        "Check for syntax format, explanation of performance optimization, and readability benefits.",
+      difficulty: "Medium",
+      marks: 8,
+    },
+    {
+      id: "py_th3",
+      questionText:
+        "What is the Global Interpreter Lock (GIL) in CPython and what are its implications for CPU-bound multithreaded applications?",
+      expectedAnswer:
+        "The GIL is a mutex that protects access to Python objects, preventing multiple threads from executing Python bytecodes at once in CPython. For CPU-bound tasks, multithreading does not achieve true multi-core parallelism; multiprocessing or asyncio should be used instead.",
+      rubricOrGuidelines:
+        "Award marks for identifying single-core bytecode execution and recommending multiprocessing for CPU bound workloads.",
+      difficulty: "Hard",
+      marks: 10,
+    },
+  ],
+  sub_java: [
+    {
+      id: "java_th1",
+      questionText:
+        "Explain the four pillars of Object-Oriented Programming (OOP) with real-world software examples.",
+      expectedAnswer:
+        "1. Encapsulation: Bundling data and methods while restricting direct access (private fields with getters/setters). 2. Abstraction: Hiding implementation details and exposing only essential interfaces. 3. Inheritance: Reusing parent class properties and behavior via extends. 4. Polymorphism: Ability of methods/objects to execute different behaviors dynamically (method overloading and overriding).",
+      rubricOrGuidelines: "2.5 marks per pillar with clear definition and real-world example.",
+      difficulty: "Medium",
+      marks: 10,
+    },
+    {
+      id: "java_th2",
+      questionText:
+        "What is the difference between an Abstract Class and an Interface in modern Java (Java 8+)?",
+      expectedAnswer:
+        "An interface defines a contract with default and static methods, multiple interfaces can be implemented, and variables are implicitly public static final. An abstract class can have instance state (fields), constructors, and protected methods, but Java permits only single inheritance.",
+      rubricOrGuidelines:
+        "Credit differences regarding state, constructors, and multiple vs single inheritance.",
+      difficulty: "Medium",
+      marks: 8,
+    },
+  ],
+  sub_dsa: [
+    {
+      id: "dsa_th1",
+      questionText:
+        "Compare the time and space complexity of Merge Sort and Quick Sort in average and worst cases. Under what circumstances would you choose Merge Sort?",
+      expectedAnswer:
+        "Merge Sort runs in O(n log n) in all cases with O(n) auxiliary space. Quick Sort runs in O(n log n) average but O(n^2) worst case with O(log n) stack space. Merge Sort is preferred when stable sorting is required (e.g. linked lists) or for external sorting with predictable upper-bound latency.",
+      rubricOrGuidelines:
+        "Accurate Big-O times in table/format and valid rationale for Merge Sort stability.",
+      difficulty: "Hard",
+      marks: 10,
+    },
+    {
+      id: "dsa_th2",
+      questionText:
+        "Explain the working principle of a Hash Table and describe two common collision resolution techniques.",
+      expectedAnswer:
+        "A hash table uses a hash function to map keys to bucket indices for O(1) average access. Collision resolutions: 1. Separate Chaining: Each bucket holds a linked list or balanced tree of colliding entries. 2. Open Addressing (Linear/Quadratic Probing): Searches for the next available slot sequentially.",
+      rubricOrGuidelines:
+        "Clearly articulate hash function mapping, separate chaining, and open addressing probing.",
+      difficulty: "Medium",
+      marks: 8,
+    },
+  ],
+  sub_web: [
+    {
+      id: "web_th1",
+      questionText:
+        "Explain the differences between Server-Side Rendering (SSR), Client-Side Rendering (CSR), and Static Site Generation (SSG).",
+      expectedAnswer:
+        "CSR renders HTML dynamically in the browser via JavaScript. SSR renders HTML on-demand on the server per request, improving initial load and SEO. SSG generates static HTML files ahead of time at build time for high performance and CDN edge caching.",
+      rubricOrGuidelines: "Credit trade-offs regarding SEO, build time, and server workload.",
+      difficulty: "Medium",
+      marks: 8,
+    },
+  ],
+};
 
 export function loadQuestionBank(): SubjectItem[] {
   if (typeof window === "undefined") return DEFAULT_SUBJECTS;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SUBJECTS));
-      return DEFAULT_SUBJECTS;
+      const initialized = DEFAULT_SUBJECTS.map((s) => ({
+        ...s,
+        theoryQuestions: DEFAULT_THEORY_QUESTIONS[s.id] || [],
+      }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(initialized));
+      return initialized;
     }
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed;
+      return parsed.map((s) => ({
+        ...s,
+        theoryQuestions:
+          s.theoryQuestions && s.theoryQuestions.length > 0
+            ? s.theoryQuestions
+            : DEFAULT_THEORY_QUESTIONS[s.id] || [],
+      }));
     }
     return DEFAULT_SUBJECTS;
   } catch (e) {
@@ -409,6 +527,114 @@ export function extractQuestionsFromDocumentText(
         explanation: `Reference from uploaded documentation: "${para.substring(0, 150)}..."`,
         difficulty: idx === 0 ? "Easy" : idx === 1 ? "Medium" : "Hard",
         xp: 25,
+        sourceDoc: docTitle || "Curriculum Document",
+      });
+    });
+  }
+
+  return generated;
+}
+
+/**
+ * Intelligent parser that extracts or generates Theory / Descriptive questions from uploaded document text
+ */
+export function extractTheoryQuestionsFromDocumentText(
+  text: string,
+  subjectName: string,
+  docTitle?: string,
+): TheoryQuestionItem[] {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+
+  const generated: TheoryQuestionItem[] = [];
+
+  // 1. JSON parsing support
+  if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      const items = Array.isArray(parsed)
+        ? parsed
+        : parsed.theoryQuestions || parsed.questions || [parsed];
+      items.forEach((item: Record<string, unknown>, idx: number) => {
+        const qText = (item.questionText || item.question || item.prompt) as string | undefined;
+        if (qText) {
+          generated.push({
+            id: `theory_imp_${Date.now()}_${idx}`,
+            questionText: qText,
+            expectedAnswer: (item.expectedAnswer ||
+              item.answer ||
+              item.solution ||
+              "Comprehensive theoretical explanation.") as string,
+            rubricOrGuidelines: (item.rubricOrGuidelines || item.guidelines || item.rubric) as
+              string | undefined,
+            difficulty: (item.difficulty as "Easy" | "Medium" | "Hard") || "Medium",
+            marks: Number(item.marks) || (idx % 2 === 0 ? 5 : 10),
+            sourceDoc: docTitle || "Uploaded JSON",
+          });
+        }
+      });
+      if (generated.length > 0) return generated;
+    } catch {
+      // Fall through
+    }
+  }
+
+  // 2. Question blocks formatted as "Q1: Explain / Describe / What is ..."
+  const questionBlocks = trimmed.split(/\n\s*(?:(?:Q\d+[:.)]|Question\s*\d+[:.)]|\d+[.)]))\s*/i);
+  if (questionBlocks.length > 1) {
+    questionBlocks.slice(1).forEach((block, idx) => {
+      const lines = block
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean);
+      if (lines.length > 0) {
+        const questionText = lines[0] || `Theory Question on ${subjectName}`;
+        const answerLine = lines.find((l) => /^(?:Ans|Answer|Expected|Solution)[\s:]+/i.test(l));
+        const rubricLine = lines.find((l) => /^(?:Rubric|Guideline|Key Points)[\s:]+/i.test(l));
+
+        const expectedAnswer = answerLine
+          ? answerLine.replace(/^(?:Ans|Answer|Expected|Solution)[\s:]+/i, "").trim()
+          : lines.slice(1).join(" ") ||
+            `Model answer derived from curriculum notes on ${subjectName}.`;
+
+        generated.push({
+          id: `doc_th_${Date.now()}_${idx}`,
+          questionText,
+          expectedAnswer,
+          rubricOrGuidelines: rubricLine
+            ? rubricLine.replace(/^(?:Rubric|Guideline|Key Points)[\s:]+/i, "").trim()
+            : "Award marks for conceptual clarity, accurate terminology, and relevant code examples.",
+          difficulty: idx % 3 === 0 ? "Easy" : idx % 3 === 1 ? "Medium" : "Hard",
+          marks: idx % 3 === 2 ? 10 : 5,
+          sourceDoc: docTitle || "Curriculum Document",
+        });
+      }
+    });
+  }
+
+  // 3. Paragraph-based conceptual synthesis
+  if (generated.length === 0) {
+    const paragraphs = trimmed
+      .split(/\n\n+/)
+      .map((p) => p.trim())
+      .filter((p) => p.length > 40);
+
+    const keyParagraphs = paragraphs.slice(0, 4);
+    keyParagraphs.forEach((para, idx) => {
+      const sentences = para
+        .split(/[.!?]+/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 10);
+      const mainSentence = sentences[0] || para.substring(0, 80);
+
+      generated.push({
+        id: `auto_th_${Date.now()}_${idx}`,
+        questionText: `Explain the architectural importance of: "${mainSentence}" in ${subjectName}. Provide a concrete programming example.`,
+        expectedAnswer: `According to syllabus reference: ${para}`,
+        rubricOrGuidelines:
+          "Check for clear theoretical explanation (3 marks) and realistic code implementation (2 marks).",
+        difficulty: idx === 0 ? "Easy" : idx === 1 ? "Medium" : "Hard",
+        marks: idx % 2 === 0 ? 5 : 8,
         sourceDoc: docTitle || "Curriculum Document",
       });
     });
