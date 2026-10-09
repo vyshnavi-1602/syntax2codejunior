@@ -1,38 +1,43 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
+  Layers,
+  FileText,
+  BookOpen,
+  Tag,
   HelpCircle,
   Plus,
   Upload,
-  FileText,
+  RefreshCw,
+  Search,
   Trash2,
   Edit3,
   CheckCircle2,
-  Sparkles,
-  BookOpen,
-  Search,
-  Check,
-  X,
-  FileCode,
-  Layers,
   ChevronRight,
-  RefreshCw,
   FolderPlus,
-  AlertCircle,
-  CheckSquare,
+  Clock,
+  Sparkles,
+  Calendar,
+  Award,
   FileUp,
+  X,
+  Check,
+  AlertCircle,
+  Play,
 } from "lucide-react";
 import { toast } from "sonner";
-import { PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
 import { cn } from "@/client/lib/utils";
 import {
   loadQuestionBank,
   saveQuestionBank,
+  loadExams,
+  saveExams,
+  extractTextFromUploadedFile,
   extractQuestionsFromDocumentText,
-  extractTheoryQuestionsFromDocumentText,
   type SubjectItem,
+  type TopicItem,
   type McqQuestionItem,
-  type TheoryQuestionItem,
+  type ExamItem,
   DEFAULT_SUBJECTS,
 } from "@/client/components/app/questionBank";
 import {
@@ -46,11 +51,11 @@ import {
 export const Route = createFileRoute("/teacher/questions")({
   head: () => ({
     meta: [
-      { title: "Question Bank & MCQs · Syntax2Code" },
+      { title: "Question Bank & Assessments · Syntax2Code" },
       {
         name: "description",
         content:
-          "Organize subject-wise MCQs, upload curriculum documents to generate questions, and publish assessments.",
+          "Organize subject-wise MCQs, upload curriculum documents to generate questions, and publish exams.",
       },
     ],
   }),
@@ -58,1260 +63,1452 @@ export const Route = createFileRoute("/teacher/questions")({
 });
 
 function TeacherQuestionsPage() {
+  // Top view switcher: Question Bank vs MCQ Exams
+  const [activeMainTab, setActiveMainTab] = useState<"bank" | "exams">("bank");
+
+  // Question Bank State
   const [subjects, setSubjects] = useState<SubjectItem[]>([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
+  const [selectedTopicId, setSelectedTopicId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"mcq" | "theory">("mcq");
+  const [levelFilter, setLevelFilter] = useState<"All" | "Easy" | "Medium" | "Hard">("All");
+
+  // Exams State
+  const [exams, setExams] = useState<ExamItem[]>([]);
 
   // Modals
-  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [uploadDocxModalOpen, setUploadDocxModalOpen] = useState(false);
   const [addQuestionModalOpen, setAddQuestionModalOpen] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<McqQuestionItem | null>(null);
   const [newSubjectModalOpen, setNewSubjectModalOpen] = useState(false);
+  const [newTopicModalOpen, setNewTopicModalOpen] = useState(false);
+  const [fromOldTestModalOpen, setFromOldTestModalOpen] = useState(false);
+  const [createExamModalOpen, setCreateExamModalOpen] = useState(false);
 
-  // Document Upload Form
-  const [docTitle, setDocTitle] = useState("");
-  const [docContent, setDocContent] = useState("");
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [extractionTarget, setExtractionTarget] = useState<"mcq" | "theory">("mcq");
-  const [extractedPreview, setExtractedPreview] = useState<McqQuestionItem[]>([]);
-  const [extractedTheoryPreview, setExtractedTheoryPreview] = useState<TheoryQuestionItem[]>([]);
-  const [uploadedFileName, setUploadedFileName] = useState("");
-  const [uploadedFileSize, setUploadedFileSize] = useState("");
-  const [isDragging, setIsDragging] = useState(false);
+  // Document Upload (.docx / .doc / .txt)
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [docFileName, setDocFileName] = useState("");
+  const [docFileSize, setDocFileSize] = useState("");
+  const [rawDocText, setRawDocText] = useState("");
+  const [isExtractingDoc, setIsExtractingDoc] = useState(false);
+  const [extractedDocQuestions, setExtractedDocQuestions] = useState<McqQuestionItem[]>([]);
+  const [uploadTargetSubjectId, setUploadTargetSubjectId] = useState("");
+  const [uploadTargetTopicId, setUploadTargetTopicId] = useState("");
+  const [isNewTopicForUpload, setIsNewTopicForUpload] = useState(false);
+  const [newTopicTitleForUpload, setNewTopicTitleForUpload] = useState("");
+  const [docInputMode, setDocInputMode] = useState<"file" | "paste">("file");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Manual Question Form (MCQ)
-  const [questionPrompt, setQuestionPrompt] = useState("");
-  const [options, setOptions] = useState<string[]>(["", "", "", ""]);
-  const [correctOptionIdx, setCorrectOptionIdx] = useState(0);
-  const [explanation, setExplanation] = useState("");
-  const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">("Medium");
-  const [xp, setXp] = useState(25);
-
-  // Manual Question Form (Theory / Coding)
-  const [theoryPrompt, setTheoryPrompt] = useState("");
-  const [theoryExpectedAnswer, setTheoryExpectedAnswer] = useState("");
-  const [theoryRubric, setTheoryRubric] = useState("");
-  const [theoryDifficulty, setTheoryDifficulty] = useState<"Easy" | "Medium" | "Hard">("Medium");
-  const [theoryMarks, setTheoryMarks] = useState(5);
-
   // New Subject Form
-  const [newSubName, setNewSubName] = useState("");
-  const [newSubDesc, setNewSubDesc] = useState("");
+  const [newSubjectName, setNewSubjectName] = useState("");
+  const [newSubjectDesc, setNewSubjectDesc] = useState("");
 
+  // New Topic Form
+  const [newTopicName, setNewTopicName] = useState("");
+  const [newTopicDesc, setNewTopicDesc] = useState("");
+
+  // New / Edit Question Form
+  const [questionPrompt, setQuestionPrompt] = useState("");
+  const [questionOptions, setQuestionOptions] = useState<string[]>(["", "", "", ""]);
+  const [correctOptionIdx, setCorrectOptionIdx] = useState<number>(0);
+  const [questionExplanation, setQuestionExplanation] = useState("");
+  const [questionDifficulty, setQuestionDifficulty] = useState<"Easy" | "Medium" | "Hard">(
+    "Medium",
+  );
+  const [questionXp, setQuestionXp] = useState(20);
+
+  // New Exam Form
+  const [newExamTitle, setNewExamTitle] = useState("");
+  const [newExamSubjectId, setNewExamSubjectId] = useState("");
+  const [newExamTopicIds, setNewExamTopicIds] = useState<string[]>([]);
+  const [newExamTotalQuestions, setNewExamTotalQuestions] = useState(20);
+  const [newExamDuration, setNewExamDuration] = useState(45);
+  const [newExamPassing, setNewExamPassing] = useState(60);
+
+  // Initialize Data
   useEffect(() => {
-    const loaded = loadQuestionBank();
-    setSubjects(loaded);
-    if (loaded.length > 0 && loaded[0]) {
-      setSelectedSubjectId((prev) => prev || loaded[0]!.id);
+    const loadedSubs = loadQuestionBank();
+    setSubjects(loadedSubs);
+
+    const loadedEx = loadExams();
+    setExams(loadedEx);
+
+    if (loadedSubs.length > 0) {
+      const firstSub = loadedSubs[0];
+      if (firstSub) {
+        setSelectedSubjectId(firstSub.id);
+        if (firstSub.topics && firstSub.topics.length > 0) {
+          const firstTopic = firstSub.topics[0];
+          if (firstTopic) {
+            setSelectedTopicId(firstTopic.id);
+          }
+        }
+      }
     }
   }, []);
 
-  const activeSubject = subjects.find((s) => s.id === selectedSubjectId) || subjects[0];
+  // Sync upload target with active selection
+  useEffect(() => {
+    if (selectedSubjectId) setUploadTargetSubjectId(selectedSubjectId);
+    if (selectedTopicId) setUploadTargetTopicId(selectedTopicId);
+  }, [selectedSubjectId, selectedTopicId]);
+
+  const activeSubject = useMemo(
+    () => subjects.find((s) => s.id === selectedSubjectId) || null,
+    [subjects, selectedSubjectId],
+  );
+
+  const activeTopic = useMemo(() => {
+    if (!activeSubject) return null;
+    return activeSubject.topics.find((t) => t.id === selectedTopicId) || null;
+  }, [activeSubject, selectedTopicId]);
 
   const updateSubjects = (newSubs: SubjectItem[]) => {
     setSubjects(newSubs);
     saveQuestionBank(newSubs);
   };
 
-  const totalMcqs = subjects.reduce((sum, s) => sum + s.questions.length, 0);
-  const totalTheory = subjects.reduce((sum, s) => sum + (s.theoryQuestions?.length || 0), 0);
-  const docExtractedCount = subjects.reduce(
-    (sum, s) =>
-      sum +
-      s.questions.filter((q) => q.sourceDoc).length +
-      (s.theoryQuestions || []).filter((q) => q.sourceDoc).length,
-    0,
-  );
-
-  // File Upload Handlers
-  const handleFile = (file: File) => {
-    setUploadedFileName(file.name);
-    setUploadedFileSize(`${(file.size / 1024).toFixed(1)} KB`);
-    if (!docTitle) {
-      setDocTitle(file.name.replace(/\.[^/.]+$/, ""));
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      if (content) {
-        setDocContent(content);
-        toast.success(`Loaded "${file.name}"!`, {
-          description: "Click 'Extract Questions' below to parse questions.",
-        });
-      }
-    };
-    reader.onerror = () => {
-      toast.error("Failed to read file.");
-    };
-    reader.readAsText(file);
+  const updateExams = (newEx: ExamItem[]) => {
+    setExams(newEx);
+    saveExams(newEx);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
+  const handleRefresh = () => {
+    const loaded = loadQuestionBank();
+    setSubjects(loaded);
+    const loadedEx = loadExams();
+    setExams(loadedEx);
+    toast.success("Question bank refreshed");
+  };
+
+  const handleSelectSubject = (subId: string) => {
+    setSelectedSubjectId(subId);
+    const sub = subjects.find((s) => s.id === subId);
+    if (sub && sub.topics.length > 0 && sub.topics[0]) {
+      setSelectedTopicId(sub.topics[0].id);
+    } else {
+      setSelectedTopicId("");
     }
   };
 
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0]);
-    }
-  };
+  // -------------------------------------------------------------
+  // File Upload & Document Extraction (.docx / .doc / .txt / .md)
+  // -------------------------------------------------------------
+  const handleFileUpload = async (file: File) => {
+    setDocFile(file);
+    setDocFileName(file.name);
+    setDocFileSize(`${(file.size / 1024).toFixed(1)} KB`);
 
-  // Handle Document Upload & Extraction
-  const handleExtractFromDoc = () => {
-    if (!docContent.trim()) {
-      toast.error("Please provide document content or select a file to extract from.");
-      return;
-    }
-    setIsExtracting(true);
-    setTimeout(() => {
-      if (extractionTarget === "mcq") {
-        const generated = extractQuestionsFromDocumentText(
-          docContent,
-          activeSubject ? activeSubject.name : "Subject",
-          docTitle || uploadedFileName || "Uploaded Syllabus Notes",
-        );
-        setExtractedPreview(generated);
-        setExtractedTheoryPreview([]);
-        setIsExtracting(false);
-        toast.success(`Extracted ${generated.length} Multiple Choice Questions!`, {
-          description: "Review the questions below and click 'Save to Subject Bank'.",
-        });
+    // Auto default new topic title based on document filename
+    const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+    setNewTopicTitleForUpload(cleanName);
+
+    try {
+      setIsExtractingDoc(true);
+      const text = await extractTextFromUploadedFile(file);
+      setRawDocText(text);
+
+      const targetSub = subjects.find((s) => s.id === uploadTargetSubjectId) || activeSubject;
+      const subName = targetSub ? targetSub.name : "General";
+
+      const parsedQuestions = extractQuestionsFromDocumentText(text, subName, file.name);
+      setExtractedDocQuestions(parsedQuestions);
+      setIsExtractingDoc(false);
+
+      if (parsedQuestions.length > 0) {
+        toast.success(`Successfully parsed ${parsedQuestions.length} questions from ${file.name}!`);
       } else {
-        const generated = extractTheoryQuestionsFromDocumentText(
-          docContent,
-          activeSubject ? activeSubject.name : "Subject",
-          docTitle || uploadedFileName || "Uploaded Syllabus Notes",
+        toast.warning(
+          "No questions recognized automatically. You can review or edit the text on the right.",
         );
-        setExtractedTheoryPreview(generated);
-        setExtractedPreview([]);
-        setIsExtracting(false);
-        toast.success(`Extracted ${generated.length} Theory & Coding Questions!`, {
-          description: "Review the questions below and click 'Save to Subject Bank'.",
-        });
       }
-    }, 600);
-  };
-
-  const handleSaveExtracted = () => {
-    if (!activeSubject) return;
-
-    if (extractionTarget === "mcq" && extractedPreview.length > 0) {
-      const updated = subjects.map((s) => {
-        if (s.id === activeSubject.id) {
-          return {
-            ...s,
-            questions: [...s.questions, ...extractedPreview],
-          };
-        }
-        return s;
-      });
-
-      updateSubjects(updated);
-      toast.success(`Added ${extractedPreview.length} MCQs to ${activeSubject.name}!`);
-      setExtractedPreview([]);
-    } else if (extractionTarget === "theory" && extractedTheoryPreview.length > 0) {
-      const updated = subjects.map((s) => {
-        if (s.id === activeSubject.id) {
-          return {
-            ...s,
-            theoryQuestions: [...(s.theoryQuestions || []), ...extractedTheoryPreview],
-          };
-        }
-        return s;
-      });
-
-      updateSubjects(updated);
-      toast.success(
-        `Added ${extractedTheoryPreview.length} Theory questions to ${activeSubject.name}!`,
-      );
-      setExtractedTheoryPreview([]);
+    } catch (err) {
+      setIsExtractingDoc(false);
+      console.error("Doc extract error:", err);
+      toast.error("Failed to parse document file.");
     }
-
-    setDocContent("");
-    setDocTitle("");
-    setUploadedFileName("");
-    setUploadedFileSize("");
-    setUploadModalOpen(false);
   };
 
-  // Handle Manual MCQ Creation
-  const handleCreateQuestion = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!questionPrompt.trim()) {
-      toast.error("Please enter the question prompt.");
+  const handleManualDocParse = () => {
+    if (!rawDocText.trim()) {
+      toast.error("Please enter or paste document content.");
       return;
     }
-    const filteredOptions = options.map((o) => o.trim());
-    if (filteredOptions.some((o) => !o)) {
+    setIsExtractingDoc(true);
+    setTimeout(() => {
+      const targetSub = subjects.find((s) => s.id === uploadTargetSubjectId) || activeSubject;
+      const subName = targetSub ? targetSub.name : "General";
+      const parsed = extractQuestionsFromDocumentText(
+        rawDocText,
+        subName,
+        docFileName || "Pasted Document",
+      );
+      setExtractedDocQuestions(parsed);
+      setIsExtractingDoc(false);
+      if (parsed.length > 0) {
+        toast.success(`Parsed ${parsed.length} questions!`);
+      } else {
+        toast.warning(
+          "Could not detect MCQ pattern. Try formatting as: 1. Question? A) ... B) ...",
+        );
+      }
+    }, 300);
+  };
+
+  const handleSaveDocQuestionsToBank = () => {
+    if (!uploadTargetSubjectId) {
+      toast.error("Please select a target subject.");
+      return;
+    }
+
+    if (extractedDocQuestions.length === 0) {
+      toast.error("No questions to import.");
+      return;
+    }
+
+    let targetTopicId = uploadTargetTopicId;
+
+    const updated = subjects.map((sub) => {
+      if (sub.id !== uploadTargetSubjectId) return sub;
+
+      let subTopics = [...sub.topics];
+
+      // If creating a new topic for the uploaded questions
+      if (isNewTopicForUpload || !targetTopicId) {
+        const topicName =
+          newTopicTitleForUpload.trim() ||
+          docFileName.replace(/\.[^/.]+$/, "") ||
+          "Uploaded Questions";
+        const newTopic: TopicItem = {
+          id: `top_${Date.now()}`,
+          subjectId: sub.id,
+          name: topicName,
+          description: `Questions imported from ${docFileName || "document"}`,
+          questions: extractedDocQuestions,
+        };
+        subTopics = [...subTopics, newTopic];
+        targetTopicId = newTopic.id;
+      } else {
+        // Append to existing topic
+        subTopics = subTopics.map((top) => {
+          if (top.id === targetTopicId) {
+            return {
+              ...top,
+              questions: [...top.questions, ...extractedDocQuestions],
+            };
+          }
+          return top;
+        });
+      }
+
+      return {
+        ...sub,
+        topics: subTopics,
+      };
+    });
+
+    updateSubjects(updated);
+    setSelectedSubjectId(uploadTargetSubjectId);
+    if (targetTopicId) {
+      setSelectedTopicId(targetTopicId);
+    }
+
+    toast.success(
+      `Saved ${extractedDocQuestions.length} questions to ${activeSubject?.name || "Subject"}!`,
+    );
+
+    // Reset upload modal state
+    setUploadDocxModalOpen(false);
+    setDocFile(null);
+    setDocFileName("");
+    setRawDocText("");
+    setExtractedDocQuestions([]);
+  };
+
+  // -------------------------------------------------------------
+  // Question Add / Edit
+  // -------------------------------------------------------------
+  const handleOpenAddQuestion = () => {
+    if (!activeTopic) {
+      toast.error("Please select or create a topic first.");
+      return;
+    }
+    setEditingQuestion(null);
+    setQuestionPrompt("");
+    setQuestionOptions(["", "", "", ""]);
+    setCorrectOptionIdx(0);
+    setQuestionExplanation("");
+    setQuestionDifficulty("Medium");
+    setQuestionXp(20);
+    setAddQuestionModalOpen(true);
+  };
+
+  const handleOpenEditQuestion = (q: McqQuestionItem) => {
+    setEditingQuestion(q);
+    setQuestionPrompt(q.questionText);
+    setQuestionOptions(
+      q.options.length >= 4 ? [...q.options] : [...q.options, "", "", ""].slice(0, 4),
+    );
+    const corrIdx = q.options.findIndex((o) => o === q.correctAnswer);
+    setCorrectOptionIdx(corrIdx >= 0 ? corrIdx : 0);
+    setQuestionExplanation(q.explanation || "");
+    setQuestionDifficulty(q.difficulty || "Medium");
+    setQuestionXp(q.xp || 20);
+    setAddQuestionModalOpen(true);
+  };
+
+  const handleSaveQuestion = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeSubject || !activeTopic) {
+      toast.error("Please select a subject and topic.");
+      return;
+    }
+
+    if (!questionPrompt.trim()) {
+      toast.error("Please enter a question prompt.");
+      return;
+    }
+
+    const cleanedOptions = questionOptions.map((o) => o.trim());
+    if (cleanedOptions.some((o) => !o)) {
       toast.error("Please fill in all 4 options.");
       return;
     }
 
-    const newQ: McqQuestionItem = {
-      id: `manual_${Date.now()}`,
-      questionText: questionPrompt.trim(),
-      options: filteredOptions,
-      correctAnswer: filteredOptions[correctOptionIdx] || filteredOptions[0] || "Option A",
-      explanation: explanation.trim() || "Concept explanation provided by instructor.",
-      difficulty,
-      xp,
-    };
+    const correctAns = cleanedOptions[correctOptionIdx] || cleanedOptions[0] || "";
 
-    if (!activeSubject) return;
-    const currentSubId = activeSubject.id;
-    const updated = subjects.map((s) => {
-      if (s.id === currentSubId) {
+    if (editingQuestion) {
+      // Update existing
+      const updated = subjects.map((sub) => {
+        if (sub.id !== activeSubject.id) return sub;
         return {
-          ...s,
-          questions: [newQ, ...s.questions],
+          ...sub,
+          topics: sub.topics.map((top) => {
+            if (top.id !== activeTopic.id) return top;
+            return {
+              ...top,
+              questions: top.questions.map((q) => {
+                if (q.id !== editingQuestion.id) return q;
+                return {
+                  ...q,
+                  questionText: questionPrompt.trim(),
+                  options: cleanedOptions,
+                  correctAnswer: correctAns,
+                  explanation: questionExplanation.trim(),
+                  difficulty: questionDifficulty,
+                  xp: questionXp,
+                };
+              }),
+            };
+          }),
         };
-      }
-      return s;
-    });
+      });
+      updateSubjects(updated);
+      toast.success("Question updated successfully!");
+    } else {
+      // Add new
+      const newQ: McqQuestionItem = {
+        id: `q_${Date.now()}`,
+        topicId: activeTopic.id,
+        questionText: questionPrompt.trim(),
+        options: cleanedOptions,
+        correctAnswer: correctAns,
+        explanation: questionExplanation.trim(),
+        difficulty: questionDifficulty,
+        xp: questionXp,
+      };
 
-    updateSubjects(updated);
-    toast.success("MCQ created successfully!");
-    setAddQuestionModalOpen(false);
-    setQuestionPrompt("");
-    setOptions(["", "", "", ""]);
-    setCorrectOptionIdx(0);
-    setExplanation("");
-  };
-
-  // Handle Manual Theory Question Creation
-  const handleCreateTheoryQuestion = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!theoryPrompt.trim()) {
-      toast.error("Please enter the question prompt.");
-      return;
+      const updated = subjects.map((sub) => {
+        if (sub.id !== activeSubject.id) return sub;
+        return {
+          ...sub,
+          topics: sub.topics.map((top) => {
+            if (top.id !== activeTopic.id) return top;
+            return {
+              ...top,
+              questions: [newQ, ...top.questions],
+            };
+          }),
+        };
+      });
+      updateSubjects(updated);
+      toast.success("Question added to topic!");
     }
-    if (!theoryExpectedAnswer.trim()) {
-      toast.error("Please provide the expected answer or solution.");
-      return;
-    }
 
-    const newQ: TheoryQuestionItem = {
-      id: `th_manual_${Date.now()}`,
-      questionText: theoryPrompt.trim(),
-      expectedAnswer: theoryExpectedAnswer.trim(),
-      rubricOrGuidelines: theoryRubric.trim() || undefined,
-      difficulty: theoryDifficulty,
-      marks: theoryMarks,
-    };
-
-    if (!activeSubject) return;
-    const updated = subjects.map((s) => {
-      if (s.id === activeSubject.id) {
-        return {
-          ...s,
-          theoryQuestions: [newQ, ...(s.theoryQuestions || [])],
-        };
-      }
-      return s;
-    });
-
-    updateSubjects(updated);
-    toast.success("Theory question created successfully!");
     setAddQuestionModalOpen(false);
-    setTheoryPrompt("");
-    setTheoryExpectedAnswer("");
-    setTheoryRubric("");
   };
 
-  const handleDeleteQuestion = (qId: string) => {
-    if (!activeSubject) return;
-    const updated = subjects.map((s) => {
-      if (s.id === activeSubject.id) {
-        return {
-          ...s,
-          questions: s.questions.filter((q) => q.id !== qId),
-        };
-      }
-      return s;
+  const handleDeleteQuestion = (questionId: string) => {
+    if (!activeSubject || !activeTopic) return;
+    const updated = subjects.map((sub) => {
+      if (sub.id !== activeSubject.id) return sub;
+      return {
+        ...sub,
+        topics: sub.topics.map((top) => {
+          if (top.id !== activeTopic.id) return top;
+          return {
+            ...top,
+            questions: top.questions.filter((q) => q.id !== questionId),
+          };
+        }),
+      };
     });
     updateSubjects(updated);
-    toast.success("Question removed from bank.");
+    toast.success("Question deleted");
   };
 
-  const handleDeleteTheoryQuestion = (qId: string) => {
-    if (!activeSubject) return;
-    const updated = subjects.map((s) => {
-      if (s.id === activeSubject.id) {
-        return {
-          ...s,
-          theoryQuestions: (s.theoryQuestions || []).filter((q) => q.id !== qId),
-        };
-      }
-      return s;
-    });
-    updateSubjects(updated);
-    toast.success("Theory question removed from bank.");
-  };
-
-  // Handle New Subject Creation
+  // -------------------------------------------------------------
+  // Add Subject & Add Topic
+  // -------------------------------------------------------------
   const handleCreateSubject = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSubName.trim()) {
-      toast.error("Please enter a subject name.");
+    if (!newSubjectName.trim()) {
+      toast.error("Subject name is required.");
       return;
     }
+
     const newSub: SubjectItem = {
       id: `sub_${Date.now()}`,
-      name: newSubName.trim(),
-      description: newSubDesc.trim() || `Coursework and assessments for ${newSubName.trim()}`,
+      name: newSubjectName.trim(),
+      description: newSubjectDesc.trim() || `Questions and topics for ${newSubjectName.trim()}`,
       iconName: "BookOpen",
-      color: "indigo",
+      color: "emerald",
+      topics: [],
       questions: [],
     };
 
     const updated = [...subjects, newSub];
     updateSubjects(updated);
     setSelectedSubjectId(newSub.id);
+    setSelectedTopicId("");
     setNewSubjectModalOpen(false);
-    setNewSubName("");
-    setNewSubDesc("");
-    toast.success(`Subject "${newSub.name}" added to bank!`);
+    setNewSubjectName("");
+    setNewSubjectDesc("");
+    toast.success(`Subject "${newSub.name}" created!`);
   };
 
-  // Filtered Questions in Current Subject
-  const filteredMcqs = activeSubject
-    ? activeSubject.questions.filter(
-        (q) =>
-          q.questionText.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          q.options.some((o) => o.toLowerCase().includes(searchQuery.toLowerCase())),
-      )
-    : [];
+  const handleCreateTopic = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeSubject) {
+      toast.error("Please select a subject first.");
+      return;
+    }
+    if (!newTopicName.trim()) {
+      toast.error("Topic name is required.");
+      return;
+    }
 
-  const filteredTheory = activeSubject
-    ? (activeSubject.theoryQuestions || []).filter(
-        (q) =>
-          q.questionText.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          q.expectedAnswer.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-    : [];
+    const newTop: TopicItem = {
+      id: `top_${Date.now()}`,
+      subjectId: activeSubject.id,
+      name: newTopicName.trim(),
+      description: newTopicDesc.trim(),
+      questions: [],
+    };
+
+    const updated = subjects.map((sub) => {
+      if (sub.id !== activeSubject.id) return sub;
+      return {
+        ...sub,
+        topics: [...sub.topics, newTop],
+      };
+    });
+
+    updateSubjects(updated);
+    setSelectedTopicId(newTop.id);
+    setNewTopicModalOpen(false);
+    setNewTopicName("");
+    setNewTopicDesc("");
+    toast.success(`Topic "${newTop.name}" created!`);
+  };
+
+  // Import from old test sample
+  const handleImportSampleQuestions = (count: number) => {
+    if (!activeSubject || !activeTopic) {
+      toast.error("Select a subject and topic first.");
+      return;
+    }
+
+    const samplePool: McqQuestionItem[] = [
+      {
+        id: `mock_${Date.now()}_1`,
+        questionText: `Which of the following represents standard behavior in ${activeSubject.name}?`,
+        options: [
+          "Deterministic execution with validated inputs",
+          "Random state mutation without locks",
+          "Blocking the event loop continuously",
+          "Ignoring runtime exceptions unconditionally",
+        ],
+        correctAnswer: "Deterministic execution with validated inputs",
+        explanation: "Robust systems guarantee deterministic execution with verified inputs.",
+        difficulty: "Easy",
+        xp: 15,
+        sourceDoc: "Past Mock Exam 2025",
+      },
+      {
+        id: `mock_${Date.now()}_2`,
+        questionText: `What is the optimal complexity for search operations in an indexed ${activeTopic.name} structure?`,
+        options: ["O(log n)", "O(n²)", "O(n!)", "O(2ⁿ)"],
+        correctAnswer: "O(log n)",
+        explanation:
+          "Binary and tree-based indexed lookups typically achieve logarithmic O(log n) time.",
+        difficulty: "Medium",
+        xp: 25,
+        sourceDoc: "Past Mock Exam 2025",
+      },
+      {
+        id: `mock_${Date.now()}_3`,
+        questionText: `In competitive assessments, what is the best practice when handling boundary constraints?`,
+        options: [
+          "Validate edge cases such as empty input, maximum bounds, and negative values",
+          "Assume all inputs fit within typical integer limits without bounds checks",
+          "Discard any input that exceeds 10 elements",
+          "Rely entirely on default compiler traps",
+        ],
+        correctAnswer:
+          "Validate edge cases such as empty input, maximum bounds, and negative values",
+        explanation: "Defensive boundary testing guarantees correctness against edge test cases.",
+        difficulty: "Hard",
+        xp: 35,
+        sourceDoc: "Past Mock Exam 2025",
+      },
+    ];
+
+    const toAdd = samplePool.slice(0, count);
+    const updated = subjects.map((sub) => {
+      if (sub.id !== activeSubject.id) return sub;
+      return {
+        ...sub,
+        topics: sub.topics.map((top) => {
+          if (top.id !== activeTopic.id) return top;
+          return {
+            ...top,
+            questions: [...top.questions, ...toAdd],
+          };
+        }),
+      };
+    });
+
+    updateSubjects(updated);
+    setFromOldTestModalOpen(false);
+    toast.success(`Imported ${toAdd.length} questions from previous test paper!`);
+  };
+
+  // -------------------------------------------------------------
+  // Filtered Questions in Current Topic
+  // -------------------------------------------------------------
+  const displayedQuestions = useMemo(() => {
+    if (!activeTopic) return [];
+    return activeTopic.questions.filter((q) => {
+      const matchSearch =
+        !searchQuery.trim() ||
+        q.questionText.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        q.options.some((o) => o.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      const matchLevel = levelFilter === "All" || q.difficulty === levelFilter;
+
+      return matchSearch && matchLevel;
+    });
+  }, [activeTopic, searchQuery, levelFilter]);
+
+  // Handle Exam Creation
+  const handleCreateExam = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newExamTitle.trim() || !newExamSubjectId) {
+      toast.error("Please fill in the exam title and subject.");
+      return;
+    }
+
+    const sub = subjects.find((s) => s.id === newExamSubjectId);
+    const newEx: ExamItem = {
+      id: `exam_${Date.now()}`,
+      title: newExamTitle.trim(),
+      subjectId: newExamSubjectId,
+      subjectName: sub ? sub.name : "Subject",
+      topicIds: newExamTopicIds,
+      totalQuestions: newExamTotalQuestions,
+      durationMinutes: newExamDuration,
+      passingPercentage: newExamPassing,
+      status: "Published",
+      scheduledDate: new Date().toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }),
+      questions: [],
+    };
+
+    const updated = [newEx, ...exams];
+    updateExams(updated);
+    setCreateExamModalOpen(false);
+    setNewExamTitle("");
+    toast.success(`Exam "${newEx.title}" published!`);
+  };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Question Bank & Assessments"
-        subtitle="Organize Multiple Choice Questions (MCQs) and Theory / Coding problems, upload curriculum documents, and create assessments."
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setNewSubjectModalOpen(true)}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-xs cursor-pointer transition-colors"
-            >
-              <FolderPlus className="h-3.5 w-3.5 text-indigo-600" />
-              <span>+ New Subject</span>
-            </button>
-            <button
-              onClick={() => {
-                setExtractionTarget(activeTab);
-                setUploadModalOpen(true);
-              }}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 px-3 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 shadow-xs cursor-pointer transition-colors"
-            >
-              <Upload className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Upload Document to Extract</span>
-            </button>
-            <button
-              onClick={() => setAddQuestionModalOpen(true)}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3.5 text-xs font-semibold text-white shadow-sm cursor-pointer transition-colors"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Add {activeTab === "mcq" ? "MCQ" : "Theory Question"}</span>
-            </button>
-          </div>
-        }
-      />
+    <div className="space-y-5 pb-16">
+      {/* ========================================================= */}
+      {/* Top Switcher: [QUESTION BANK] vs [MCQ EXAMS]             */}
+      {/* ========================================================= */}
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800/80 pb-3">
+        <button
+          onClick={() => setActiveMainTab("bank")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs",
+            activeMainTab === "bank"
+              ? "bg-[#10B981] text-slate-950 shadow-emerald-500/20"
+              : "bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800",
+          )}
+        >
+          <Layers className="h-4 w-4" />
+          <span>QUESTION BANK</span>
+        </button>
 
-      {/* Top Level Metric Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat
-          label="Active Subjects"
-          value={subjects.length}
-          sub="Organized topic banks"
-          tone="violet"
-        />
-        <Stat label="Total MCQs" value={totalMcqs} sub="Multiple choice questions" tone="emerald" />
-        <Stat
-          label="Theory & Coding"
-          value={totalTheory}
-          sub="Descriptive problem bank"
-          tone="teal"
-        />
-        <Stat
-          label="Current Pool"
-          value={
-            activeTab === "mcq"
-              ? activeSubject?.questions.length || 0
-              : activeSubject?.theoryQuestions?.length || 0
-          }
-          sub={
-            activeSubject
-              ? `${activeSubject.name} (${activeTab === "mcq" ? "MCQs" : "Theory"})`
-              : "Select subject"
-          }
-          tone="amber"
-        />
+        <button
+          onClick={() => setActiveMainTab("exams")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs",
+            activeMainTab === "exams"
+              ? "bg-[#10B981] text-slate-950 shadow-emerald-500/20"
+              : "bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800",
+          )}
+        >
+          <FileText className="h-4 w-4" />
+          <span>MCQ EXAMS</span>
+        </button>
       </div>
 
-      {/* Main Two-Column Layout */}
-      <div className="grid gap-6 lg:grid-cols-12 items-start">
-        {/* Left Column: Subjects Navigator */}
-        <div className="lg:col-span-4 space-y-4">
-          <Panel
-            title="Subjects & Domains"
-            description="Select a subject to view its questions"
-            action={
+      {/* ========================================================= */}
+      {/* Header Row: Title, Subtitle, Refresh                      */}
+      {/* ========================================================= */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0 mt-0.5">
+            <Layers className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+              Question Bank
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Subject → Topic → Questions. Exams draw their papers from this bank.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleRefresh}
+            className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-xs cursor-pointer transition-colors"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ========================================================= */}
+      {/* VIEW 1: QUESTION BANK 3-COLUMN VIEW                       */}
+      {/* ========================================================= */}
+      {activeMainTab === "bank" && (
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start min-h-[640px]">
+          {/* ------------------------------------------------------- */}
+          {/* COLUMN 1: SUBJECTS                                      */}
+          {/* ------------------------------------------------------- */}
+          <div className="md:col-span-3 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#13151b] overflow-hidden flex flex-col h-[700px] shadow-sm">
+            {/* Column Header */}
+            <div className="px-4 py-3.5 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/70 dark:bg-slate-900/40">
+              <div className="flex items-center gap-2 text-xs font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300">
+                <BookOpen className="h-4 w-4 text-emerald-500" />
+                <span>SUBJECTS</span>
+              </div>
               <button
                 onClick={() => setNewSubjectModalOpen(true)}
-                className="text-xs font-semibold text-indigo-600 hover:underline cursor-pointer"
+                title="Add New Subject"
+                className="h-6 w-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                + Add Subject
+                <Plus className="h-4 w-4" />
               </button>
-            }
-          >
-            <div className="space-y-1.5">
+            </div>
+
+            {/* Subject List */}
+            <div className="flex-1 overflow-y-auto p-2 space-y-1">
               {subjects.map((sub) => {
                 const isSelected = sub.id === selectedSubjectId;
                 return (
                   <button
                     key={sub.id}
-                    onClick={() => {
-                      setSelectedSubjectId(sub.id);
-                      setSearchQuery("");
-                    }}
+                    onClick={() => handleSelectSubject(sub.id)}
                     className={cn(
-                      "w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer",
+                      "w-full text-left px-3.5 py-3 rounded-xl transition-all cursor-pointer group flex flex-col justify-center",
                       isSelected
-                        ? "border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-950 dark:text-indigo-100 shadow-xs font-semibold"
-                        : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800",
+                        ? "bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-semibold"
+                        : "hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-800 dark:text-slate-200 border border-transparent",
                     )}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div
-                        className={cn(
-                          "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
-                          isSelected
-                            ? "bg-indigo-600 text-white"
-                            : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400",
-                        )}
-                      >
-                        <BookOpen className="h-4 w-4" />
-                      </div>
-                      <div className="truncate">
-                        <p className="text-xs font-semibold truncate">{sub.name}</p>
-                        <p className="text-[11px] text-slate-500 truncate">{sub.description}</p>
-                      </div>
+                    <div className="text-sm font-semibold truncate leading-tight group-hover:text-emerald-500 transition-colors">
+                      {sub.name}
                     </div>
-                    <div className="flex items-center gap-1 shrink-0 ml-2">
-                      <span
-                        className={cn(
-                          "rounded-full px-2 py-0.5 text-[10px] font-bold",
-                          isSelected
-                            ? "bg-indigo-600 text-white"
-                            : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400",
-                        )}
-                      >
-                        {sub.questions.length} MCQs
-                      </span>
-                      <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-500">
-                        {(sub.theoryQuestions || []).length} Th
-                      </span>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                      {sub.topics.length} topic(s)
                     </div>
                   </button>
                 );
               })}
-            </div>
-          </Panel>
 
-          {/* Document Upload Quick Info Banner */}
-          <div className="rounded-2xl border border-indigo-100 dark:border-indigo-900/60 bg-gradient-to-br from-indigo-50/80 to-teal-50/40 dark:from-indigo-950/40 dark:to-slate-900 p-4 space-y-2.5">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-indigo-600" />
-              <h4 className="text-xs font-bold text-indigo-900 dark:text-indigo-200">
-                Document Question Generator
-              </h4>
+              {subjects.length === 0 && (
+                <div className="p-6 text-center text-xs text-slate-500">
+                  No subjects found. Click + to create one.
+                </div>
+              )}
             </div>
-            <p className="text-xs text-indigo-950/80 dark:text-indigo-300 leading-relaxed">
-              Upload your syllabus file (.txt, .md, .pdf, .docx, .json) or copy-paste lecture notes.
-              The AI parser extracts both <strong>MCQs</strong> and{" "}
-              <strong>Theory Questions</strong> with model answers.
-            </p>
-            <button
-              onClick={() => {
-                setExtractionTarget(activeTab);
-                setUploadModalOpen(true);
-              }}
-              className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 py-2 text-xs font-bold text-white shadow-xs cursor-pointer transition-colors"
-            >
-              <Upload className="h-3.5 w-3.5" />
-              Upload Syllabus Document
-            </button>
           </div>
-        </div>
 
-        {/* Right Column: Question Bank for Selected Subject */}
-        <div className="lg:col-span-8 space-y-4">
-          {/* Header & Search */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs">
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-display text-base font-bold text-slate-900 dark:text-slate-100">
-                  {activeSubject?.name || "Subject Questions"}
-                </h3>
-                <Pill tone="emerald">{activeSubject?.questions.length || 0} MCQs</Pill>
-                <Pill tone="teal">{(activeSubject?.theoryQuestions || []).length} Theory</Pill>
+          {/* ------------------------------------------------------- */}
+          {/* COLUMN 2: TOPICS                                        */}
+          {/* ------------------------------------------------------- */}
+          <div className="md:col-span-3 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#13151b] overflow-hidden flex flex-col h-[700px] shadow-sm">
+            {/* Column Header */}
+            <div className="px-4 py-3.5 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/70 dark:bg-slate-900/40">
+              <div className="flex items-center gap-2 text-xs font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300">
+                <Tag className="h-4 w-4 text-emerald-500" />
+                <span>TOPICS</span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {activeSubject?.description || "Browse questions to include in assessments."}
-              </p>
+              <button
+                onClick={() => {
+                  if (!activeSubject) {
+                    toast.error("Select a subject first.");
+                    return;
+                  }
+                  setNewTopicModalOpen(true);
+                }}
+                title="Add Topic to Subject"
+                className="h-6 w-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
             </div>
 
-            {/* Search Input */}
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
-              <input
-                type="text"
-                placeholder={`Search ${activeTab === "mcq" ? "MCQs" : "Theory questions"}...`}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8.5 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 pl-8 pr-3 text-xs outline-none focus:border-indigo-400"
-              />
+            {/* Topics List or Empty state */}
+            <div className="flex-1 overflow-y-auto p-2">
+              {!activeSubject ? (
+                <div className="h-full flex items-center justify-center p-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                  Select a subject first.
+                </div>
+              ) : activeSubject.topics.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center p-6 text-center space-y-3">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    No topics created for {activeSubject.name}.
+                  </p>
+                  <button
+                    onClick={() => setNewTopicModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold hover:bg-emerald-500/20 cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Create Topic</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {activeSubject.topics.map((top) => {
+                    const isSelected = top.id === selectedTopicId;
+                    return (
+                      <button
+                        key={top.id}
+                        onClick={() => setSelectedTopicId(top.id)}
+                        className={cn(
+                          "w-full text-left px-3.5 py-3 rounded-xl transition-all cursor-pointer group flex flex-col justify-center",
+                          isSelected
+                            ? "bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-semibold"
+                            : "hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-800 dark:text-slate-200 border border-transparent",
+                        )}
+                      >
+                        <div className="text-sm font-semibold truncate leading-tight group-hover:text-emerald-500 transition-colors">
+                          {top.name}
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                          {top.questions.length} question(s)
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Segmented View Switcher: MCQs vs Theory Questions */}
-          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
-            <button
-              onClick={() => setActiveTab("mcq")}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer",
-                activeTab === "mcq"
-                  ? "bg-indigo-600 text-white shadow-xs"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700",
-              )}
-            >
-              <CheckSquare className="h-4 w-4" />
-              <span>Multiple Choice (MCQs) ({activeSubject?.questions.length || 0})</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("theory")}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer",
-                activeTab === "theory"
-                  ? "bg-indigo-600 text-white shadow-xs"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700",
-              )}
-            >
-              <FileText className="h-4 w-4" />
-              <span>
-                Theory & Coding Questions ({(activeSubject?.theoryQuestions || []).length})
-              </span>
-            </button>
-          </div>
+          {/* ------------------------------------------------------- */}
+          {/* COLUMN 3: QUESTIONS                                     */}
+          {/* ------------------------------------------------------- */}
+          <div className="md:col-span-6 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#13151b] overflow-hidden flex flex-col h-[700px] shadow-sm">
+            {/* Top Toolbar */}
+            <div className="p-3.5 border-b border-slate-200 dark:border-slate-800/80 space-y-3 bg-slate-50/70 dark:bg-slate-900/40">
+              <div className="flex flex-wrap items-center gap-2 justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300">
+                  <HelpCircle className="h-4 w-4 text-emerald-500" />
+                  <span>QUESTIONS</span>
+                  {activeTopic && (
+                    <span className="text-[11px] font-normal normal-case text-slate-500 truncate max-w-[140px]">
+                      ({activeTopic.name})
+                    </span>
+                  )}
+                </div>
 
-          {/* VIEW 1: Multiple Choice Questions (MCQs) */}
-          {activeTab === "mcq" &&
-            (filteredMcqs.length > 0 ? (
-              <div className="space-y-3">
-                {filteredMcqs.map((q, idx) => (
+                {/* Upload (.docx) Button */}
+                <button
+                  onClick={() => {
+                    setDocInputMode("file");
+                    setExtractedDocQuestions([]);
+                    setUploadDocxModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/80 shadow-xs cursor-pointer transition-colors"
+                >
+                  <Upload className="h-3.5 w-3.5 text-emerald-500" />
+                  <span>Upload (.docx)</span>
+                </button>
+              </div>
+
+              {/* Search + Filter Row */}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="h-8.5 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 pl-8 pr-3 text-xs outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors"
+                  />
+                </div>
+
+                <select
+                  value={levelFilter}
+                  onChange={(e) =>
+                    setLevelFilter(e.target.value as "All" | "Easy" | "Medium" | "Hard")
+                  }
+                  className="h-8.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 text-xs font-medium text-slate-700 dark:text-slate-300 outline-none focus:border-emerald-500"
+                >
+                  <option value="All">All levels</option>
+                  <option value="Easy">Easy</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Hard">Hard</option>
+                </select>
+              </div>
+
+              {/* Action Buttons: From old test & + Add */}
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  onClick={() => setFromOldTestModalOpen(true)}
+                  disabled={!activeTopic}
+                  className="inline-flex items-center gap-1 h-8 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 cursor-pointer transition-colors"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                  <span>From old test</span>
+                </button>
+
+                <button
+                  onClick={handleOpenAddQuestion}
+                  disabled={!activeTopic}
+                  className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg bg-[#10B981] hover:bg-[#059669] text-slate-950 text-xs font-bold disabled:opacity-50 cursor-pointer shadow-xs transition-colors"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>+ Add</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Questions Body */}
+            <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
+              {!activeTopic ? (
+                <div className="h-full flex items-center justify-center p-8 text-center text-xs text-slate-500 dark:text-slate-400">
+                  Select a topic to manage its questions.
+                </div>
+              ) : displayedQuestions.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center p-8 text-center space-y-3">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    No questions in this topic yet.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleOpenAddQuestion}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 text-xs font-bold hover:bg-emerald-600 cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Add First Question</span>
+                    </button>
+                    <button
+                      onClick={() => setUploadDocxModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                    >
+                      <Upload className="h-3.5 w-3.5 text-emerald-500" />
+                      <span>Upload (.docx)</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                displayedQuestions.map((q, idx) => (
                   <div
                     key={q.id}
-                    className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs hover:border-indigo-200 dark:hover:border-indigo-800 transition-all space-y-3"
+                    className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all space-y-3"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                            Q{idx + 1}.
-                          </span>
-                          <Pill
-                            tone={
-                              q.difficulty === "Easy"
-                                ? "emerald"
-                                : q.difficulty === "Medium"
-                                  ? "amber"
-                                  : "rose"
-                            }
-                          >
-                            {q.difficulty}
-                          </Pill>
-                          <span className="rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-400">
-                            +{q.xp} XP
-                          </span>
-                          {q.sourceDoc && (
-                            <span className="inline-flex items-center gap-1 rounded bg-indigo-50 dark:bg-indigo-950/40 text-[10px] font-medium text-indigo-700 dark:text-indigo-300 px-2 py-0.5">
-                              <FileText className="h-3 w-3" />
-                              <span>{q.sourceDoc}</span>
-                            </span>
+                    {/* Card Top: Number, Badges, Delete/Edit */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
+                          #{idx + 1}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider",
+                            q.difficulty === "Easy"
+                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                              : q.difficulty === "Medium"
+                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                                : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20",
                           )}
-                        </div>
-                        <h4 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 leading-snug">
-                          {q.questionText}
-                        </h4>
+                        >
+                          {q.difficulty}
+                        </span>
+                        <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                          {q.xp || 20} XP
+                        </span>
+                        {q.sourceDoc && (
+                          <span className="text-[10px] text-slate-400 truncate max-w-[150px]">
+                            • {q.sourceDoc}
+                          </span>
+                        )}
                       </div>
 
-                      <button
-                        onClick={() => handleDeleteQuestion(q.id)}
-                        className="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
-                        title="Delete question"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleOpenEditQuestion(q)}
+                          title="Edit Question"
+                          className="h-7 w-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                        >
+                          <Edit3 className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteQuestion(q.id)}
+                          title="Delete Question"
+                          className="h-7 w-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
 
-                    {/* 4 Options Grid */}
-                    <div className="grid gap-2 sm:grid-cols-2 pt-1">
+                    {/* Question Prompt */}
+                    <div className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 leading-relaxed">
+                      {q.questionText}
+                    </div>
+
+                    {/* 4 Choices */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
                       {q.options.map((opt, optIdx) => {
                         const isCorrect = opt === q.correctAnswer;
-                        const letter = ["A", "B", "C", "D"][optIdx] || `${optIdx + 1}`;
+                        const letter = String.fromCharCode(65 + optIdx);
                         return (
                           <div
                             key={optIdx}
                             className={cn(
-                              "flex items-center gap-2 rounded-xl p-2.5 text-xs font-medium border transition-colors",
+                              "flex items-start gap-2 p-2 rounded-lg text-xs transition-colors",
                               isCorrect
-                                ? "border-emerald-300 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200"
-                                : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 text-slate-700 dark:text-slate-300",
+                                ? "bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 font-medium"
+                                : "bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800/80 text-slate-700 dark:text-slate-300",
                             )}
                           >
                             <span
                               className={cn(
-                                "flex h-5 w-5 shrink-0 items-center justify-center rounded-md font-mono text-[10px] font-bold",
+                                "h-5 w-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0",
                                 isCorrect
-                                  ? "bg-emerald-600 text-white"
-                                  : "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400",
+                                  ? "bg-emerald-500 text-slate-950"
+                                  : "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300",
                               )}
                             >
                               {letter}
                             </span>
-                            <span className="flex-1 truncate">{opt}</span>
+                            <span className="flex-1 break-words leading-tight">{opt}</span>
                             {isCorrect && (
-                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 shrink-0">
-                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                                <span>Correct</span>
-                              </span>
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
                             )}
                           </div>
                         );
                       })}
                     </div>
 
-                    {/* Explanation Box */}
+                    {/* Explanation */}
                     {q.explanation && (
-                      <div className="rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-950/60 p-2.5 text-[11px] text-slate-600 dark:text-slate-400">
-                        <strong className="text-slate-800 dark:text-slate-200 font-semibold">
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 bg-slate-50/80 dark:bg-slate-950/40 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800/60 leading-relaxed">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">
                           Explanation:
-                        </strong>{" "}
+                        </span>{" "}
                         {q.explanation}
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center space-y-3">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600">
-                  <CheckSquare className="h-6 w-6" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                    No MCQs in Subject
-                  </h4>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-                    Upload a syllabus document or add multiple choice questions manually.
-                  </p>
-                </div>
-                <div className="flex items-center justify-center gap-2 pt-2">
-                  <button
-                    onClick={() => {
-                      setExtractionTarget("mcq");
-                      setUploadModalOpen(true);
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 cursor-pointer"
-                  >
-                    <Upload className="h-3.5 w-3.5" /> Upload Document
-                  </button>
-                  <button
-                    onClick={() => setAddQuestionModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 cursor-pointer"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Add MCQ
-                  </button>
-                </div>
-              </div>
-            ))}
-
-          {/* VIEW 2: Theory & Coding Questions */}
-          {activeTab === "theory" &&
-            (filteredTheory.length > 0 ? (
-              <div className="space-y-3">
-                {filteredTheory.map((tq, idx) => (
-                  <div
-                    key={tq.id}
-                    className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xs hover:border-indigo-200 dark:hover:border-indigo-800 transition-all space-y-3"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                            Q{idx + 1}.
-                          </span>
-                          <Pill
-                            tone={
-                              tq.difficulty === "Easy"
-                                ? "emerald"
-                                : tq.difficulty === "Medium"
-                                  ? "amber"
-                                  : "rose"
-                            }
-                          >
-                            {tq.difficulty}
-                          </Pill>
-                          <span className="rounded bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-300">
-                            {tq.marks} Marks
-                          </span>
-                          {tq.sourceDoc && (
-                            <span className="inline-flex items-center gap-1 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-400 px-2 py-0.5">
-                              <FileText className="h-3 w-3" />
-                              <span>{tq.sourceDoc}</span>
-                            </span>
-                          )}
-                        </div>
-                        <h4 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 leading-snug">
-                          {tq.questionText}
-                        </h4>
-                      </div>
-
-                      <button
-                        onClick={() => handleDeleteTheoryQuestion(tq.id)}
-                        className="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
-                        title="Delete question"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    {/* Model Answer / Solution Card */}
-                    <div className="rounded-xl border border-indigo-100 dark:border-indigo-950/80 bg-indigo-50/50 dark:bg-indigo-950/30 p-3 space-y-1 text-xs">
-                      <p className="font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-indigo-600" />
-                        <span>Expected Answer / Model Solution:</span>
-                      </p>
-                      <p className="text-slate-700 dark:text-slate-300 leading-relaxed font-mono text-[11px]">
-                        {tq.expectedAnswer}
-                      </p>
-                    </div>
-
-                    {/* Rubric / Evaluation Guidelines */}
-                    {tq.rubricOrGuidelines && (
-                      <div className="rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-950/60 p-2.5 text-[11px] text-slate-600 dark:text-slate-400">
-                        <strong className="text-slate-800 dark:text-slate-200 font-semibold">
-                          Evaluation Rubric:
-                        </strong>{" "}
-                        {tq.rubricOrGuidelines}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center space-y-3">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600">
-                  <FileText className="h-6 w-6" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                    No Theory Questions Found
-                  </h4>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-                    Extract open-ended or coding questions from syllabus notes or add them manually.
-                  </p>
-                </div>
-                <div className="flex items-center justify-center gap-2 pt-2">
-                  <button
-                    onClick={() => {
-                      setExtractionTarget("theory");
-                      setUploadModalOpen(true);
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 cursor-pointer"
-                  >
-                    <Upload className="h-3.5 w-3.5" /> Upload Document
-                  </button>
-                  <button
-                    onClick={() => setAddQuestionModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 cursor-pointer"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Add Theory Question
-                  </button>
-                </div>
-              </div>
-            ))}
+                ))
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* MODAL 1: Upload Document & Extract Questions */}
-      <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
+      {/* ========================================================= */}
+      {/* VIEW 2: MCQ EXAMS TAB                                     */}
+      {/* ========================================================= */}
+      {activeMainTab === "exams" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                Published & Scheduled Exams
+              </h2>
+              <p className="text-xs text-slate-500">
+                Automated assessments drawing questions directly from the question bank.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setNewExamSubjectId(selectedSubjectId || subjects[0]?.id || "");
+                setCreateExamModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#10B981] hover:bg-[#059669] text-slate-950 text-xs font-bold shadow-xs cursor-pointer transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Create MCQ Exam</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {exams.map((exam) => (
+              <div
+                key={exam.id}
+                className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#13151b] p-5 shadow-sm space-y-4 flex flex-col justify-between"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                      {exam.status}
+                    </span>
+                    <span className="text-xs text-slate-500 flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {exam.durationMinutes} mins
+                    </span>
+                  </div>
+
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    {exam.title}
+                  </h3>
+                  <div className="text-xs text-emerald-500 font-semibold">{exam.subjectName}</div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-2 text-xs text-slate-500">
+                  <div className="flex items-center justify-between">
+                    <span>Questions Pool:</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                      {exam.totalQuestions} Questions
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Pass Score:</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                      {exam.passingPercentage}%
+                    </span>
+                  </div>
+                  {exam.scheduledDate && (
+                    <div className="flex items-center justify-between">
+                      <span>Schedule:</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">
+                        {exam.scheduledDate}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2 flex items-center gap-2">
+                  <button
+                    onClick={() => toast.success(`Exam link copied to clipboard!`)}
+                    className="flex-1 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                  >
+                    Copy Link
+                  </button>
+                  <button
+                    onClick={() => toast.info(`Previewing exam "${exam.title}"`)}
+                    className="h-8 px-3 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                  >
+                    Preview
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL 1: UPLOAD (.docx) & DOCUMENT PARSER                  */}
+      {/* ========================================================= */}
+      <Dialog open={uploadDocxModalOpen} onOpenChange={setUploadDocxModalOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-indigo-600" />
-              <span>Extract Questions from Subject Document</span>
+              <Upload className="h-5 w-5 text-emerald-500" />
+              <span>Upload Document to Question Bank</span>
             </DialogTitle>
             <DialogDescription>
-              Upload or paste chapter notes for <strong>{activeSubject?.name}</strong>. Choose
-              whether to extract MCQs or Theory questions.
+              Upload curriculum notes, tests, or questions from Word (.docx), text (.txt), markdown
+              (.md), or paste document text directly.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* Extraction Type Selector */}
-            <div className="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+            {/* Input Mode Toggle */}
+            <div className="flex rounded-lg bg-slate-100 dark:bg-slate-800 p-1 text-xs">
               <button
                 type="button"
-                onClick={() => setExtractionTarget("mcq")}
+                onClick={() => setDocInputMode("file")}
                 className={cn(
-                  "flex-1 py-1.5 px-3 text-xs font-bold rounded-lg transition-all cursor-pointer",
-                  extractionTarget === "mcq"
-                    ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900",
+                  "flex-1 py-1.5 rounded-md font-semibold transition-all cursor-pointer",
+                  docInputMode === "file"
+                    ? "bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-xs"
+                    : "text-slate-600 dark:text-slate-400",
                 )}
               >
-                🎯 Extract as Multiple Choice (MCQs)
+                Upload File (.docx / .doc / .txt)
               </button>
               <button
                 type="button"
-                onClick={() => setExtractionTarget("theory")}
+                onClick={() => setDocInputMode("paste")}
                 className={cn(
-                  "flex-1 py-1.5 px-3 text-xs font-bold rounded-lg transition-all cursor-pointer",
-                  extractionTarget === "theory"
-                    ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900",
+                  "flex-1 py-1.5 rounded-md font-semibold transition-all cursor-pointer",
+                  docInputMode === "paste"
+                    ? "bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-xs"
+                    : "text-slate-600 dark:text-slate-400",
                 )}
               >
-                📝 Extract as Theory & Coding Questions
+                Paste Text / Questions
               </button>
             </div>
 
-            {/* Drag & Drop File Upload Box */}
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragging(true);
-              }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={cn(
-                "border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all",
-                isDragging
-                  ? "border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40"
-                  : uploadedFileName
-                    ? "border-emerald-300 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/20"
-                    : "border-slate-200 dark:border-slate-800 hover:border-indigo-400 bg-slate-50/50 dark:bg-slate-900/50",
-              )}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".txt,.md,.json,.csv,.doc,.docx,.pdf"
-                className="hidden"
-                onChange={handleFileInputChange}
-              />
-              <div className="flex flex-col items-center justify-center gap-1.5">
-                <div className="h-10 w-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center">
-                  <FileUp className="h-5 w-5" />
+            {/* Target Subject & Topic Selectors */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Import into Subject *
+                </label>
+                <select
+                  value={uploadTargetSubjectId}
+                  onChange={(e) => {
+                    setUploadTargetSubjectId(e.target.value);
+                    const sub = subjects.find((s) => s.id === e.target.value);
+                    if (sub && sub.topics.length > 0) {
+                      setUploadTargetTopicId(sub.topics[0]?.id || "");
+                    }
+                  }}
+                  className="h-8.5 w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 text-xs outline-none"
+                >
+                  {subjects.map((sub) => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                    Topic Destination
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsNewTopicForUpload(!isNewTopicForUpload)}
+                    className="text-[10px] font-semibold text-emerald-500 hover:underline cursor-pointer"
+                  >
+                    {isNewTopicForUpload ? "Use Existing Topic" : "+ Create New Topic"}
+                  </button>
                 </div>
-                {uploadedFileName ? (
-                  <div>
-                    <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1 justify-center">
-                      <Check className="h-3.5 w-3.5" /> {uploadedFileName} ({uploadedFileSize})
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Click or drop another file to replace
-                    </p>
-                  </div>
+
+                {isNewTopicForUpload ? (
+                  <input
+                    type="text"
+                    placeholder="New topic name..."
+                    value={newTopicTitleForUpload}
+                    onChange={(e) => setNewTopicTitleForUpload(e.target.value)}
+                    className="h-8.5 w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 text-xs outline-none focus:border-emerald-500"
+                  />
                 ) : (
-                  <div>
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                      Click to browse or drag and drop syllabus / notes file
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Supports .txt, .md, .json, .csv, and formatted documents
-                    </p>
-                  </div>
+                  <select
+                    value={uploadTargetTopicId}
+                    onChange={(e) => setUploadTargetTopicId(e.target.value)}
+                    className="h-8.5 w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 text-xs outline-none"
+                  >
+                    {subjects
+                      .find((s) => s.id === uploadTargetSubjectId)
+                      ?.topics.map((top) => (
+                        <option key={top.id} value={top.id}>
+                          {top.name}
+                        </option>
+                      ))}
+                    {(!subjects.find((s) => s.id === uploadTargetSubjectId)?.topics ||
+                      subjects.find((s) => s.id === uploadTargetSubjectId)?.topics.length ===
+                        0) && <option value="">No topics (will create default)</option>}
+                  </select>
                 )}
               </div>
             </div>
 
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Document / Chapter Title (Optional)
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Chapter 4: Object-Oriented Programming & Classes"
-                value={docTitle}
-                onChange={(e) => setDocTitle(e.target.value)}
-                className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 px-3 text-xs outline-none focus:border-indigo-400"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Curriculum Notes or Document Text
-              </label>
-              <textarea
-                rows={5}
-                placeholder="Paste curriculum notes, lecture content, syllabus guidelines, or formatted Q&A text here...&#10;&#10;e.g.&#10;In Python, lists are mutable while tuples are immutable. Functions are created with the 'def' keyword."
-                value={docContent}
-                onChange={(e) => setDocContent(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 p-3 text-xs font-mono outline-none focus:border-indigo-400"
-              />
-            </div>
-
-            {/* Quick Demo Pre-Fill Button */}
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => {
-                  setDocTitle(`${activeSubject?.name || "Subject"} Core Lecture Notes`);
-                  setDocContent(
-                    `Q1: What is the main purpose of encapsulation in object-oriented programming?\na) To hide internal state and require all interaction through methods\nb) To allow multiple inheritance\nc) To compile code faster\nd) To execute parallel threads\nAnswer: To hide internal state and require all interaction through methods\n\nQ2: Explain the significance of polymorphism in scalable software architecture.\nExpected Answer: Polymorphism allows code to work with objects of multiple types uniformly through a common interface or abstract class, enabling loose coupling and easy extensibility.\nRubric: Award 3 marks for interface definition and 2 marks for real-world example.\n\nQ3: What happens when an exception is not caught in a program?\na) The program terminates abnormally\nb) The computer automatically reboots\nc) The code compiles into JavaScript\nd) The execution ignores all errors\nAnswer: The program terminates abnormally`,
-                  );
-                }}
-                className="text-xs font-medium text-indigo-600 hover:underline cursor-pointer"
+            {/* Mode 1: File Dropzone */}
+            {docInputMode === "file" && (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 rounded-xl p-8 text-center cursor-pointer transition-colors bg-slate-50/50 dark:bg-slate-900/30"
               >
-                + Paste Sample Curriculum Text
-              </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".docx,.doc,.txt,.md,.json,.csv"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      handleFileUpload(e.target.files[0]);
+                    }
+                  }}
+                />
+                <div className="flex flex-col items-center gap-2">
+                  <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                    <FileUp className="h-5 w-5" />
+                  </div>
+                  <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    {docFileName ? docFileName : "Choose a document or drag it here"}
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    Supports Word (.docx), Plain text (.txt), Markdown (.md)
+                  </div>
+                  {docFileSize && (
+                    <div className="text-[10px] text-emerald-500 font-medium">{docFileSize}</div>
+                  )}
+                </div>
+              </div>
+            )}
 
-              <button
-                type="button"
-                onClick={handleExtractFromDoc}
-                disabled={isExtracting || !docContent.trim()}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-50 cursor-pointer shadow-xs transition-colors"
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>
-                  {isExtracting
-                    ? "Extracting..."
-                    : `Extract & Generate ${extractionTarget === "mcq" ? "MCQs" : "Theory Questions"}`}
-                </span>
-              </button>
-            </div>
-
-            {/* Extracted MCQs Preview */}
-            {extractionTarget === "mcq" && extractedPreview.length > 0 && (
-              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                    Extracted MCQs ({extractedPreview.length})
-                  </h4>
+            {/* Mode 2: Paste text */}
+            {docInputMode === "paste" && (
+              <div className="space-y-2">
+                <textarea
+                  rows={6}
+                  placeholder={`Paste questions here, for example:\n\n1. What is the antonym of Abundant?\nA) Scarce\nB) Plentiful\nC) Ample\nD) Broad\nAnswer: A\nExplanation: Scarce means insufficient.`}
+                  value={rawDocText}
+                  onChange={(e) => setRawDocText(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-3 text-xs outline-none focus:border-emerald-500 font-mono"
+                />
+                <div className="flex justify-end">
                   <button
                     type="button"
-                    onClick={handleSaveExtracted}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 cursor-pointer shadow-xs transition-colors"
+                    onClick={handleManualDocParse}
+                    disabled={isExtractingDoc}
+                    className="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-xs font-semibold hover:bg-slate-300 dark:hover:bg-slate-700 cursor-pointer"
                   >
-                    <Check className="h-3.5 w-3.5" />
-                    <span>Save {extractedPreview.length} MCQs to Bank</span>
+                    Parse Pasted Text
                   </button>
                 </div>
+              </div>
+            )}
 
-                <div className="max-h-60 overflow-y-auto space-y-2.5 pr-1">
-                  {extractedPreview.map((pq, idx) => (
+            {/* Extracted Preview */}
+            {extractedDocQuestions.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    <span>Parsed {extractedDocQuestions.length} Questions Ready to Import</span>
+                  </div>
+                </div>
+
+                <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
+                  {extractedDocQuestions.slice(0, 5).map((q, i) => (
                     <div
-                      key={idx}
-                      className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-3 space-y-2 text-xs"
+                      key={i}
+                      className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs bg-white dark:bg-slate-950 space-y-1"
                     >
-                      <p className="font-semibold text-slate-800 dark:text-slate-200">
-                        {idx + 1}. {pq.questionText}
-                      </p>
-                      <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-                        {pq.options.map((opt, oIdx) => (
-                          <div
-                            key={oIdx}
-                            className={cn(
-                              "rounded p-1 border truncate",
-                              opt === pq.correctAnswer
-                                ? "bg-emerald-100 border-emerald-300 text-emerald-800 font-semibold"
-                                : "bg-white border-slate-200 text-slate-600",
-                            )}
-                          >
-                            {opt}
-                          </div>
-                        ))}
+                      <div className="font-semibold truncate">
+                        {i + 1}. {q.questionText}
+                      </div>
+                      <div className="text-[11px] text-emerald-500 font-medium">
+                        Answer: {q.correctAnswer}
                       </div>
                     </div>
                   ))}
-                </div>
-              </div>
-            )}
-
-            {/* Extracted Theory Questions Preview */}
-            {extractionTarget === "theory" && extractedTheoryPreview.length > 0 && (
-              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                    Extracted Theory Questions ({extractedTheoryPreview.length})
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={handleSaveExtracted}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 cursor-pointer shadow-xs transition-colors"
-                  >
-                    <Check className="h-3.5 w-3.5" />
-                    <span>Save {extractedTheoryPreview.length} Theory Questions</span>
-                  </button>
-                </div>
-
-                <div className="max-h-60 overflow-y-auto space-y-2.5 pr-1">
-                  {extractedTheoryPreview.map((tq, idx) => (
-                    <div
-                      key={idx}
-                      className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-3 space-y-1.5 text-xs"
-                    >
-                      <p className="font-semibold text-slate-800 dark:text-slate-200">
-                        {idx + 1}. {tq.questionText}
-                      </p>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-400 font-mono">
-                        <strong>Expected:</strong> {tq.expectedAnswer}
-                      </p>
+                  {extractedDocQuestions.length > 5 && (
+                    <div className="text-center text-[11px] text-slate-400 py-1">
+                      + {extractedDocQuestions.length - 5} more questions
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             )}
+
+            {/* Dialog Footer Actions */}
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setUploadDocxModalOpen(false)}
+                className="h-8.5 px-3.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveDocQuestionsToBank}
+                disabled={extractedDocQuestions.length === 0}
+                className="h-8.5 px-4 rounded-lg bg-[#10B981] hover:bg-[#059669] text-slate-950 text-xs font-bold disabled:opacity-50 cursor-pointer shadow-xs"
+              >
+                Save {extractedDocQuestions.length} Questions to Bank
+              </button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* MODAL 2: Add Question Manually (MCQ or Theory) */}
+      {/* ========================================================= */}
+      {/* MODAL 2: ADD / EDIT QUESTION                              */}
+      {/* ========================================================= */}
       <Dialog open={addQuestionModalOpen} onOpenChange={setAddQuestionModalOpen}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Add {activeTab === "mcq" ? "MCQ Question" : "Theory & Coding Question"}
+              {editingQuestion ? "Edit Multiple Choice Question" : "Add Question to Topic"}
             </DialogTitle>
             <DialogDescription>
-              Create a question for <strong>{activeSubject?.name}</strong>.
+              {activeTopic ? `Topic: ${activeTopic.name}` : "Configure question and options"}
             </DialogDescription>
           </DialogHeader>
 
-          {activeTab === "mcq" ? (
-            <form onSubmit={handleCreateQuestion} className="space-y-4 py-2">
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Question Prompt *
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="e.g. Which of the following data structures operates on a FIFO basis?"
-                  value={questionPrompt}
-                  onChange={(e) => setQuestionPrompt(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 p-2.5 text-xs outline-none focus:border-indigo-400"
-                  required
-                />
-              </div>
+          <form onSubmit={handleSaveQuestion} className="space-y-4 py-2">
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Question Prompt *
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Type the question prompt..."
+                value={questionPrompt}
+                onChange={(e) => setQuestionPrompt(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2.5 text-xs outline-none focus:border-emerald-500"
+                required
+              />
+            </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
-                  Answer Choices (Select the radio of the correct answer) *
-                </label>
-                {options.map((opt, idx) => (
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
+                Answer Choices (Select the radio of the correct answer) *
+              </label>
+              {questionOptions.map((opt, idx) => {
+                const letter = String.fromCharCode(65 + idx);
+                const isSelected = correctOptionIdx === idx;
+                return (
                   <div key={idx} className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="correctChoice"
-                      checked={correctOptionIdx === idx}
-                      onChange={() => setCorrectOptionIdx(idx)}
-                      className="h-4 w-4 text-emerald-600 cursor-pointer"
-                    />
-                    <span className="font-mono text-xs font-bold text-slate-400 w-4">
-                      {["A", "B", "C", "D"][idx]}:
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCorrectOptionIdx(idx)}
+                      className={cn(
+                        "h-7 w-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 transition-colors cursor-pointer",
+                        isSelected
+                          ? "bg-emerald-500 text-slate-950"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200",
+                      )}
+                    >
+                      {letter}
+                    </button>
                     <input
                       type="text"
-                      placeholder={`Option ${["A", "B", "C", "D"][idx]}`}
+                      placeholder={`Option ${letter}...`}
                       value={opt}
                       onChange={(e) => {
-                        const updated = [...options];
-                        updated[idx] = e.target.value;
-                        setOptions(updated);
+                        const next = [...questionOptions];
+                        next[idx] = e.target.value;
+                        setQuestionOptions(next);
                       }}
-                      className="h-8.5 flex-1 rounded-lg border border-slate-200 dark:border-slate-800 px-2.5 text-xs outline-none focus:border-indigo-400"
+                      className="h-8.5 flex-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 text-xs outline-none focus:border-emerald-500"
                       required
                     />
                   </div>
-                ))}
+                );
+              })}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Difficulty
+                </label>
+                <select
+                  value={questionDifficulty}
+                  onChange={(e) =>
+                    setQuestionDifficulty(e.target.value as "Easy" | "Medium" | "Hard")
+                  }
+                  className="h-8.5 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 text-xs outline-none"
+                >
+                  <option value="Easy">Easy</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Hard">Hard</option>
+                </select>
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Explanation (Shown after student submits)
+                  XP Points
                 </label>
-                <textarea
-                  rows={2}
-                  placeholder="e.g. A Queue follows First-In, First-Out (FIFO), unlike Stacks which use LIFO."
-                  value={explanation}
-                  onChange={(e) => setExplanation(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 p-2 text-xs outline-none focus:border-indigo-400"
+                <input
+                  type="number"
+                  value={questionXp}
+                  onChange={(e) => setQuestionXp(Number(e.target.value))}
+                  className="h-8.5 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 text-xs outline-none"
                 />
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Difficulty
-                  </label>
-                  <select
-                    value={difficulty}
-                    onChange={(e) => setDifficulty(e.target.value as "Easy" | "Medium" | "Hard")}
-                    className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 text-xs outline-none"
-                  >
-                    <option value="Easy">Easy (15 XP)</option>
-                    <option value="Medium">Medium (25 XP)</option>
-                    <option value="Hard">Hard (35 XP)</option>
-                  </select>
-                </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Explanation (Optional)
+              </label>
+              <textarea
+                rows={2}
+                placeholder="Why is this answer correct?"
+                value={questionExplanation}
+                onChange={(e) => setQuestionExplanation(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2.5 text-xs outline-none focus:border-emerald-500"
+              />
+            </div>
 
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    XP Reward
-                  </label>
-                  <input
-                    type="number"
-                    value={xp}
-                    onChange={(e) => setXp(Number(e.target.value))}
-                    className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 px-3 text-xs outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setAddQuestionModalOpen(false)}
-                  className="h-9 rounded-xl border border-slate-200 px-4 text-xs font-medium text-slate-700 hover:bg-slate-50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="h-9 rounded-xl bg-indigo-600 px-5 text-xs font-bold text-white hover:bg-indigo-700 cursor-pointer shadow-xs"
-                >
-                  Add MCQ
-                </button>
-              </div>
-            </form>
-          ) : (
-            <form onSubmit={handleCreateTheoryQuestion} className="space-y-4 py-2">
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Question Prompt *
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="e.g. Explain how Merge Sort works and derive its time complexity."
-                  value={theoryPrompt}
-                  onChange={(e) => setTheoryPrompt(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 p-2.5 text-xs outline-none focus:border-indigo-400"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Expected Answer / Model Solution *
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Detail the complete expected solution or key points..."
-                  value={theoryExpectedAnswer}
-                  onChange={(e) => setTheoryExpectedAnswer(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 p-2.5 text-xs outline-none focus:border-indigo-400"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                  Evaluation Rubric & Guidelines (Optional)
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="e.g. 3 marks for dividing step, 2 marks for merging explanation."
-                  value={theoryRubric}
-                  onChange={(e) => setTheoryRubric(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 p-2.5 text-xs outline-none focus:border-indigo-400"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Difficulty
-                  </label>
-                  <select
-                    value={theoryDifficulty}
-                    onChange={(e) =>
-                      setTheoryDifficulty(e.target.value as "Easy" | "Medium" | "Hard")
-                    }
-                    className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 text-xs outline-none"
-                  >
-                    <option value="Easy">Easy</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Hard">Hard</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Total Marks
-                  </label>
-                  <input
-                    type="number"
-                    value={theoryMarks}
-                    onChange={(e) => setTheoryMarks(Number(e.target.value))}
-                    className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 px-3 text-xs outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setAddQuestionModalOpen(false)}
-                  className="h-9 rounded-xl border border-slate-200 px-4 text-xs font-medium text-slate-700 hover:bg-slate-50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="h-9 rounded-xl bg-indigo-600 px-5 text-xs font-bold text-white hover:bg-indigo-700 cursor-pointer shadow-xs"
-                >
-                  Add Theory Question
-                </button>
-              </div>
-            </form>
-          )}
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setAddQuestionModalOpen(false)}
+                className="h-8.5 rounded-xl border border-slate-200 dark:border-slate-800 px-4 text-xs font-medium cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="h-8.5 rounded-xl bg-[#10B981] hover:bg-[#059669] px-4 text-xs font-bold text-slate-950 cursor-pointer shadow-xs"
+              >
+                {editingQuestion ? "Update Question" : "Save Question"}
+              </button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
 
-      {/* MODAL 3: New Subject */}
+      {/* ========================================================= */}
+      {/* MODAL 3: NEW SUBJECT                                      */}
+      {/* ========================================================= */}
       <Dialog open={newSubjectModalOpen} onOpenChange={setNewSubjectModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Create New Subject</DialogTitle>
+            <DialogTitle>Add New Subject</DialogTitle>
             <DialogDescription>
-              Add a new topic/domain to categorize multiple choice questions.
+              Create a new subject bucket to categorize topics and questions.
             </DialogDescription>
           </DialogHeader>
 
@@ -1322,23 +1519,24 @@ function TeacherQuestionsPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g. Cybersecurity & Network Defense"
-                value={newSubName}
-                onChange={(e) => setNewSubName(e.target.value)}
-                className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 px-3 text-xs outline-none focus:border-indigo-400"
+                placeholder="e.g. Verbal Ability, Cloud Computing"
+                value={newSubjectName}
+                onChange={(e) => setNewSubjectName(e.target.value)}
+                className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 text-xs outline-none focus:border-emerald-500"
                 required
               />
             </div>
+
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Subject Description
+                Description (Optional)
               </label>
               <textarea
                 rows={2}
-                placeholder="Brief description of the domain..."
-                value={newSubDesc}
-                onChange={(e) => setNewSubDesc(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 p-2.5 text-xs outline-none focus:border-indigo-400"
+                placeholder="Subject description or curriculum note..."
+                value={newSubjectDesc}
+                onChange={(e) => setNewSubjectDesc(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2.5 text-xs outline-none focus:border-emerald-500"
               />
             </div>
 
@@ -1346,15 +1544,212 @@ function TeacherQuestionsPage() {
               <button
                 type="button"
                 onClick={() => setNewSubjectModalOpen(false)}
-                className="h-9 rounded-xl border border-slate-200 px-4 text-xs font-medium text-slate-700 hover:bg-slate-50 cursor-pointer"
+                className="h-8.5 rounded-xl border border-slate-200 dark:border-slate-800 px-4 text-xs font-medium cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="h-9 rounded-xl bg-indigo-600 px-5 text-xs font-bold text-white hover:bg-indigo-700 cursor-pointer shadow-xs"
+                className="h-8.5 rounded-xl bg-[#10B981] hover:bg-[#059669] px-4 text-xs font-bold text-slate-950 cursor-pointer shadow-xs"
               >
                 Create Subject
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ========================================================= */}
+      {/* MODAL 4: NEW TOPIC                                        */}
+      {/* ========================================================= */}
+      <Dialog open={newTopicModalOpen} onOpenChange={setNewTopicModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Topic</DialogTitle>
+            <DialogDescription>
+              {activeSubject
+                ? `Add a topic under "${activeSubject.name}"`
+                : "Create a topic under selected subject"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateTopic} className="space-y-4 py-2">
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Topic Name *
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Syllogisms, Profit and Loss, Async Await"
+                value={newTopicName}
+                onChange={(e) => setNewTopicName(e.target.value)}
+                className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 text-xs outline-none focus:border-emerald-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Description (Optional)
+              </label>
+              <textarea
+                rows={2}
+                placeholder="Topic syllabus or guidelines..."
+                value={newTopicDesc}
+                onChange={(e) => setNewTopicDesc(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2.5 text-xs outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setNewTopicModalOpen(false)}
+                className="h-8.5 rounded-xl border border-slate-200 dark:border-slate-800 px-4 text-xs font-medium cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="h-8.5 rounded-xl bg-[#10B981] hover:bg-[#059669] px-4 text-xs font-bold text-slate-950 cursor-pointer shadow-xs"
+              >
+                Create Topic
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ========================================================= */}
+      {/* MODAL 5: FROM OLD TEST MODAL                              */}
+      {/* ========================================================= */}
+      <Dialog open={fromOldTestModalOpen} onOpenChange={setFromOldTestModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Import from Previous Test Papers</DialogTitle>
+            <DialogDescription>
+              Quickly seed questions into "{activeTopic?.name || "Topic"}" from past archived test
+              banks.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Mock Semester Examination 2025
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Standard questions vetted by curriculum chairs with complete answer keys.
+              </p>
+              <button
+                onClick={() => handleImportSampleQuestions(3)}
+                className="w-full h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500/10 hover:text-emerald-500 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Import 3 High-Yield Questions
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Diagnostic Placement Exam Set
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Foundational and speed-accuracy problem sets.
+              </p>
+              <button
+                onClick={() => handleImportSampleQuestions(2)}
+                className="w-full h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500/10 hover:text-emerald-500 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Import 2 Diagnostic Questions
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ========================================================= */}
+      {/* MODAL 6: CREATE EXAM                                      */}
+      {/* ========================================================= */}
+      <Dialog open={createExamModalOpen} onOpenChange={setCreateExamModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create MCQ Exam</DialogTitle>
+            <DialogDescription>
+              Configure an automated exam drawing questions from the question bank.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateExam} className="space-y-4 py-2">
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Exam Title *
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Mid-Term Assessment - C Programming"
+                value={newExamTitle}
+                onChange={(e) => setNewExamTitle(e.target.value)}
+                className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 text-xs outline-none focus:border-emerald-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Subject *
+              </label>
+              <select
+                value={newExamSubjectId}
+                onChange={(e) => setNewExamSubjectId(e.target.value)}
+                className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 text-xs outline-none"
+              >
+                {subjects.map((sub) => (
+                  <option key={sub.id} value={sub.id}>
+                    {sub.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Duration (Mins)
+                </label>
+                <input
+                  type="number"
+                  value={newExamDuration}
+                  onChange={(e) => setNewExamDuration(Number(e.target.value))}
+                  className="h-8.5 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 text-xs outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Pass Score (%)
+                </label>
+                <input
+                  type="number"
+                  value={newExamPassing}
+                  onChange={(e) => setNewExamPassing(Number(e.target.value))}
+                  className="h-8.5 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 text-xs outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setCreateExamModalOpen(false)}
+                className="h-8.5 rounded-xl border border-slate-200 dark:border-slate-800 px-4 text-xs font-medium cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="h-8.5 rounded-xl bg-[#10B981] hover:bg-[#059669] px-4 text-xs font-bold text-slate-950 cursor-pointer shadow-xs"
+              >
+                Publish Exam
               </button>
             </div>
           </form>

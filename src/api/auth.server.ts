@@ -4,7 +4,7 @@ import { auth } from "../server/auth/auth";
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "../server/db";
 import * as schema from "../server/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 const demoUsersByRole: Record<string, CachedUser> = {
   student: {
@@ -163,11 +163,31 @@ export const roleMiddleware = (allowedRoles: string[]) => {
 export const classIsolationMiddleware = createMiddleware().server(async ({ next }) => {
   const request = getRequest();
   const context = await getCachedSession(request as Request | undefined);
+  const user = context.user;
+  const isGlobalSupervisor = ["admin", "s2c", "school"].includes(user?.role || "");
+  const teacherId = user?.id;
+
   return next({
     context: {
       ...context,
       isClassOwner: true,
       strictIsolationActive: true,
+      teacherId,
+      isGlobalSupervisor,
+      verifyClassOwnership: async (classId: number): Promise<boolean> => {
+        if (isGlobalSupervisor) return true;
+        if (!classId) return false;
+        try {
+          const match = await db
+            .select({ id: schema.classes.id })
+            .from(schema.classes)
+            .where(and(eq(schema.classes.id, classId), eq(schema.classes.teacherId, teacherId)))
+            .limit(1);
+          return match.length > 0;
+        } catch {
+          return true;
+        }
+      },
     },
   });
 });

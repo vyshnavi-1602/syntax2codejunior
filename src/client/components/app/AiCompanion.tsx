@@ -142,7 +142,7 @@ export function FloatingCompanion() {
       )}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="fixed right-5 bottom-5 z-50 inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-3 text-sm font-medium text-white shadow-lg transition-transform hover:scale-[1.03] hover:bg-indigo-700"
+        className="fixed right-5 bottom-5 z-50 inline-flex items-center gap-2 rounded-full bg-[#10b981] hover:bg-[#059669] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition-transform hover:scale-[1.03]"
       >
         <Bot className="h-4 w-4" />
         Ask S2C

@@ -16,7 +16,11 @@ export const Route = createFileRoute("/teacher/students/")({
     ],
   }),
   loader: async () => {
-    return await getAllTeacherStudentsFn();
+    try {
+      return await getAllTeacherStudentsFn();
+    } catch {
+      return [];
+    }
   },
   component: TeacherStudentsPage,
 });
@@ -58,15 +62,19 @@ function TeacherStudentsPage() {
             placeholder="Search student or class..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-sm focus:border-indigo-500 focus:outline-none"
+            className="h-10 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 pl-9 pr-4 text-sm text-slate-900 dark:text-slate-100 focus:border-emerald-500 focus:outline-none"
           />
         </div>
       </div>
 
-      <Panel title="Enrolled Students" description={`${list.length} students matching criteria`}>
+      <Panel
+        title="Enrolled Students"
+        description={`${list.length} students matching criteria`}
+        className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#13151b]"
+      >
         <div className="overflow-x-auto">
           <table className="w-full min-w-[44rem] text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+            <thead className="bg-slate-50 dark:bg-slate-900/60 text-left text-xs uppercase text-slate-500 dark:text-slate-400">
               <tr>
                 <th className="px-4 py-3 font-medium">Student</th>
                 <th className="px-4 py-3 font-medium">Class</th>
@@ -79,15 +87,20 @@ function TeacherStudentsPage() {
             </thead>
             <tbody>
               {list.map((s) => (
-                <tr key={s.id} className="border-t border-slate-100 hover:bg-slate-50/60">
+                <tr
+                  key={s.id}
+                  className="border-t border-slate-100 dark:border-slate-800/80 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
+                >
                   <td className="px-4 py-3">
-                    <p className="font-medium text-slate-900">{s.name}</p>
-                    <p className="text-xs text-slate-500">{s.email}</p>
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{s.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{s.email}</p>
                   </td>
-                  <td className="px-4 py-3 font-medium text-slate-700">{s.className}</td>
-                  <td className="px-4 py-3 text-slate-600">Lv {s.level}</td>
-                  <td className="px-4 py-3 text-slate-600">{s.score}</td>
-                  <td className="px-4 py-3 text-slate-600">{s.attendance}%</td>
+                  <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-300">
+                    {s.className}
+                  </td>
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400">Lv {s.level}</td>
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{s.score}</td>
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{s.attendance}%</td>
                   <td className="px-4 py-3">
                     <Pill
                       tone={
@@ -105,7 +118,7 @@ function TeacherStudentsPage() {
                     <Link
                       to="/teacher/students/$studentId"
                       params={{ studentId: s.id }}
-                      className="text-xs font-semibold text-indigo-600 hover:underline"
+                      className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
                     >
                       View profile
                     </Link>

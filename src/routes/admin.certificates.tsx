@@ -42,7 +42,11 @@ export const Route = createFileRoute("/admin/certificates")({
     ],
   }),
   loader: async () => {
-    return await getAdminCertificatesFn();
+    try {
+      return await getAdminCertificatesFn();
+    } catch {
+      return { templates: [], issuedCredentials: [] };
+    }
   },
   component: AdminCertificates,
 });

@@ -29,6 +29,7 @@ import {
   type SubjectItem,
   type McqQuestionItem,
 } from "@/client/components/app/questionBank";
+import { loadCourses, type CourseItem } from "@/client/components/app/coursesData";
 import {
   Bar as RBar,
   BarChart,
@@ -71,20 +72,38 @@ export const Route = createFileRoute("/teacher/assignments")({
     ],
   }),
   loader: async () => {
-    const [assignments, classes] = await Promise.all([
-      getTeacherAssignmentsFn(),
-      getTeacherClassesFn(),
-    ]);
-    return {
-      assignments,
-      classes,
-      questionAnalytics: [
-        { q: "Q1. Variables & I/O", correct: 85 },
-        { q: "Q2. Conditional Logic", correct: 65 },
-        { q: "Q3. Loops & Range", correct: 48 },
-        { q: "Q4. Functions & Arrays", correct: 74 },
-      ],
-    };
+    try {
+      const [assignments, classes] = await Promise.all([
+        getTeacherAssignmentsFn(),
+        getTeacherClassesFn(),
+      ]);
+      return {
+        assignments: assignments || [],
+        classes: classes || [],
+        questionAnalytics: [
+          { q: "Q1. Variables & I/O", correct: 85 },
+          { q: "Q2. Conditional Logic", correct: 65 },
+          { q: "Q3. Loops & Range", correct: 48 },
+          { q: "Q4. Functions & Arrays", correct: 74 },
+        ],
+      };
+    } catch {
+      return {
+        assignments: [],
+        classes: [
+          { id: 1, name: "Grade 8A" },
+          { id: 2, name: "Grade 8B" },
+          { id: 3, name: "Grade 9A" },
+          { id: 4, name: "Grade 6A" },
+        ],
+        questionAnalytics: [
+          { q: "Q1. Variables & I/O", correct: 85 },
+          { q: "Q2. Conditional Logic", correct: 65 },
+          { q: "Q3. Loops & Range", correct: 48 },
+          { q: "Q4. Functions & Arrays", correct: 74 },
+        ],
+      };
+    }
   },
   component: AssignmentsPage,
 });
@@ -126,6 +145,21 @@ interface ParsedCodingRound {
   constraints: string;
   testCases: Array<{ input: string; expectedOutput: string; isHidden?: boolean }>;
   questions?: Array<AssignmentQuestionItem>;
+  courseId?: string;
+  courseName?: string;
+  durationMinutes?: number;
+  maxAttempts?: number;
+  startTime?: string;
+  endTime?: string;
+  isActive?: boolean;
+  enableCopyPaste?: boolean;
+  requireFullscreen?: boolean;
+  enableAutoSubmit?: boolean;
+  allowTabSwitching?: boolean;
+  allowedLanguages?: string[];
+  assignmentCategoryType?: string;
+  questionsPerAttemptMode?: "all" | "random";
+  randomQuestionsCount?: number;
 }
 
 const tabs = ["All assignments", "Coding assessments", "Question analytics"] as const;
@@ -234,6 +268,46 @@ function AssignmentsPage() {
     xp: 60,
   });
 
+  // Course association and settings
+  const [coursesList, setCoursesList] = useState<CourseItem[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>("none");
+  const [durationMinutes, setDurationMinutes] = useState<number>(60);
+  const [maxAttempts, setMaxAttempts] = useState<number>(1);
+  const [startTime, setStartTime] = useState<string>("");
+  const [endTime, setEndTime] = useState<string>("");
+  const [isActiveAssignment, setIsActiveAssignment] = useState<boolean>(true);
+
+  // Security & exam restrictions
+  const [enableCopyPaste, setEnableCopyPaste] = useState<boolean>(true);
+  const [requireFullscreen, setRequireFullscreen] = useState<boolean>(true);
+  const [enableAutoSubmit, setEnableAutoSubmit] = useState<boolean>(true);
+  const [allowTabSwitching, setAllowTabSwitching] = useState<boolean>(false);
+
+  // Allowed Languages
+  const [allowedLanguages, setAllowedLanguages] = useState<string[]>([
+    "Java",
+    "C",
+    "C++",
+    "Python",
+    "JavaScript",
+  ]);
+
+  // Assignment Type
+  const [assignmentCategoryType, setAssignmentCategoryType] = useState<string>("none");
+
+  // Questions Per Attempt
+  const [questionsPerAttemptMode, setQuestionsPerAttemptMode] = useState<"all" | "random">("all");
+  const [randomQuestionsCount, setRandomQuestionsCount] = useState<number>(5);
+
+  useEffect(() => {
+    try {
+      const loaded = loadCourses("teacher");
+      setCoursesList(loaded);
+    } catch {
+      // fallback
+    }
+  }, []);
+
   // Assessment Format: "coding" or "mcq"
   const [assessmentFormat, setAssessmentFormat] = useState<"coding" | "mcq">("coding");
   const [questionBankSubjects, setQuestionBankSubjects] = useState<SubjectItem[]>([]);
@@ -325,6 +399,20 @@ function AssignmentsPage() {
     setActiveQIndex(0);
     setStarters(DEFAULT_STARTERS);
     setShowStartersEditor(false);
+    setSelectedCourseId("none");
+    setDurationMinutes(60);
+    setMaxAttempts(1);
+    setStartTime("");
+    setEndTime("");
+    setIsActiveAssignment(true);
+    setEnableCopyPaste(true);
+    setRequireFullscreen(true);
+    setEnableAutoSubmit(true);
+    setAllowTabSwitching(false);
+    setAllowedLanguages(["Java", "C", "C++", "Python", "JavaScript"]);
+    setAssignmentCategoryType("none");
+    setQuestionsPerAttemptMode("all");
+    setRandomQuestionsCount(5);
     setTitleError("");
     setEditingId(null);
   };
@@ -605,6 +693,21 @@ function AssignmentsPage() {
     } else {
       setAssessmentFormat("coding");
     }
+
+    setSelectedCourseId(parsed?.courseId || "none");
+    setDurationMinutes(parsed?.durationMinutes || 60);
+    setMaxAttempts(parsed?.maxAttempts || 1);
+    setStartTime(parsed?.startTime || "");
+    setEndTime(parsed?.endTime || "");
+    setIsActiveAssignment(parsed?.isActive ?? a.status !== "Draft");
+    setEnableCopyPaste(parsed?.enableCopyPaste ?? true);
+    setRequireFullscreen(parsed?.requireFullscreen ?? true);
+    setEnableAutoSubmit(parsed?.enableAutoSubmit ?? true);
+    setAllowTabSwitching(parsed?.allowTabSwitching ?? false);
+    setAllowedLanguages(parsed?.allowedLanguages || ["Java", "C", "C++", "Python", "JavaScript"]);
+    setAssignmentCategoryType(parsed?.assignmentCategoryType || "none");
+    setQuestionsPerAttemptMode(parsed?.questionsPerAttemptMode || "all");
+    setRandomQuestionsCount(parsed?.randomQuestionsCount || 5);
 
     setCreating(true);
   };
@@ -1081,13 +1184,13 @@ function AssignmentsPage() {
 
               <div className="grid gap-3 sm:grid-cols-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                     Target Class
                   </label>
                   <select
                     value={form.className}
                     onChange={(e) => setForm({ ...form, className: e.target.value })}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-indigo-400"
+                    className="h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-400"
                   >
                     {availableClasses.map((c) => (
                       <option key={c.id} value={c.name}>
@@ -1097,27 +1200,286 @@ function AssignmentsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                     Due Date
                   </label>
                   <input
                     type="date"
                     value={form.due}
                     onChange={(e) => setForm({ ...form, due: e.target.value })}
-                    className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                    className="h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-400"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Status</label>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                    Status
+                  </label>
                   <select
                     value={form.status}
                     onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-indigo-400"
+                    className="h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-400"
                   >
                     <option value="Active">Active (Visible)</option>
                     <option value="Draft">Draft (Hidden)</option>
                     <option value="Graded">Graded (Closed)</option>
                   </select>
+                </div>
+              </div>
+
+              {/* COURSE, TIMING & EXAM RESTRICTIONS PANEL (MATCHING SPEC) */}
+              <div className="rounded-2xl border border-slate-800 bg-[#151722] p-4.5 space-y-4 text-white shadow-inner">
+                {/* 1. Course */}
+                <div>
+                  <label className="text-xs font-bold text-slate-200 block mb-1.5">Course</label>
+                  <select
+                    value={selectedCourseId}
+                    onChange={(e) => setSelectedCourseId(e.target.value)}
+                    className="h-10 w-full rounded-xl border border-slate-700/80 bg-[#1c1f2e] px-3 text-xs text-white outline-none focus:border-emerald-500 font-medium cursor-pointer"
+                  >
+                    <option value="none">None</option>
+                    {coursesList.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.title} ({c.level} · {c.languages.join(", ")})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. Duration (minutes) & Max Attempts */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-slate-200 block mb-1.5">
+                      Duration (minutes)
+                    </label>
+                    <input
+                      type="number"
+                      min={5}
+                      max={600}
+                      value={durationMinutes}
+                      onChange={(e) =>
+                        setDurationMinutes(Math.max(1, Number(e.target.value) || 60))
+                      }
+                      className="h-10 w-full rounded-xl border border-slate-700/80 bg-[#1c1f2e] px-3 text-xs text-white outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-200 block mb-1.5">
+                      Max Attempts
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={maxAttempts}
+                      onChange={(e) => setMaxAttempts(Math.max(1, Number(e.target.value) || 1))}
+                      className="h-10 w-full rounded-xl border border-slate-700/80 bg-[#1c1f2e] px-3 text-xs text-white outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Start Time & End Time */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-slate-200 block mb-1.5">
+                      Start Time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="h-10 w-full rounded-xl border border-slate-700/80 bg-[#1c1f2e] px-3 text-xs text-white outline-none focus:border-emerald-500 [color-scheme:dark]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-200 block mb-1.5">
+                      End Time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className="h-10 w-full rounded-xl border border-slate-700/80 bg-[#1c1f2e] px-3 text-xs text-white outline-none focus:border-emerald-500 [color-scheme:dark]"
+                    />
+                  </div>
+                </div>
+
+                {/* 4. Active Checkbox */}
+                <div>
+                  <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={isActiveAssignment}
+                      onChange={(e) => setIsActiveAssignment(e.target.checked)}
+                      className="h-4 w-4 rounded accent-emerald-500 cursor-pointer"
+                    />
+                    <span>Active</span>
+                  </label>
+                </div>
+
+                {/* 5. Security & Anti-Cheating Settings (4 cards) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <label className="flex items-center gap-2.5 rounded-xl border border-slate-800 bg-[#1c1f2e] p-3 cursor-pointer hover:border-slate-700 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={enableCopyPaste}
+                      onChange={(e) => setEnableCopyPaste(e.target.checked)}
+                      className="h-4 w-4 rounded accent-emerald-500 cursor-pointer"
+                    />
+                    <span className="text-xs font-medium text-slate-200">Enable copy-paste</span>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 rounded-xl border border-slate-800 bg-[#1c1f2e] p-3 cursor-pointer hover:border-slate-700 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={requireFullscreen}
+                      onChange={(e) => setRequireFullscreen(e.target.checked)}
+                      className="h-4 w-4 rounded accent-emerald-500 cursor-pointer"
+                    />
+                    <span className="text-xs font-medium text-slate-200">Require fullscreen</span>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 rounded-xl border border-slate-800 bg-[#1c1f2e] p-3 cursor-pointer hover:border-slate-700 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={enableAutoSubmit}
+                      onChange={(e) => setEnableAutoSubmit(e.target.checked)}
+                      className="h-4 w-4 rounded accent-emerald-500 cursor-pointer"
+                    />
+                    <span className="text-xs font-medium text-slate-200">Enable auto-submit</span>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 rounded-xl border border-slate-800 bg-[#1c1f2e] p-3 cursor-pointer hover:border-slate-700 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={allowTabSwitching}
+                      onChange={(e) => setAllowTabSwitching(e.target.checked)}
+                      className="h-4 w-4 rounded accent-emerald-500 cursor-pointer"
+                    />
+                    <span className="text-xs font-medium text-slate-200">Allow tab switching</span>
+                  </label>
+                </div>
+
+                {/* 6. Copy-Paste Restrictions Explanatory Box (Word-for-word from reference) */}
+                <div className="rounded-xl border border-slate-800 bg-[#11131a] p-3 text-xs text-slate-300 space-y-1.5">
+                  <div className="flex items-center gap-2 font-semibold text-slate-200">
+                    <AlertCircle className="h-4 w-4 text-slate-400" />
+                    <span>About Copy-Paste Restrictions</span>
+                  </div>
+                  <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-400 pl-1 leading-relaxed">
+                    <li>When disabled, keyboard shortcuts (Ctrl+C, Ctrl+V, Ctrl+X) are blocked</li>
+                    <li>Right-click context menu is disabled</li>
+                    <li>Users must type code manually, encouraging learning</li>
+                    <li>This setting applies to all users immediately</li>
+                    <li className="text-slate-500">
+                      Note: Determined users may still find ways to bypass restrictions
+                    </li>
+                  </ul>
+                </div>
+
+                {/* 7. Allowed Languages */}
+                <div>
+                  <label className="text-xs font-bold text-slate-200 block mb-1.5">
+                    Allowed Languages
+                  </label>
+                  <div className="rounded-xl border border-slate-800 bg-[#1c1f2e] p-3 flex flex-wrap items-center gap-4 text-xs">
+                    {["Java", "C", "C++", "Python", "JavaScript"].map((lang) => {
+                      const checked = allowedLanguages.includes(lang);
+                      return (
+                        <label
+                          key={lang}
+                          className="inline-flex items-center gap-2 cursor-pointer text-slate-200 hover:text-white"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              setAllowedLanguages((prev) =>
+                                prev.includes(lang)
+                                  ? prev.filter((l) => l !== lang)
+                                  : [...prev, lang],
+                              );
+                            }}
+                            className="h-4 w-4 rounded accent-emerald-500 cursor-pointer"
+                          />
+                          <span className="font-medium">{lang}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 8. Assignment Type & Questions Per Attempt */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                  <div>
+                    <label className="text-xs font-bold text-slate-200 block mb-1.5">
+                      Assignment Type
+                    </label>
+                    <select
+                      value={assignmentCategoryType}
+                      onChange={(e) => setAssignmentCategoryType(e.target.value)}
+                      className="h-10 w-full rounded-xl border border-slate-700/80 bg-[#1c1f2e] px-3 text-xs text-white outline-none focus:border-emerald-500 font-medium cursor-pointer"
+                    >
+                      <option value="none">— None —</option>
+                      <option value="Coding Assessment">Coding Assessment</option>
+                      <option value="MCQ Test">MCQ Test</option>
+                      <option value="Homework">Homework</option>
+                      <option value="Practice Set">Practice Set</option>
+                      <option value="Exam / Contest">Exam / Contest</option>
+                      <option value="Lab Milestone">Lab Milestone</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-200 block mb-1.5">
+                      Questions Per Attempt
+                    </label>
+                    <div className="flex items-center gap-4 pt-1">
+                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-200 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="questionsPerAttempt"
+                          value="all"
+                          checked={questionsPerAttemptMode === "all"}
+                          onChange={() => setQuestionsPerAttemptMode("all")}
+                          className="h-4 w-4 accent-emerald-500 cursor-pointer"
+                        />
+                        <span>All questions</span>
+                      </label>
+                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-200 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="questionsPerAttempt"
+                          value="random"
+                          checked={questionsPerAttemptMode === "random"}
+                          onChange={() => setQuestionsPerAttemptMode("random")}
+                          className="h-4 w-4 accent-emerald-500 cursor-pointer"
+                        />
+                        <span>Random N</span>
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1.5">
+                      {questionsPerAttemptMode === "all"
+                        ? "Students see all questions in the assignment."
+                        : `Randomly picks ${randomQuestionsCount} questions from the pool per attempt.`}
+                    </p>
+                    {questionsPerAttemptMode === "random" && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="text-xs text-slate-400">Questions count (N):</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={50}
+                          value={randomQuestionsCount}
+                          onChange={(e) =>
+                            setRandomQuestionsCount(Math.max(1, Number(e.target.value) || 1))
+                          }
+                          className="h-8 w-20 rounded-lg border border-slate-700 bg-slate-900 px-2 text-xs text-white outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -1850,6 +2212,21 @@ function AssignmentsPage() {
                       mcqQuestions?: McqQuestionItem[] | undefined;
                       passingScore?: number | undefined;
                       timeLimitMinutes?: number | undefined;
+                      courseId?: string | undefined;
+                      courseName?: string | undefined;
+                      durationMinutes?: number | undefined;
+                      maxAttempts?: number | undefined;
+                      startTime?: string | undefined;
+                      endTime?: string | undefined;
+                      isActive?: boolean | undefined;
+                      enableCopyPaste?: boolean | undefined;
+                      requireFullscreen?: boolean | undefined;
+                      enableAutoSubmit?: boolean | undefined;
+                      allowTabSwitching?: boolean | undefined;
+                      allowedLanguages?: string[] | undefined;
+                      assignmentCategoryType?: string | undefined;
+                      questionsPerAttemptMode?: "all" | "random" | undefined;
+                      randomQuestionsCount?: number | undefined;
                     };
 
                     if (assessmentFormat === "mcq") {
@@ -1873,7 +2250,7 @@ function AssignmentsPage() {
                         className: form.className,
                         due: form.due || "",
                         type: "MCQ Test",
-                        status: form.status,
+                        status: isActiveAssignment ? form.status : "Draft",
                         difficulty: form.difficulty,
                         xp: totalXp || 50,
                         instructions:
@@ -1883,7 +2260,22 @@ function AssignmentsPage() {
                         subject: activeSubj?.name || "General",
                         mcqQuestions: selectedQuestions,
                         passingScore,
-                        timeLimitMinutes,
+                        timeLimitMinutes: durationMinutes || timeLimitMinutes,
+                        courseId: selectedCourseId !== "none" ? selectedCourseId : undefined,
+                        courseName: coursesList.find((c) => c.id === selectedCourseId)?.title,
+                        durationMinutes,
+                        maxAttempts,
+                        startTime,
+                        endTime,
+                        isActive: isActiveAssignment,
+                        enableCopyPaste,
+                        requireFullscreen,
+                        enableAutoSubmit,
+                        allowTabSwitching,
+                        allowedLanguages,
+                        assignmentCategoryType,
+                        questionsPerAttemptMode,
+                        randomQuestionsCount,
                       };
                     } else {
                       const totalXp = questions.reduce((sum, q) => sum + (q.xp || 50), 0);
@@ -1894,7 +2286,7 @@ function AssignmentsPage() {
                         className: form.className,
                         due: form.due || "",
                         type: form.type,
-                        status: form.status,
+                        status: isActiveAssignment ? form.status : "Draft",
                         difficulty: primaryQ.difficulty || form.difficulty,
                         xp: totalXp || form.xp,
                         instructions: form.instructions || primaryQ.prompt,
@@ -1904,6 +2296,21 @@ function AssignmentsPage() {
                         inputFormat: isCodingRound ? primaryQ.inputFormat : undefined,
                         outputFormat: isCodingRound ? primaryQ.outputFormat : undefined,
                         constraints: isCodingRound ? primaryQ.constraints : undefined,
+                        courseId: selectedCourseId !== "none" ? selectedCourseId : undefined,
+                        courseName: coursesList.find((c) => c.id === selectedCourseId)?.title,
+                        durationMinutes,
+                        maxAttempts,
+                        startTime,
+                        endTime,
+                        isActive: isActiveAssignment,
+                        enableCopyPaste,
+                        requireFullscreen,
+                        enableAutoSubmit,
+                        allowTabSwitching,
+                        allowedLanguages,
+                        assignmentCategoryType,
+                        questionsPerAttemptMode,
+                        randomQuestionsCount,
                       };
                     }
 

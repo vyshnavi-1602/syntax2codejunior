@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Play,
   RotateCcw,
@@ -374,6 +374,46 @@ function LabPage() {
   });
 
   const [selectedLang, setSelectedLang] = useState<Lang>("Python");
+
+  // Class-scoped execution guardrails configured by teacher
+  const [activeGuardrails, setActiveGuardrails] = useState<{
+    allowedLanguages: string[];
+    maxLoopTimeoutMs: number;
+    sandboxMode: string;
+    blockExternalNetwork: boolean;
+  }>({
+    allowedLanguages: ["Python", "Java", "C", "C++", "JavaScript"],
+    maxLoopTimeoutMs: 2500,
+    sandboxMode: "strict",
+    blockExternalNetwork: true,
+  });
+
+  useEffect(() => {
+    try {
+      const stored =
+        localStorage.getItem("s2c_class_guardrails_v2_all") ||
+        localStorage.getItem("s2c_class_guardrails_v2_g8a");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.allowedLanguages && Array.isArray(parsed.allowedLanguages)) {
+          setActiveGuardrails({
+            allowedLanguages: parsed.allowedLanguages,
+            maxLoopTimeoutMs: parsed.maxLoopTimeoutMs || 2500,
+            sandboxMode: parsed.sandboxMode || "strict",
+            blockExternalNetwork: parsed.blockExternalNetwork ?? true,
+          });
+        }
+      }
+    } catch {
+      // fallback
+    }
+  }, []);
+
+  const isLanguageAllowed = (lang: string) => {
+    if (!activeGuardrails.allowedLanguages || activeGuardrails.allowedLanguages.length === 0)
+      return true;
+    return activeGuardrails.allowedLanguages.includes(lang);
+  };
 
   const currentQ = questionList[selectedQIdx] || questionList[0] || QUESTIONS[0]!;
 
@@ -1066,6 +1106,12 @@ function LabPage() {
                   <Select
                     value={selectedLang}
                     onValueChange={(val: string) => {
+                      if (!isLanguageAllowed(val)) {
+                        toast.warning(
+                          `Language ${val} is restricted by your teacher's active classroom guardrails.`,
+                        );
+                        return;
+                      }
                       setSelectedLang(val as Lang);
                       setResults(null);
                     }}
@@ -1077,17 +1123,35 @@ function LabPage() {
                       </div>
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg">
-                      {(["Python", "Java", "C", "C++", "JavaScript"] as Lang[]).map((l) => (
-                        <SelectItem
-                          key={l}
-                          value={l}
-                          className="text-xs font-medium cursor-pointer"
-                        >
-                          {l}
-                        </SelectItem>
-                      ))}
+                      {(["Python", "Java", "C", "C++", "JavaScript"] as Lang[]).map((l) => {
+                        const allowed = isLanguageAllowed(l);
+                        return (
+                          <SelectItem
+                            key={l}
+                            value={l}
+                            className={cn(
+                              "text-xs font-medium cursor-pointer",
+                              !allowed && "opacity-50 text-slate-400",
+                            )}
+                          >
+                            <span className="flex items-center justify-between w-full gap-2">
+                              <span>{l}</span>
+                              {!allowed && (
+                                <span className="text-[10px] text-amber-500 font-semibold">
+                                  (Locked)
+                                </span>
+                              )}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
+
+                  <div className="hidden sm:inline-flex items-center gap-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
+                    <ShieldCheck className="h-3 w-3" />
+                    <span>Guardrails ({activeGuardrails.maxLoopTimeoutMs}ms)</span>
+                  </div>
                 </div>
               </div>
 

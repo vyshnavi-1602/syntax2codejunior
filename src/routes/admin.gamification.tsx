@@ -56,7 +56,16 @@ export const Route = createFileRoute("/admin/gamification")({
     ],
   }),
   loader: async () => {
-    return await getAdminGamificationFn();
+    try {
+      return await getAdminGamificationFn();
+    } catch {
+      return {
+        rules: [],
+        levelThresholds: [],
+        badgeLibrary: [],
+        scoreWeights: [],
+      };
+    }
   },
   component: AdminGamification,
 });

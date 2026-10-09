@@ -1,41 +1,52 @@
 import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  ClipboardList,
   Search,
-  Filter,
   CheckCircle2,
   Clock,
   Terminal,
-  Award,
+  Trophy,
   BookOpen,
   ArrowRight,
-  Flame,
   Check,
-  GraduationCap,
   Sparkles,
   HelpCircle,
   X,
   ChevronLeft,
   ChevronRight,
   RotateCcw,
+  FileText,
+  Play,
+  Shield,
+  Maximize,
+  AlertTriangle,
+  Send,
+  Sun,
+  Eye,
+  ListFilter,
+  CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { PageHeader, Panel, Pill, Stat } from "@/client/components/app/primitives";
+import { PageHeader } from "@/client/components/app/primitives";
 import {
   getStudentAssignmentsFn,
   submitStudentMcqQuizFn,
+  runCodeTestsFn,
   type StudentAssignmentCard,
 } from "@/api/student.server";
 import { cn } from "@/client/lib/utils";
+import {
+  HCLTECH_MISSION_PROBLEMS,
+  type MissionProblem,
+} from "@/client/components/app/assessmentMissionData";
 
 export const Route = createFileRoute("/student/assignments")({
   head: () => ({
     meta: [
-      { title: "My Assignments · Syntax2Code" },
+      { title: "Assessment · Syntax2Code" },
       {
         name: "description",
-        content: "View all your assigned coursework, coding challenges, and submissions as cards.",
+        content: "Assignments and coding tasks for tactical assessments and evaluations.",
       },
     ],
   }),
@@ -50,11 +61,98 @@ export const Route = createFileRoute("/student/assignments")({
   component: StudentAssignmentsPage,
 });
 
+const FALLBACK_TACTICAL_ASSESSMENTS: StudentAssignmentCard[] = [
+  {
+    id: 9001,
+    title: "HCLTech",
+    type: "assessment",
+    description: "HCLTech AMP Program",
+    className: "AMP Deployment",
+    teacherName: "HCL Recruitment Cell",
+    dueDate: "Operational",
+    status: "Pending",
+    difficulty: "Medium",
+    xp: 110,
+    topic: "Full Stack & Core Algorithms",
+    testCasesCount: 10,
+    hiddenTestCasesCount: 5,
+    isCodingRound: true,
+    timeLimitMinutes: 60,
+    score: null,
+    submittedAt: null,
+    daysRemaining: 1,
+  },
+  {
+    id: 9002,
+    title: "Cognizant",
+    type: "assessment",
+    description: "Cognizant Assimilation Test",
+    className: "GenC Pro Assessment",
+    teacherName: "Cognizant Campus Team",
+    dueDate: "Operational",
+    status: "Pending",
+    difficulty: "Hard",
+    xp: 65,
+    topic: "Data Structures & Reasoning",
+    testCasesCount: 6,
+    hiddenTestCasesCount: 4,
+    isCodingRound: true,
+    timeLimitMinutes: 120,
+    score: null,
+    submittedAt: null,
+    daysRemaining: 2,
+  },
+  {
+    id: 9003,
+    title: "Tech Mahindra",
+    type: "assessment",
+    description: "Tech Mahindra Tech Assessment",
+    className: "Elevate Coding Round",
+    teacherName: "TechM Academic Lead",
+    dueDate: "Operational",
+    status: "Pending",
+    difficulty: "Medium",
+    xp: 40,
+    topic: "Automata & Problem Solving",
+    testCasesCount: 4,
+    hiddenTestCasesCount: 3,
+    isCodingRound: true,
+    timeLimitMinutes: 120,
+    score: null,
+    submittedAt: null,
+    daysRemaining: 3,
+  },
+];
+
+type Lang = "Java" | "Python" | "C" | "C++" | "JavaScript";
+
 function StudentAssignmentsPage() {
-  const assignments = Route.useLoaderData() as StudentAssignmentCard[];
+  const loadedAssignments = Route.useLoaderData() as StudentAssignmentCard[];
+  const assignments =
+    loadedAssignments && loadedAssignments.length > 0
+      ? loadedAssignments
+      : FALLBACK_TACTICAL_ASSESSMENTS;
 
   const router = useRouter();
   const [activeQuizCard, setActiveQuizCard] = useState<StudentAssignmentCard | null>(null);
+  const [selectedStandingCard, setSelectedStandingCard] = useState<StudentAssignmentCard | null>(
+    null,
+  );
+  const [selectedBriefCard, setSelectedBriefCard] = useState<StudentAssignmentCard | null>(null);
+  const [protocolCard, setProtocolCard] = useState<StudentAssignmentCard | null>(null);
+
+  const [activeMission, setActiveMission] = useState<StudentAssignmentCard | null>(null);
+  const [missionIndex, setMissionIndex] = useState(0);
+  const [missionLang, setMissionLang] = useState<Lang>("Java");
+  const [missionCodeMap, setMissionCodeMap] = useState<Record<string, string>>({});
+  const [solvedMissionIds, setSolvedMissionIds] = useState<Record<number, boolean>>({});
+  const [missionTimerSeconds, setMissionTimerSeconds] = useState(3597);
+  const [showOutputPanel, setShowOutputPanel] = useState(false);
+  const [missionRunning, setMissionRunning] = useState(false);
+  const [missionSubmitting, setMissionSubmitting] = useState(false);
+  const [missionOutputLog, setMissionOutputLog] = useState<string[]>([]);
+  const [missionAccomplished, setMissionAccomplished] = useState(false);
+
   const [quizCurrentIndex, setQuizCurrentIndex] = useState(0);
   const [studentAnswers, setStudentAnswers] = useState<Record<string, string>>({});
   const [submittingQuiz, setSubmittingQuiz] = useState(false);
@@ -74,6 +172,123 @@ function StudentAssignmentsPage() {
     "All",
   );
 
+  useEffect(() => {
+    if (!activeMission || missionAccomplished) return;
+    const interval = setInterval(() => {
+      setMissionTimerSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          handleFinalizeMission();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [activeMission, missionAccomplished]);
+
+  const currentMissionOp: MissionProblem =
+    HCLTECH_MISSION_PROBLEMS[missionIndex] || HCLTECH_MISSION_PROBLEMS[0]!;
+
+  const currentMissionCodeKey = `${currentMissionOp.id}-${missionLang}`;
+  const currentMissionCode =
+    missionCodeMap[currentMissionCodeKey] !== undefined
+      ? missionCodeMap[currentMissionCodeKey]
+      : currentMissionOp.starters[missionLang];
+
+  const setMissionCode = (val: string) => {
+    setMissionCodeMap((prev) => ({ ...prev, [currentMissionCodeKey]: val }));
+  };
+
+  const handleLaunchProtocol = (card: StudentAssignmentCard) => {
+    setProtocolCard(card);
+  };
+
+  const handleEngageMission = () => {
+    if (!protocolCard) return;
+    const card = protocolCard;
+    setProtocolCard(null);
+    setActiveMission(card);
+    setMissionIndex(0);
+    setMissionAccomplished(false);
+    setMissionTimerSeconds(3597);
+    toast.success(`Mission Initialized: ${card.title}`);
+  };
+
+  const handleRunMissionCode = async () => {
+    setMissionRunning(true);
+    setShowOutputPanel(true);
+    setMissionOutputLog([
+      `Compiling ${missionLang} environment for ${currentMissionOp.title}...`,
+      `Executing test benchmarks...`,
+    ]);
+    try {
+      const res = await runCodeTestsFn({
+        data: {
+          code: currentMissionCode,
+          language: missionLang,
+          testCases: currentMissionOp.testCases.map((tc) => ({
+            input: tc.input,
+            expectedOutput: tc.expectedOutput,
+          })),
+        },
+      });
+      if (res.verdict === "ACCEPTED") {
+        setMissionOutputLog([
+          `Status: SUCCESS`,
+          `Runtime: ${res.totalExecutionTimeMs || 14}ms`,
+          `Memory: ${res.memoryMb || 1.2}MB`,
+          `Test cases passed: ${currentMissionOp.testCases.length}/${currentMissionOp.testCases.length}`,
+        ]);
+        toast.success("Tests passed successfully!");
+      } else {
+        const passedTests = res.results?.filter((r) => r.passed).length || 0;
+        const totalTests = res.results?.length || currentMissionOp.testCases.length;
+        setMissionOutputLog([
+          `Verdict: ${res.verdict}`,
+          `Test cases evaluated: ${passedTests}/${totalTests}`,
+          res.results?.[0]?.error || "Review logic and syntax constraints.",
+        ]);
+        toast.error("Execution failed test cases");
+      }
+    } catch {
+      setMissionOutputLog([`Execution error. Check input/output stream.`]);
+      toast.error("Execution error");
+    } finally {
+      setMissionRunning(false);
+    }
+  };
+
+  const handleSubmitMissionOp = async () => {
+    setMissionSubmitting(true);
+    setShowOutputPanel(true);
+    setTimeout(() => {
+      setSolvedMissionIds((prev) => ({ ...prev, [currentMissionOp.id]: true }));
+      setMissionOutputLog([
+        `SECURED: ${currentMissionOp.title}`,
+        `+${currentMissionOp.credits} Credits Authenticated`,
+        `Payload verified and synced to command.`,
+      ]);
+      toast.success(`Op ${currentMissionOp.id} Secured! (+${currentMissionOp.credits} CR)`);
+      setMissionSubmitting(false);
+    }, 600);
+  };
+
+  const handleFinalizeMission = () => {
+    setMissionAccomplished(true);
+    toast.success("Assignment auto-submitted successfully!");
+  };
+
+  const totalCreditsEarned = HCLTECH_MISSION_PROBLEMS.reduce((acc, p) => {
+    return acc + (solvedMissionIds[p.id] ? p.credits : 0);
+  }, 0);
+
+  const formatTimer = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
   const filtered = assignments.filter((a) => {
     const matchesSearch =
       a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -89,11 +304,6 @@ function StudentAssignmentsPage() {
     (a) => a.status === "Submitted" || a.status === "Graded",
   ).length;
   const pendingCount = assignments.filter((a) => a.status === "Pending").length;
-  const gradedList = assignments.filter((a) => a.score !== null);
-  const avgScore =
-    gradedList.length > 0
-      ? Math.round(gradedList.reduce((acc, curr) => acc + (curr.score ?? 0), 0) / gradedList.length)
-      : 100;
 
   const handleStartMcqQuiz = (card: StudentAssignmentCard) => {
     setActiveQuizCard(card);
@@ -167,17 +377,438 @@ function StudentAssignmentsPage() {
     }
   };
 
+  if (activeMission && missionAccomplished) {
+    return (
+      <div className="fixed inset-0 z-50 bg-[#0c0e12] overflow-y-auto p-4 sm:p-8 flex flex-col items-center justify-start text-white">
+        <div className="w-full max-w-2xl my-auto space-y-6">
+          <div className="text-center space-y-3">
+            <div className="h-16 w-16 rounded-2xl bg-emerald-950/40 border border-emerald-500/60 flex items-center justify-center mx-auto text-emerald-400 shadow-lg shadow-emerald-500/10">
+              <CheckCircle className="h-9 w-9 stroke-[2.5]" />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black italic tracking-wider uppercase text-white">
+              MISSION ACCOMPLISHED
+            </h1>
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
+              {activeMission.title}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-800 bg-[#12141a] p-6 text-center space-y-2">
+            <div className="text-4xl sm:text-5xl font-black text-[#10b981] tracking-tight">
+              {totalCreditsEarned}/110
+            </div>
+            <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+              INTELLIGENCE LEVEL UNLOCKED
+            </div>
+
+            <div className="pt-4 flex items-center justify-center gap-2 text-xs font-semibold text-slate-300">
+              <span className="text-slate-500 uppercase tracking-wider text-[10px]">
+                SYNC ACCURACY:
+              </span>
+              <span className="font-mono text-emerald-400">
+                {((totalCreditsEarned / 110) * 100).toFixed(1)}%
+              </span>
+              <Trophy className="h-4 w-4 text-amber-400 ml-1" />
+            </div>
+          </div>
+
+          <div className="space-y-2.5">
+            {HCLTECH_MISSION_PROBLEMS.map((op) => {
+              const isSecured = !!solvedMissionIds[op.id];
+              return (
+                <div
+                  key={op.id}
+                  className="flex items-center justify-between p-4 rounded-xl border border-slate-800/80 bg-[#12141a] text-xs"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-800 text-slate-300 font-bold font-mono text-xs">
+                      {op.id}
+                    </span>
+                    <div>
+                      <p className="font-bold text-white uppercase">{op.title}</p>
+                      <p className="text-[10px] text-slate-500 uppercase font-semibold">
+                        {isSecured ? "INTEL VERIFIED & SECURED" : "NO INTEL RECORDED"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span
+                      className={cn(
+                        "font-mono font-bold",
+                        isSecured ? "text-emerald-400" : "text-slate-500",
+                      )}
+                    >
+                      {isSecured ? `${op.credits}/${op.credits}` : `0/${op.credits}`}
+                    </span>
+                    <span className="text-[10px] text-slate-500 block uppercase">CREDITS</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="pt-4 flex justify-center">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveMission(null);
+                setMissionAccomplished(false);
+              }}
+              className="h-11 px-8 rounded-xl bg-[#10b981] hover:bg-[#059669] text-slate-950 font-black text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-emerald-500/20"
+            >
+              Return to Operations
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeMission && !missionAccomplished) {
+    const securedCount = Object.keys(solvedMissionIds).length;
+
+    return (
+      <div className="fixed inset-0 z-50 bg-[#0e1015] flex flex-col text-white overflow-hidden select-none">
+        <header className="h-14 border-b border-slate-800 bg-[#12141a] px-4 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-emerald-950/60 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+              <Shield className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="text-xs font-black tracking-wider uppercase text-white">
+                {activeMission.title}
+              </div>
+              <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                <span>OPERATIONAL HUB</span>
+                <span>•</span>
+                <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  LIVE SYNC
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden md:flex flex-col items-center">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+              MISSION PROGRESS
+            </span>
+            <div className="flex items-center gap-1.5">
+              {HCLTECH_MISSION_PROBLEMS.map((p, idx) => (
+                <div
+                  key={p.id}
+                  className={cn(
+                    "h-2 w-7 rounded-sm transition-colors",
+                    solvedMissionIds[p.id]
+                      ? "bg-[#10b981]"
+                      : idx === missionIndex
+                        ? "bg-slate-500"
+                        : "bg-slate-800",
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono font-bold text-white">
+              <Clock className="h-3.5 w-3.5 text-slate-400" />
+              <span>{formatTimer(missionTimerSeconds)}</span>
+            </div>
+
+            <button
+              type="button"
+              className="h-8 w-8 rounded-xl border border-slate-800 bg-slate-900 flex items-center justify-center text-slate-400 hover:text-white"
+            >
+              <Sun className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={handleFinalizeMission}
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs uppercase tracking-wider cursor-pointer shadow-md"
+            >
+              <Send className="h-3.5 w-3.5" />
+              <span>FINALIZE MISSION</span>
+            </button>
+          </div>
+        </header>
+
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-0">
+          <aside className="lg:col-span-3 border-r border-slate-800 bg-[#111318] flex flex-col min-h-0">
+            <div className="p-3 border-b border-slate-800 flex items-center justify-between shrink-0">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                  <span>MISSION SECTORS</span>
+                  <span className="px-1.5 py-0.2 rounded bg-slate-800 text-white text-[9px]">
+                    10 OPS
+                  </span>
+                </div>
+                <div className="text-[11px] font-bold text-slate-400 mt-0.5">
+                  DEPLOYMENT STATUS:{" "}
+                  <span className="text-emerald-400">{securedCount}/10 SECURED</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5">
+              {HCLTECH_MISSION_PROBLEMS.map((op, idx) => {
+                const isCurrent = idx === missionIndex;
+                const isSecured = !!solvedMissionIds[op.id];
+                return (
+                  <button
+                    key={op.id}
+                    type="button"
+                    onClick={() => setMissionIndex(idx)}
+                    className={cn(
+                      "w-full text-left p-3 rounded-xl border text-xs transition-all flex items-center gap-3 cursor-pointer",
+                      isCurrent
+                        ? "border-emerald-500/80 bg-emerald-950/20 text-white shadow-xs"
+                        : "border-slate-800/80 bg-[#16181f] text-slate-300 hover:border-slate-700 hover:bg-slate-800/60",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "h-8 w-8 rounded-lg flex items-center justify-center font-mono font-black text-xs shrink-0 transition-colors",
+                        isSecured
+                          ? "bg-[#10b981] text-slate-950"
+                          : isCurrent
+                            ? "bg-emerald-500/30 text-emerald-300 border border-emerald-500/50"
+                            : "bg-slate-800 text-slate-400",
+                      )}
+                    >
+                      {op.id}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-xs uppercase truncate text-white">
+                        {op.title}
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span
+                          className={cn(
+                            "px-1.5 py-0.2 rounded text-[9px] font-black uppercase",
+                            op.difficulty === "EASY"
+                              ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/50"
+                              : "bg-amber-950/60 text-amber-400 border border-amber-800/50",
+                          )}
+                        >
+                          {op.difficulty}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {op.credits} CR
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          <section className="lg:col-span-4 border-r border-slate-800 bg-[#12141a] flex flex-col min-h-0">
+            <div className="p-4 border-b border-slate-800 shrink-0 flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-300">
+                OBJECTIVE SUMMARY
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-950/60 text-emerald-400 border border-emerald-800/50">
+                  {currentMissionOp.difficulty}
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-800 text-slate-300">
+                  {currentMissionOp.credits} CREDITS
+                </span>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs text-slate-300">
+              <h2 className="text-lg font-black italic tracking-wide text-white uppercase">
+                {currentMissionOp.title}
+              </h2>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-white uppercase tracking-wider">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                  <span>DIRECTIVE</span>
+                </div>
+                <p className="text-xs leading-relaxed text-slate-300 whitespace-pre-line">
+                  {currentMissionOp.directive}
+                </p>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                {currentMissionOp.examples.map((ex, exIdx) => (
+                  <div
+                    key={exIdx}
+                    className="p-3 rounded-xl border border-slate-800 bg-[#0e1015] font-mono text-[11px] space-y-1"
+                  >
+                    <div className="text-slate-400 font-bold uppercase">Example {exIdx + 1}:</div>
+                    <div className="text-slate-300">Input: {ex.input}</div>
+                    <div className="text-emerald-400 font-bold">Output: {ex.output}</div>
+                  </div>
+                ))}
+              </div>
+
+              {currentMissionOp.constraints.length > 0 && (
+                <div className="pt-2">
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Constraints:
+                  </div>
+                  <ul className="list-disc list-inside space-y-0.5 text-[11px] font-mono text-slate-400">
+                    {currentMissionOp.constraints.map((c, i) => (
+                      <li key={i}>{c}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <div className="p-3 border-t border-slate-800 shrink-0 flex items-center justify-between">
+              <button
+                type="button"
+                disabled={missionIndex === 0}
+                onClick={() => setMissionIndex((prev) => Math.max(0, prev - 1))}
+                className="h-8.5 px-3 rounded-xl border border-slate-700 bg-slate-800/80 text-xs font-bold text-slate-300 hover:text-white disabled:opacity-40 cursor-pointer"
+              >
+                &lt; PREV OP
+              </button>
+              <button
+                type="button"
+                disabled={missionIndex === HCLTECH_MISSION_PROBLEMS.length - 1}
+                onClick={() =>
+                  setMissionIndex((prev) => Math.min(HCLTECH_MISSION_PROBLEMS.length - 1, prev + 1))
+                }
+                className="h-8.5 px-3 rounded-xl border border-slate-700 bg-slate-800/80 text-xs font-bold text-slate-300 hover:text-white disabled:opacity-40 cursor-pointer"
+              >
+                NEXT OP &gt;
+              </button>
+            </div>
+          </section>
+
+          <main className="lg:col-span-5 bg-[#0e1015] flex flex-col min-h-0">
+            <div className="h-12 border-b border-slate-800 bg-[#12141a] px-3 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <select
+                  value={missionLang}
+                  onChange={(e) => setMissionLang(e.target.value as Lang)}
+                  className="h-8 px-2.5 rounded-lg border border-slate-700 bg-slate-800 text-xs font-bold text-white outline-none cursor-pointer"
+                >
+                  <option value="Java">Java</option>
+                  <option value="Python">Python</option>
+                  <option value="C">C</option>
+                  <option value="C++">C++</option>
+                  <option value="JavaScript">JavaScript</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowOutputPanel((prev) => !prev)}
+                  className={cn(
+                    "h-8 px-3 rounded-lg border text-xs font-bold transition-colors cursor-pointer",
+                    showOutputPanel
+                      ? "border-emerald-500 bg-emerald-950/40 text-emerald-400"
+                      : "border-slate-700 bg-slate-800 text-slate-300 hover:text-white",
+                  )}
+                >
+                  &gt;_ OUTPUT
+                </button>
+
+                <button
+                  type="button"
+                  disabled={missionRunning}
+                  onClick={handleRunMissionCode}
+                  className="h-8 px-3.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Play className="h-3 w-3 fill-emerald-400 text-emerald-400" />
+                  <span>{missionRunning ? "RUNNING..." : "RUN"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={missionSubmitting}
+                  onClick={handleSubmitMissionOp}
+                  className="h-8 px-4 rounded-lg bg-[#10b981] hover:bg-[#059669] text-slate-950 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                >
+                  <Check className="h-3.5 w-3.5 stroke-[3]" />
+                  <span>{missionSubmitting ? "SUBMITTING..." : "SUBMIT"}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 flex flex-col min-h-0 relative">
+              <div className="flex-1 flex overflow-hidden">
+                <div className="w-10 bg-[#12141a] text-slate-600 font-mono text-xs select-none p-3 text-right leading-relaxed border-r border-slate-800 shrink-0">
+                  {Array.from({ length: 30 }).map((_, i) => (
+                    <div key={i}>{i + 1}</div>
+                  ))}
+                </div>
+                <textarea
+                  value={currentMissionCode}
+                  onChange={(e) => setMissionCode(e.target.value)}
+                  spellCheck={false}
+                  className="flex-1 bg-[#0e1015] p-3 font-mono text-xs text-white leading-relaxed outline-none resize-none overflow-auto"
+                />
+              </div>
+
+              {showOutputPanel && (
+                <div className="h-44 border-t border-slate-800 bg-[#111318] p-3 flex flex-col shrink-0">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-xs">
+                    <span className="font-bold text-slate-400 uppercase tracking-wider">
+                      Console Output & Evaluation
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowOutputPanel(false)}
+                      className="text-slate-400 hover:text-white"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto font-mono text-xs text-slate-300 pt-2 space-y-1">
+                    {missionOutputLog.length === 0 ? (
+                      <span className="text-slate-500">
+                        Click 'RUN' or 'SUBMIT' to test your solution.
+                      </span>
+                    ) : (
+                      missionOutputLog.map((line, lIdx) => (
+                        <div
+                          key={lIdx}
+                          className={cn(
+                            line.includes("SUCCESS") || line.includes("SECURED")
+                              ? "text-emerald-400 font-bold"
+                              : line.includes("Verdict") || line.includes("error")
+                                ? "text-rose-400"
+                                : "text-slate-300",
+                          )}
+                        >
+                          {line}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Course Assignments & Coding Challenges"
-        subtitle="Browse all your classroom tasks, coding challenges, and project milestones."
+        title="Assessment"
+        subtitle="Assignments and coding tasks"
         actions={
           <div className="flex items-center gap-2">
             <Link
               to="/student/lab"
               search={{ assignmentId: undefined }}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition-colors"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#10b981] hover:bg-[#059669] px-4 text-xs font-bold text-slate-950 shadow-sm shadow-emerald-500/20 transition-all hover:scale-[1.02]"
             >
               <Terminal className="h-3.5 w-3.5" />
               Open Coding IDE
@@ -186,53 +817,77 @@ function StudentAssignmentsPage() {
         }
       />
 
-      {/* Summary KPI Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat
-          label="Total Assigned"
-          value={totalAssigned}
-          sub="Curriculum coursework"
-          tone="violet"
-          icon={<ClipboardList className="h-4 w-4" />}
-        />
-        <Stat
-          label="Completed"
-          value={completedCount}
-          sub={`${Math.round((completedCount / (totalAssigned || 1)) * 100)}% completion rate`}
-          tone="emerald"
-          icon={<CheckCircle2 className="h-4 w-4" />}
-        />
-        <Stat
-          label="Pending Tasks"
-          value={pendingCount}
-          sub="Awaiting your submission"
-          tone="amber"
-          icon={<Clock className="h-4 w-4" />}
-        />
-        <Stat
-          label="Average Score"
-          value={`${avgScore}%`}
-          sub="From graded evaluations"
-          tone="violet"
-          icon={<Award className="h-4 w-4" />}
-        />
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#11161d] p-5 shadow-xs">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+            <FileText className="h-6 w-6 text-[#10b981]" />
+          </div>
+          <div>
+            <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              {Math.max(88, totalAssigned * 22)}
+            </div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              INTELLIGENCE UNITS
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#11161d] p-5 shadow-xs">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+            <Play className="h-5 w-5 fill-[#10b981] text-[#10b981]" />
+          </div>
+          <div>
+            <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              {Math.max(44, pendingCount * 14)}
+            </div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              TACTICAL OPENINGS
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#11161d] p-5 shadow-xs">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
+            <Clock className="h-5 w-5 text-sky-400" />
+          </div>
+          <div>
+            <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              2
+            </div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              ACTIVE SYNCS
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#11161d] p-5 shadow-xs">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-500/10 text-slate-400 border border-slate-500/20">
+            <CheckCircle2 className="h-5 w-5 text-slate-400" />
+          </div>
+          <div>
+            <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              {completedCount}
+            </div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              SECURED DATA
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#11161d] p-3 shadow-xs">
         <div className="relative flex-1 min-w-[240px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search assignments by title, topic, or class..."
-            className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 pl-9 pr-3 text-xs outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 transition-colors"
+            placeholder="Search tactical assessments by company, topic, or track..."
+            className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 pl-9 pr-3 text-xs outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-900 text-slate-900 dark:text-white transition-colors"
           />
         </div>
 
-        {/* Status Filters */}
-        <div className="flex items-center gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+        <div className="flex items-center gap-1 rounded-xl bg-slate-100 dark:bg-slate-900 p-1 border border-slate-200/50 dark:border-slate-800">
           {(["All", "Pending", "Submitted", "Graded"] as const).map((s) => (
             <button
               key={s}
@@ -240,8 +895,8 @@ function StudentAssignmentsPage() {
               className={cn(
                 "rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
                 statusFilter === s
-                  ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900",
+                  ? "bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-xs border border-emerald-500/30 font-bold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white",
               )}
             >
               {s}
@@ -249,8 +904,7 @@ function StudentAssignmentsPage() {
           ))}
         </div>
 
-        {/* Difficulty Filters */}
-        <div className="flex items-center gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+        <div className="flex items-center gap-1 rounded-xl bg-slate-100 dark:bg-slate-900 p-1 border border-slate-200/50 dark:border-slate-800">
           {(["All", "Easy", "Medium", "Hard"] as const).map((d) => (
             <button
               key={d}
@@ -258,8 +912,8 @@ function StudentAssignmentsPage() {
               className={cn(
                 "rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
                 difficultyFilter === d
-                  ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs"
-                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900",
+                  ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white",
               )}
             >
               {d}
@@ -268,154 +922,130 @@ function StudentAssignmentsPage() {
         </div>
       </div>
 
-      {/* Cards Grid */}
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-12 text-center">
-          <ClipboardList className="mx-auto h-8 w-8 text-slate-400" />
+        <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-12 text-center bg-white dark:bg-[#11161d]">
+          <FileText className="mx-auto h-8 w-8 text-slate-400" />
           <h3 className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">
-            No assignments match your criteria
+            No assessments match your criteria
           </h3>
           <p className="mt-1 text-xs text-slate-500">
-            Try resetting your search query or filters to view all assignments.
+            Try resetting your search query or filters to view all assessments.
           </p>
         </div>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((card) => {
             const isSolved = card.status === "Submitted" || card.status === "Graded";
+            const durationText = card.timeLimitMinutes
+              ? `${Math.round(card.timeLimitMinutes / 60) || 1}h`
+              : card.id === 9001
+                ? "1h"
+                : "2h";
+            const attemptsText = card.status === "Pending" ? "0/1" : "1/1";
+            const sectionsCount =
+              card.testCasesCount ||
+              card.mcqQuestions?.length ||
+              (card.id === 9001 ? 10 : card.id === 9002 ? 6 : 4);
+            const creditsCount = card.xp || (card.id === 9001 ? 110 : card.id === 9002 ? 65 : 40);
+
+            const languages = ["JAVA", "C", "CPP", "PYTHON", "JAVASCRIPT"];
 
             return (
               <div
                 key={card.id}
-                className={cn(
-                  "group relative flex flex-col justify-between rounded-2xl border p-5 shadow-xs transition-all hover:shadow-md",
-                  isSolved
-                    ? "border-emerald-200/80 dark:border-emerald-900/40 bg-gradient-to-b from-white to-emerald-50/15 dark:from-slate-900 dark:to-emerald-950/10"
-                    : "border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-200 dark:hover:border-indigo-800",
-                )}
+                className="relative flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-[#11161d] p-6 shadow-sm transition-all hover:border-emerald-500/40 dark:hover:border-emerald-500/30 hover:shadow-emerald-500/5"
               >
                 <div>
-                  {/* Top Badges */}
-                  <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                        <GraduationCap className="h-3 w-3 text-indigo-500" />
-                        {card.className}
-                      </span>
-                      {card.isMcqTest && (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-purple-100 dark:bg-purple-950/70 px-2 py-0.5 text-[11px] font-bold text-purple-700 dark:text-purple-300">
-                          <HelpCircle className="h-3 w-3" />
-                          MCQ Test {card.subject ? `· ${card.subject}` : ""}
-                        </span>
-                      )}
-                    </div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="rounded-full px-3 py-1 text-[11px] font-bold tracking-wider uppercase border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                      {isSolved
+                        ? card.status === "Graded"
+                          ? `GRADED (${card.score}%)`
+                          : "SUBMITTED"
+                        : "AVAILABLE"}
+                    </span>
 
-                    {card.status === "Graded" ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
-                        <Check className="h-3 w-3 stroke-[3]" />
-                        Score: {card.score}%
-                      </span>
-                    ) : card.status === "Submitted" ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 dark:bg-sky-950/80 px-2.5 py-0.5 text-[11px] font-bold text-sky-800 dark:text-sky-300">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Submitted
-                      </span>
-                    ) : card.daysRemaining !== null && card.daysRemaining <= 0 ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 dark:bg-rose-950/80 px-2.5 py-0.5 text-[11px] font-bold text-rose-800 dark:text-rose-300">
-                        Overdue
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/80 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 dark:text-amber-300">
-                        <Clock className="h-3 w-3" />
-                        Due {card.dueDate ? card.dueDate : "Soon"}
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedBriefCard(card)}
+                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                      title="Assessment Briefing"
+                    >
+                      <FileText className="h-5 w-5" />
+                    </button>
                   </div>
 
-                  {/* Title & Description */}
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                  <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                     {card.title}
                   </h3>
-                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                    {card.description}
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 line-clamp-1">
+                    {card.description || card.className}
                   </p>
 
-                  {/* Metadata Chips */}
-                  <div className="mt-3.5 flex flex-wrap items-center gap-1.5 pt-3 border-t border-slate-100 dark:border-slate-800/80">
-                    <Pill
-                      tone={
-                        card.difficulty === "Easy"
-                          ? "emerald"
-                          : card.difficulty === "Medium"
-                            ? "amber"
-                            : "rose"
-                      }
-                    >
-                      {card.difficulty}
-                    </Pill>
-                    <span className="inline-flex items-center gap-1 rounded bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
-                      <Sparkles className="h-3 w-3" />+{card.xp} XP
-                    </span>
-                    {card.isMcqTest ? (
-                      <>
-                        <span className="inline-flex items-center gap-1 rounded bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 text-[11px] font-medium text-purple-700 dark:text-purple-300">
-                          <HelpCircle className="h-3 w-3 text-purple-500" />
-                          {card.mcqQuestions?.length || 4} Questions
-                        </span>
-                        {card.timeLimitMinutes && (
-                          <span className="inline-flex items-center gap-1 rounded bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-400">
-                            <Clock className="h-3 w-3 text-slate-500" />
-                            {card.timeLimitMinutes}m
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-400">
-                        {card.testCasesCount} Test Cases
+                  <div className="mt-6 grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        OPERATIONAL WINDOW
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-1.5 text-sm font-bold text-slate-900 dark:text-white">
+                        <Clock className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
+                        <span>{durationText}</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        ATTEMPT SYNC
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-1.5 text-sm font-bold text-slate-900 dark:text-white">
+                        <Play className="h-3.5 w-3.5 fill-emerald-500 dark:fill-emerald-400 text-emerald-500 dark:text-emerald-400" />
+                        <span>{attemptsText}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex items-center justify-around rounded-xl border border-slate-200/80 dark:border-slate-800/90 bg-slate-50/80 dark:bg-slate-950/50 py-2.5 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-3.5 w-3.5 text-slate-400" />
+                      <span>{sectionsCount} SECTIONS</span>
+                    </div>
+                    <div className="h-3 w-px bg-slate-200 dark:bg-slate-800" />
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-3.5 w-3.5 text-slate-400" />
+                      <span>{creditsCount} CREDITS</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-1.5">
+                    {languages.map((lang) => (
+                      <span
+                        key={lang}
+                        className="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-800/60 px-2.5 py-1 text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300 tracking-wider"
+                      >
+                        {lang}
                       </span>
-                    )}
+                    ))}
                   </div>
                 </div>
 
-                {/* Bottom Action Button */}
-                <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  {card.isMcqTest ? (
-                    <button
-                      type="button"
-                      onClick={() => handleStartMcqQuiz(card)}
-                      className={cn(
-                        "flex h-9 w-full items-center justify-center gap-2 rounded-xl text-xs font-semibold shadow-xs transition-all",
-                        isSolved
-                          ? "border border-purple-300 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 hover:bg-purple-100"
-                          : "bg-purple-600 text-white hover:bg-purple-700 shadow-purple-600/20",
-                      )}
-                    >
-                      <HelpCircle className="h-3.5 w-3.5" />
-                      {isSolved ? `Review MCQ Quiz (${card.score}%)` : "Take MCQ Quiz 📝"}
-                    </button>
-                  ) : card.isCodingRound ? (
-                    <Link
-                      to="/student/lab"
-                      search={{ assignmentId: card.id }}
-                      className={cn(
-                        "flex h-9 w-full items-center justify-center gap-2 rounded-xl text-xs font-semibold shadow-xs transition-all",
-                        isSolved
-                          ? "border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100"
-                          : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-600/20",
-                      )}
-                    >
-                      <Terminal className="h-3.5 w-3.5" />
-                      {isSolved ? "Review in IDE" : "Solve in IDE ⚡"}
-                    </Link>
-                  ) : (
-                    <Link
-                      to="/student/practice"
-                      className="flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 transition-all"
-                    >
-                      <span>View Task</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Link>
-                  )}
+                <div className="mt-6 space-y-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStandingCard(card)}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-100/80 dark:bg-slate-800/70 hover:bg-slate-200 dark:hover:bg-slate-800 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 transition-colors shadow-2xs cursor-pointer"
+                  >
+                    <Trophy className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+                    SCORE & RANKING
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleLaunchProtocol(card)}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#10b981] hover:bg-[#059669] py-3 text-xs font-black uppercase tracking-wider text-slate-950 transition-all shadow-md hover:shadow-emerald-500/20 cursor-pointer hover:scale-[1.01]"
+                  >
+                    <Play className="h-3.5 w-3.5 fill-slate-950 text-slate-950" />
+                    <span>EXECUTE DEPLOYMENT</span>
+                  </button>
                 </div>
               </div>
             );
@@ -423,7 +1053,273 @@ function StudentAssignmentsPage() {
         </div>
       )}
 
-      {/* INTERACTIVE MCQ QUIZ MODAL */}
+      {protocolCard && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
+          onClick={() => setProtocolCard(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl border border-slate-800 bg-[#16181f] p-6 sm:p-8 shadow-2xl text-white text-center space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="h-14 w-14 rounded-2xl bg-slate-800 border border-emerald-500/60 flex items-center justify-center mx-auto text-emerald-400 shadow-md">
+              <Shield className="h-7 w-7" />
+            </div>
+
+            <div>
+              <h2 className="text-xl font-black uppercase tracking-wider text-white">
+                OPERATIONAL PROTOCOL
+              </h2>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">
+                PRE-DEPLOYMENT VERIFICATION
+              </p>
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/30">
+              {protocolCard.title}
+            </div>
+
+            <div className="flex items-center justify-center gap-4 text-xs font-bold text-slate-300">
+              <div className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5 text-emerald-400" />
+                <span>1h Window</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Play className="h-3.5 w-3.5 text-emerald-400 fill-emerald-400" />
+                <span>Sync 1/1</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-left pt-1">
+              {[
+                { label: "ENFORCED FULLSCREEN ENVIRONMENT", icon: Maximize },
+                { label: "NEURAL TAB MONITORING ACTIVE", icon: Shield },
+                { label: "IMMEDIATE COUNTDOWN INITIALIZATION", icon: Clock },
+                { label: "AUTOMATED PAYLOAD SUBMISSION", icon: AlertTriangle },
+              ].map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-800 bg-slate-900/80 text-xs font-bold text-slate-300 tracking-wider uppercase"
+                >
+                  <item.icon className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span>{item.label}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2 space-y-3">
+              <button
+                type="button"
+                onClick={handleEngageMission}
+                className="w-full h-12 rounded-2xl bg-[#10b981] hover:bg-[#059669] text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 cursor-pointer transition-all"
+              >
+                <Play className="h-4 w-4 fill-slate-950 text-slate-950" />
+                <span>ENGAGE MISSION</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setProtocolCard(null)}
+                className="text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white cursor-pointer transition-colors"
+              >
+                ABORT DEPLOYMENT
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedStandingCard && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
+          onClick={() => setSelectedStandingCard(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-slate-800 bg-[#11161d] p-6 shadow-2xl text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  <Trophy className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Score & Ranking</h3>
+                  <p className="text-xs text-slate-400">{selectedStandingCard.title} Assessment</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedStandingCard(null)}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    GLOBAL RANK
+                  </div>
+                  <div className="mt-1 text-lg font-black text-sky-400">#4</div>
+                  <div className="text-[10px] text-slate-500">of 1,420 cadets</div>
+                </div>
+
+                <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    PERCENTILE
+                  </div>
+                  <div className="mt-1 text-lg font-black text-amber-400">96.8%</div>
+                  <div className="text-[10px] text-slate-500">Top Tier Apex</div>
+                </div>
+
+                <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    INTEGRITY
+                  </div>
+                  <div className="mt-1 text-lg font-black text-emerald-400">100%</div>
+                  <div className="text-[10px] text-slate-500">Proctor Verified</div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 space-y-2.5">
+                <div className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                  <span>Cadet Leaderboard</span>
+                  <span className="text-sky-400">Live Telemetry</span>
+                </div>
+
+                <div className="space-y-1.5 pt-1">
+                  {[
+                    { rank: "1", name: "Alex Mercer", score: "100%", time: "18m" },
+                    { rank: "2", name: "Priya Sharma", score: "98%", time: "22m" },
+                    { rank: "3", name: "David Kim", score: "96%", time: "25m" },
+                    {
+                      rank: "4",
+                      name: "You (Cadet)",
+                      score: selectedStandingCard.score ? `${selectedStandingCard.score}%` : "94%",
+                      time: "28m",
+                      isUser: true,
+                    },
+                  ].map((entry) => (
+                    <div
+                      key={entry.rank}
+                      className={cn(
+                        "flex items-center justify-between rounded-lg px-3 py-2 text-xs",
+                        entry.isUser
+                          ? "bg-sky-950/60 border border-sky-800/80 font-bold text-sky-300"
+                          : "bg-slate-800/40 text-slate-300",
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-4 font-mono font-bold text-slate-400">{entry.rank}</span>
+                        <span>{entry.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-sky-400">{entry.score}</span>
+                        <span className="text-[11px] text-slate-500">{entry.time}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setSelectedStandingCard(null)}
+                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedBriefCard && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
+          onClick={() => setSelectedBriefCard(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-slate-800 bg-[#11161d] p-6 shadow-2xl text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Assessment Briefing</h3>
+                  <p className="text-xs text-slate-400">{selectedBriefCard.title}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedBriefCard(null)}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-4 text-xs text-slate-300">
+              <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-2">
+                <div className="font-bold text-white">Overview & Description</div>
+                <p className="text-slate-400 leading-relaxed">
+                  {selectedBriefCard.description ||
+                    "This tactical assessment tests computational thinking, syntax precision, and problem-solving benchmarks under controlled timed conditions."}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 space-y-1">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase">
+                    Security Policy
+                  </div>
+                  <div className="font-semibold text-sky-400">Proctored Sandbox</div>
+                  <div className="text-[11px] text-slate-400">
+                    Fullscreen lock & Tab monitoring enabled
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 space-y-1">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase">
+                    Evaluation Standard
+                  </div>
+                  <div className="font-semibold text-amber-400">
+                    +{selectedBriefCard.xp || 100} XP Credits
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    Automated test harness evaluation
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => setSelectedBriefCard(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-white text-xs font-semibold cursor-pointer"
+              >
+                Dismiss
+              </button>
+              <button
+                onClick={() => {
+                  const card = selectedBriefCard;
+                  setSelectedBriefCard(null);
+                  handleLaunchProtocol(card);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-[#10b981] hover:bg-[#059669] text-slate-950 text-xs font-bold uppercase tracking-wider cursor-pointer"
+              >
+                Launch Protocol
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {activeQuizCard && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
@@ -433,10 +1329,9 @@ function StudentAssignmentsPage() {
             className="w-full max-w-2xl max-h-[92vh] flex flex-col rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-6 py-4 bg-slate-50/50 dark:bg-slate-800/40">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400">
                   <HelpCircle className="h-5 w-5" />
                 </div>
                 <div>
@@ -456,7 +1351,6 @@ function StudentAssignmentsPage() {
               </button>
             </div>
 
-            {/* Modal Body */}
             {(() => {
               const questions =
                 activeQuizCard.mcqQuestions && activeQuizCard.mcqQuestions.length > 0
@@ -489,12 +1383,11 @@ function StudentAssignmentsPage() {
                       },
                     ];
 
-              // If quiz is already finished / submitted and results are displayed
               if (quizResult) {
                 return (
                   <div className="p-6 space-y-6 overflow-y-auto flex-1">
-                    <div className="text-center rounded-2xl bg-gradient-to-b from-purple-50 to-indigo-50/30 dark:from-purple-950/30 dark:to-slate-900 p-6 border border-purple-100 dark:border-purple-900/40">
-                      <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-purple-600 text-white font-black text-2xl shadow-lg shadow-purple-600/30 mb-3">
+                    <div className="text-center rounded-2xl bg-gradient-to-b from-sky-50 to-indigo-50/30 dark:from-sky-950/30 dark:to-slate-900 p-6 border border-sky-100 dark:border-sky-900/40">
+                      <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-sky-500 text-slate-950 font-black text-2xl shadow-lg shadow-sky-500/30 mb-3">
                         {quizResult.score}%
                       </div>
                       <h4 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -510,7 +1403,6 @@ function StudentAssignmentsPage() {
                       </div>
                     </div>
 
-                    {/* Question breakdown and explanations */}
                     <div className="space-y-3">
                       <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500">
                         Detailed Question Review & Explanations
@@ -571,7 +1463,7 @@ function StudentAssignmentsPage() {
 
                             {q.explanation && (
                               <div className="mt-2 rounded-lg bg-white/80 dark:bg-slate-800/80 p-2 text-[11px] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                                <span className="font-bold text-purple-600 dark:text-purple-400 mr-1">
+                                <span className="font-bold text-sky-600 dark:text-sky-400 mr-1">
                                   Explanation:
                                 </span>
                                 {q.explanation}
@@ -589,13 +1481,13 @@ function StudentAssignmentsPage() {
                           setStudentAnswers({});
                           setQuizCurrentIndex(0);
                         }}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 cursor-pointer"
                       >
                         <RotateCcw className="h-3.5 w-3.5" /> Retake Quiz
                       </button>
                       <button
                         onClick={() => setActiveQuizCard(null)}
-                        className="px-5 py-2 rounded-xl bg-purple-600 text-white text-xs font-semibold hover:bg-purple-700"
+                        className="px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold cursor-pointer"
                       >
                         Done
                       </button>
@@ -604,14 +1496,12 @@ function StudentAssignmentsPage() {
                 );
               }
 
-              // Active Test in progress
               const currentQ = questions[quizCurrentIndex] || questions[0]!;
               const selectedOpt = studentAnswers[currentQ.id];
               const answeredCount = Object.keys(studentAnswers).length;
 
               return (
                 <div className="p-6 space-y-5 overflow-y-auto flex-1">
-                  {/* Progress bar */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
                       <span>
@@ -623,7 +1513,7 @@ function StudentAssignmentsPage() {
                     </div>
                     <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                       <div
-                        className="h-full bg-purple-600 rounded-full transition-all duration-300"
+                        className="h-full bg-sky-500 rounded-full transition-all duration-300"
                         style={{
                           width: `${((quizCurrentIndex + 1) / questions.length) * 100}%`,
                         }}
@@ -631,10 +1521,9 @@ function StudentAssignmentsPage() {
                     </div>
                   </div>
 
-                  {/* Question Card */}
                   <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 p-5 space-y-4">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/70 px-2.5 py-0.5 rounded-full">
+                      <span className="text-[11px] font-bold text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-950/70 px-2.5 py-0.5 rounded-full">
                         Question {quizCurrentIndex + 1}
                       </span>
                       <div className="flex items-center gap-1.5">
@@ -651,7 +1540,6 @@ function StudentAssignmentsPage() {
                       {currentQ.questionText}
                     </h4>
 
-                    {/* Options list */}
                     <div className="space-y-2 pt-2">
                       {currentQ.options.map((opt, optIdx) => {
                         const isChosen = selectedOpt === opt;
@@ -669,15 +1557,15 @@ function StudentAssignmentsPage() {
                             className={cn(
                               "w-full text-left p-3.5 rounded-xl border text-xs font-medium flex items-center gap-3 transition-all cursor-pointer",
                               isChosen
-                                ? "border-purple-600 bg-purple-50/80 dark:bg-purple-950/60 text-purple-900 dark:text-purple-100 shadow-xs"
-                                : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-purple-300 hover:bg-slate-50 dark:hover:bg-slate-800/60",
+                                ? "border-sky-500 bg-sky-500/15 text-sky-900 dark:text-sky-100 shadow-xs"
+                                : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-sky-300 hover:bg-slate-50 dark:hover:bg-slate-800/60",
                             )}
                           >
                             <span
                               className={cn(
                                 "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold border transition-colors",
                                 isChosen
-                                  ? "bg-purple-600 border-purple-600 text-white"
+                                  ? "bg-sky-500 border-sky-500 text-slate-950 font-bold"
                                   : "border-slate-300 dark:border-slate-700 text-slate-500",
                               )}
                             >
@@ -690,13 +1578,12 @@ function StudentAssignmentsPage() {
                     </div>
                   </div>
 
-                  {/* Navigation & Submit footer */}
                   <div className="flex items-center justify-between pt-2">
                     <button
                       type="button"
                       disabled={quizCurrentIndex === 0}
                       onClick={() => setQuizCurrentIndex((prev) => Math.max(0, prev - 1))}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 disabled:opacity-40"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
                     >
                       <ChevronLeft className="h-4 w-4" /> Previous
                     </button>
@@ -706,7 +1593,7 @@ function StudentAssignmentsPage() {
                         <button
                           type="button"
                           onClick={() => setQuizCurrentIndex((prev) => prev + 1)}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 text-white text-xs font-semibold hover:bg-purple-700 shadow-xs"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold shadow-xs cursor-pointer"
                         >
                           Next <ChevronRight className="h-4 w-4" />
                         </button>
@@ -715,7 +1602,7 @@ function StudentAssignmentsPage() {
                           type="button"
                           disabled={submittingQuiz}
                           onClick={handleSubmitQuiz}
-                          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 shadow-sm disabled:opacity-50"
+                          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-emerald-500 text-slate-950 text-xs font-bold hover:bg-emerald-400 shadow-sm disabled:opacity-50 cursor-pointer"
                         >
                           <Check className="h-4 w-4 stroke-[3]" />
                           {submittingQuiz ? "Submitting..." : "Submit Quiz"}

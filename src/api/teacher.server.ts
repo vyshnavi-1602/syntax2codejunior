@@ -976,6 +976,21 @@ export const createAssignmentFn = createServerFn({ method: "POST" })
         | undefined;
       passingScore?: number | undefined;
       timeLimitMinutes?: number | undefined;
+      courseId?: string | undefined;
+      courseName?: string | undefined;
+      durationMinutes?: number | undefined;
+      maxAttempts?: number | undefined;
+      startTime?: string | undefined;
+      endTime?: string | undefined;
+      isActive?: boolean | undefined;
+      enableCopyPaste?: boolean | undefined;
+      requireFullscreen?: boolean | undefined;
+      enableAutoSubmit?: boolean | undefined;
+      allowTabSwitching?: boolean | undefined;
+      allowedLanguages?: string[] | undefined;
+      assignmentCategoryType?: string | undefined;
+      questionsPerAttemptMode?: "all" | "random" | undefined;
+      randomQuestionsCount?: number | undefined;
     }) => data,
   )
   .handler(async ({ data, context }) => {
@@ -1134,6 +1149,21 @@ export const updateAssignmentFn = createServerFn({ method: "POST" })
         | undefined;
       passingScore?: number | undefined;
       timeLimitMinutes?: number | undefined;
+      courseId?: string | undefined;
+      courseName?: string | undefined;
+      durationMinutes?: number | undefined;
+      maxAttempts?: number | undefined;
+      startTime?: string | undefined;
+      endTime?: string | undefined;
+      isActive?: boolean | undefined;
+      enableCopyPaste?: boolean | undefined;
+      requireFullscreen?: boolean | undefined;
+      enableAutoSubmit?: boolean | undefined;
+      allowTabSwitching?: boolean | undefined;
+      allowedLanguages?: string[] | undefined;
+      assignmentCategoryType?: string | undefined;
+      questionsPerAttemptMode?: "all" | "random" | undefined;
+      randomQuestionsCount?: number | undefined;
     }) => data,
   )
   .handler(async ({ data }) => {

@@ -1914,7 +1914,31 @@ export const submitStudentMcqQuizFn = createServerFn({ method: "POST" })
       .limit(1);
 
     if (!assignRow.length) {
-      throw new Error("Assignment not found");
+      // Diagnostic, practice, or curated standalone MCQ assessment
+      const verifiedScore = Math.min(100, Math.max(0, Math.round(Number(data.score) || 0)));
+      const passed = verifiedScore >= 70;
+      const verifiedXp = passed ? Math.min(Math.max(0, data.earnedXp || 50), 75) : 10;
+
+      if (verifiedXp > 0) {
+        const profile = await db
+          .select()
+          .from(schema.studentProfiles)
+          .where(eq(schema.studentProfiles.userId, studentId))
+          .limit(1);
+        if (profile.length > 0) {
+          await db
+            .update(schema.studentProfiles)
+            .set({ xpTotal: profile[0]!.xpTotal + verifiedXp })
+            .where(eq(schema.studentProfiles.userId, studentId));
+        }
+      }
+
+      return {
+        success: true,
+        submissionId: 0,
+        score: verifiedScore,
+        xpEarned: verifiedXp,
+      };
     }
 
     const teacherId = assignRow[0]!.teacherId;

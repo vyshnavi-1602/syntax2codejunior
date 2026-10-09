@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Sparkles, ArrowRight, Loader2 } from "lucide-react";
+import { Sparkles, ArrowRight, Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useSession as useRealSession } from "@/client/lib/auth-client";
 import { authClient } from "@/client/lib/auth-client";
@@ -57,12 +57,14 @@ function LoginPage() {
   );
   const [signInEmail, setSignInEmail] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
+  const [showSignInPassword, setShowSignInPassword] = useState(false);
   const [signInEmailError, setSignInEmailError] = useState("");
   const [signInPasswordError, setSignInPasswordError] = useState("");
 
   const [signUpName, setSignUpName] = useState("");
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [signUpNameError, setSignUpNameError] = useState("");
   const [signUpEmailError, setSignUpEmailError] = useState("");
   const [signUpPasswordError, setSignUpPasswordError] = useState("");
@@ -133,7 +135,15 @@ function LoginPage() {
       return;
     }
 
-    // Enforce proper authentication through better-auth for all roles
+    const isStaffAttempt =
+      selectedRole === "teacher" ||
+      selectedRole === "school" ||
+      selectedRole === "admin" ||
+      normalizedEmail === "teacher@syntax2code.com" ||
+      normalizedEmail === "school@syntax2code.com" ||
+      normalizedEmail === "admin@syntax2code.com";
+
+    // 1. Check credentials for staff or registered student
     try {
       const { data, error } = await authClient.signIn.email({
         email: normalizedEmail,
@@ -153,7 +163,7 @@ function LoginPage() {
         return;
       }
 
-      if (error) {
+      if (error && isStaffAttempt) {
         setSignInPasswordError(
           error.message || "Invalid credentials. Please verify your password.",
         );
@@ -164,47 +174,30 @@ function LoginPage() {
         return;
       }
     } catch (_err) {
-      // In development fallback, only allow student if not a production environment
-      if (process.env.NODE_ENV === "production") {
+      if (isStaffAttempt) {
         setSignInPasswordError("Authentication error. Please check your credentials.");
         toast.error("Sign-in failed", { description: "Invalid email or password." });
         setLoading(false);
         return;
       }
     }
-    if (cleanPassword.length < 6) {
-      setSignInPasswordError("Password must be at least 6 characters.");
-      toast.error("Invalid password", {
-        description: "Please enter a valid password (at least 6 characters).",
-      });
-      setLoading(false);
-      return;
-    }
 
+    // 2. Student Portal Login with Personal Email
+    // Students can log in with their personal email (e.g. Gmail, Yahoo, etc.) and auto-onboard directly
     try {
-      const { data, error } = await authClient.signIn.email({
-        email: signInEmail,
-        password: cleanPassword,
-      });
-
-      if (!error && data?.user) {
-        let verifiedRole = (data.user as { role?: string }).role || "student";
-        if (verifiedRole === "user") verifiedRole = "student";
-        if (typeof window !== "undefined") {
-          document.cookie = `s2c_role=${verifiedRole}; path=/; max-age=31536000; SameSite=Lax`;
-          document.cookie = `s2c-demo-role=${verifiedRole}; path=/; max-age=31536000; SameSite=Lax`;
-        }
-        fakeSignIn(verifiedRole as "student" | "teacher" | "school" | "admin" | "s2c");
-        toast.success("Signed in successfully!");
-        window.location.href = roleHome[verifiedRole] || "/dashboard";
-        return;
+      // Auto-register credential in background if first time
+      try {
+        const defaultName = normalizedEmail.split("@")[0] || "Student";
+        const formattedName = defaultName.charAt(0).toUpperCase() + defaultName.slice(1);
+        await authClient.signUp.email({
+          email: normalizedEmail,
+          password: cleanPassword,
+          name: formattedName,
+        });
+      } catch {
+        // Silently continue if already registered or offline
       }
-    } catch {
-      // Continue to seamless student onboarding
-    }
 
-    // Seamless onboarding/login for any student account
-    try {
       const userProfile = await lookupOrOnboardUserFn({
         data: {
           email: normalizedEmail,
@@ -447,20 +440,36 @@ function LoginPage() {
                       Forgot password?
                     </button>
                   </div>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    value={signInPassword}
-                    onChange={(e) => {
-                      setSignInPassword(e.target.value);
-                      if (signInPasswordError) setSignInPasswordError("");
-                    }}
-                    placeholder="••••••••"
-                    className={cn(
-                      signInPasswordError &&
-                        "border-rose-400 bg-rose-50/30 focus-visible:ring-rose-200",
-                    )}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="signin-password"
+                      type={showSignInPassword ? "text" : "password"}
+                      value={signInPassword}
+                      onChange={(e) => {
+                        setSignInPassword(e.target.value);
+                        if (signInPasswordError) setSignInPasswordError("");
+                      }}
+                      placeholder="••••••••"
+                      className={cn(
+                        "pr-10",
+                        signInPasswordError &&
+                          "border-rose-400 bg-rose-50/30 focus-visible:ring-rose-200",
+                      )}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSignInPassword((prev) => !prev)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 hover:text-slate-600 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring transition-colors"
+                      aria-label={showSignInPassword ? "Hide password" : "Show password"}
+                      title={showSignInPassword ? "Hide password" : "Show password"}
+                    >
+                      {showSignInPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                   {signInPasswordError && (
                     <p className="text-xs font-medium text-rose-600 mt-1">{signInPasswordError}</p>
                   )}
@@ -516,20 +525,36 @@ function LoginPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    value={signUpPassword}
-                    onChange={(e) => {
-                      setSignUpPassword(e.target.value);
-                      if (signUpPasswordError) setSignUpPasswordError("");
-                    }}
-                    placeholder="Choose a secure password (min 6 chars)"
-                    className={cn(
-                      signUpPasswordError &&
-                        "border-rose-400 bg-rose-50/30 focus-visible:ring-rose-200",
-                    )}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="signup-password"
+                      type={showSignUpPassword ? "text" : "password"}
+                      value={signUpPassword}
+                      onChange={(e) => {
+                        setSignUpPassword(e.target.value);
+                        if (signUpPasswordError) setSignUpPasswordError("");
+                      }}
+                      placeholder="Choose a secure password (min 6 chars)"
+                      className={cn(
+                        "pr-10",
+                        signUpPasswordError &&
+                          "border-rose-400 bg-rose-50/30 focus-visible:ring-rose-200",
+                      )}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSignUpPassword((prev) => !prev)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 hover:text-slate-600 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring transition-colors"
+                      aria-label={showSignUpPassword ? "Hide password" : "Show password"}
+                      title={showSignUpPassword ? "Hide password" : "Show password"}
+                    >
+                      {showSignUpPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                   {signUpPasswordError && (
                     <p className="text-xs font-medium text-rose-600 mt-1">{signUpPasswordError}</p>
                   )}

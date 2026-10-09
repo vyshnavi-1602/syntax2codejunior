@@ -4,6 +4,7 @@ export interface NavItem {
   label: string;
   to: string;
   icon: string;
+  activeColor?: "purple" | "emerald" | "indigo";
 }
 
 export interface NavGroup {
@@ -18,6 +19,7 @@ export const navByRole: Record<RoleId, NavGroup[]> = {
       items: [
         { label: "My World", to: "/student", icon: "Home" },
         { label: "Assignments", to: "/student/assignments", icon: "ClipboardList" },
+        { label: "MCQ Assessment", to: "/student/mcq", icon: "ClipboardCheck" },
         { label: "Learn", to: "/student/learn", icon: "BookOpen" },
         { label: "Practice", to: "/student/practice", icon: "Target" },
         { label: "Build", to: "/student/build", icon: "Hammer" },
@@ -46,17 +48,28 @@ export const navByRole: Record<RoleId, NavGroup[]> = {
       group: "Teach",
       items: [
         { label: "Dashboard", to: "/teacher", icon: "Home" },
-        { label: "My Classes", to: "/teacher/classes", icon: "Users" },
-        { label: "Assignments", to: "/teacher/assignments", icon: "ClipboardList" },
-        { label: "Question Bank & MCQs", to: "/teacher/questions", icon: "HelpCircle" },
+        { label: "Student Directory", to: "/teacher/students", icon: "GraduationCap" },
         { label: "Project Reviews", to: "/teacher/reviews", icon: "CheckCircle2" },
       ],
     },
     {
-      group: "Insights",
+      group: "Content",
+      items: [
+        { label: "Courses", to: "/teacher/courses", icon: "GraduationCap", activeColor: "purple" },
+        { label: "Questions", to: "/teacher/questions", icon: "BookOpen" },
+        { label: "Assignments", to: "/teacher/assignments", icon: "ClipboardList" },
+        { label: "MCQ Assessment", to: "/teacher/questions", icon: "ClipboardCheck" },
+        { label: "Meetings", to: "/teacher/classes", icon: "Video", activeColor: "emerald" },
+        { label: "Groups", to: "/teacher/classes", icon: "Layers" },
+      ],
+    },
+    {
+      group: "Insights & Guardrails",
       items: [
         { label: "Analytics & Reports", to: "/teacher/analytics", icon: "BarChart3" },
         { label: "Announcements", to: "/teacher/announcements", icon: "Megaphone" },
+        { label: "Student Support", to: "/teacher/support", icon: "LifeBuoy" },
+        { label: "Class Guardrails", to: "/teacher/guardrails", icon: "ShieldCheck" },
       ],
     },
   ],
@@ -65,6 +78,7 @@ export const navByRole: Record<RoleId, NavGroup[]> = {
       group: "Institution",
       items: [
         { label: "Executive Overview", to: "/school", icon: "Home" },
+        { label: "Courses", to: "/school/courses", icon: "BookOpen" },
         { label: "Students", to: "/school/students", icon: "GraduationCap" },
         { label: "Teachers", to: "/school/teachers", icon: "Users" },
         { label: "Classes", to: "/school/classes", icon: "LayoutGrid" },
@@ -76,6 +90,7 @@ export const navByRole: Record<RoleId, NavGroup[]> = {
       items: [
         { label: "AI & Coding Readiness", to: "/school/readiness", icon: "Gauge" },
         { label: "Reports & Announcements", to: "/school/reports", icon: "FileText" },
+        { label: "Parent Dispatches", to: "/school/dispatches", icon: "Mail" },
       ],
     },
   ],
