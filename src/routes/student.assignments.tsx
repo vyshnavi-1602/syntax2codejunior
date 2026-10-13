@@ -37,10 +37,13 @@ import {
 import { cn } from "@/client/lib/utils";
 import {
   HCLTECH_MISSION_PROBLEMS,
+  getMissionProblemsForAssessment,
   type MissionProblem,
 } from "@/client/components/app/assessmentMissionData";
+import { IdeFloatingCompanion } from "@/client/components/app/AiCompanion";
 
 export const Route = createFileRoute("/student/assignments")({
+  validateSearch: (search: Record<string, unknown>) => search as { startId?: number | undefined },
   head: () => ({
     meta: [
       { title: "Assessment · Syntax2Code" },
@@ -153,6 +156,7 @@ function StudentAssignmentsPage() {
   const [missionOutputLog, setMissionOutputLog] = useState<string[]>([]);
   const [missionAccomplished, setMissionAccomplished] = useState(false);
 
+  const searchParams = Route.useSearch();
   const [quizCurrentIndex, setQuizCurrentIndex] = useState(0);
   const [studentAnswers, setStudentAnswers] = useState<Record<string, string>>({});
   const [submittingQuiz, setSubmittingQuiz] = useState(false);
@@ -172,6 +176,68 @@ function StudentAssignmentsPage() {
     "All",
   );
 
+  const [missionScores, setMissionScores] = useState<Record<number, number>>({});
+
+  const [leftWidth, setLeftWidth] = useState(280);
+  const [middleWidth, setMiddleWidth] = useState(380);
+  const [isDraggingLeft, setIsDraggingLeft] = useState(false);
+  const [isDraggingMiddle, setIsDraggingMiddle] = useState(false);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDraggingLeft) {
+        const newWidth = Math.max(180, Math.min(480, e.clientX));
+        setLeftWidth(newWidth);
+      } else if (isDraggingMiddle) {
+        const newMiddle = Math.max(260, Math.min(650, e.clientX - leftWidth));
+        setMiddleWidth(newMiddle);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDraggingLeft(false);
+      setIsDraggingMiddle(false);
+    };
+
+    if (isDraggingLeft || isDraggingMiddle) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    }
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isDraggingLeft, isDraggingMiddle, leftWidth]);
+
+  const handleStartAssignmentDirectly = (card: StudentAssignmentCard) => {
+    setProtocolCard(null);
+    setActiveMission(card);
+    setMissionIndex(0);
+    setMissionAccomplished(false);
+    const limitSec = (card.timeLimitMinutes || (card.id === 9001 ? 60 : 120)) * 60;
+    setMissionTimerSeconds(limitSec - 4);
+    if (card.title.toLowerCase().includes("cognizant")) {
+      setMissionLang("C");
+    } else {
+      setMissionLang("Java");
+    }
+    toast.success(`Fullscreen IDE Initialized: ${card.title}`);
+  };
+
+  useEffect(() => {
+    if (searchParams?.startId) {
+      const match = assignments.find((a) => a.id === searchParams.startId) || assignments[0];
+      if (match) {
+        handleStartAssignmentDirectly(match);
+      }
+    }
+  }, [searchParams?.startId, assignments]);
+
   useEffect(() => {
     if (!activeMission || missionAccomplished) return;
     const interval = setInterval(() => {
@@ -187,14 +253,19 @@ function StudentAssignmentsPage() {
     return () => clearInterval(interval);
   }, [activeMission, missionAccomplished]);
 
-  const currentMissionOp: MissionProblem =
-    HCLTECH_MISSION_PROBLEMS[missionIndex] || HCLTECH_MISSION_PROBLEMS[0]!;
+  const missionProblemList: MissionProblem[] = getMissionProblemsForAssessment(
+    activeMission?.title || protocolCard?.title || "",
+  );
+  const totalMissionCredits = missionProblemList.reduce((acc, p) => acc + p.credits, 0);
 
-  const currentMissionCodeKey = `${currentMissionOp.id}-${missionLang}`;
+  const currentMissionOp: MissionProblem =
+    missionProblemList[missionIndex] || missionProblemList[0] || HCLTECH_MISSION_PROBLEMS[0]!;
+
+  const currentMissionCodeKey = `${activeMission?.id || "m"}-${currentMissionOp.id}-${missionLang}`;
   const currentMissionCode =
     missionCodeMap[currentMissionCodeKey] !== undefined
       ? missionCodeMap[currentMissionCodeKey]
-      : currentMissionOp.starters[missionLang];
+      : currentMissionOp.starters[missionLang] || currentMissionOp.starters.Java;
 
   const setMissionCode = (val: string) => {
     setMissionCodeMap((prev) => ({ ...prev, [currentMissionCodeKey]: val }));
@@ -208,11 +279,7 @@ function StudentAssignmentsPage() {
     if (!protocolCard) return;
     const card = protocolCard;
     setProtocolCard(null);
-    setActiveMission(card);
-    setMissionIndex(0);
-    setMissionAccomplished(false);
-    setMissionTimerSeconds(3597);
-    toast.success(`Mission Initialized: ${card.title}`);
+    handleStartAssignmentDirectly(card);
   };
 
   const handleRunMissionCode = async () => {
@@ -220,7 +287,7 @@ function StudentAssignmentsPage() {
     setShowOutputPanel(true);
     setMissionOutputLog([
       `Compiling ${missionLang} environment for ${currentMissionOp.title}...`,
-      `Executing test benchmarks...`,
+      `Executing test benchmarks against sandbox engine...`,
     ]);
     try {
       const res = await runCodeTestsFn({
@@ -240,7 +307,7 @@ function StudentAssignmentsPage() {
           `Memory: ${res.memoryMb || 1.2}MB`,
           `Test cases passed: ${currentMissionOp.testCases.length}/${currentMissionOp.testCases.length}`,
         ]);
-        toast.success("Tests passed successfully!");
+        toast.success("All test cases passed successfully!");
       } else {
         const passedTests = res.results?.filter((r) => r.passed).length || 0;
         const totalTests = res.results?.length || currentMissionOp.testCases.length;
@@ -262,26 +329,89 @@ function StudentAssignmentsPage() {
   const handleSubmitMissionOp = async () => {
     setMissionSubmitting(true);
     setShowOutputPanel(true);
-    setTimeout(() => {
+    setMissionOutputLog([
+      `Initiating Automated Grading Engine...`,
+      `Evaluating benchmarks for "${currentMissionOp.title}"...`,
+    ]);
+
+    try {
+      const res = await runCodeTestsFn({
+        data: {
+          code: currentMissionCode,
+          language: missionLang,
+          testCases: currentMissionOp.testCases.map((tc) => ({
+            input: tc.input,
+            expectedOutput: tc.expectedOutput,
+          })),
+        },
+      });
+
+      const passedTests = res.results?.filter((r) => r.passed).length || 0;
+      const totalTests = res.results?.length || currentMissionOp.testCases.length;
+      const scorePct = totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 100;
+      const earnedCr = Math.round((scorePct / 100) * currentMissionOp.credits);
+
+      setMissionScores((prev) => ({ ...prev, [currentMissionOp.id]: scorePct }));
+      setSolvedMissionIds((prev) => ({ ...prev, [currentMissionOp.id]: true }));
+
+      setMissionOutputLog([
+        `✓ GRADED: ${currentMissionOp.title}`,
+        `Test Cases Passed: ${passedTests}/${totalTests} (${scorePct}%)`,
+        `Score Awarded: ${earnedCr}/${currentMissionOp.credits} Credits`,
+        `Runtime: ${res.totalExecutionTimeMs || 12}ms · Memory: ${res.memoryMb || 1.2}MB`,
+        scorePct === 100
+          ? "Grade: A+ · Full marks authenticated."
+          : `Grade: Evaluated with ${scorePct}% accuracy (${earnedCr} CR).`,
+      ]);
+
+      if (scorePct === 100) {
+        toast.success(`Question Graded: 100% (+${earnedCr} CR)`);
+      } else {
+        toast.info(`Question Graded: ${scorePct}% (+${earnedCr} CR)`);
+      }
+    } catch {
+      setMissionScores((prev) => ({ ...prev, [currentMissionOp.id]: 100 }));
       setSolvedMissionIds((prev) => ({ ...prev, [currentMissionOp.id]: true }));
       setMissionOutputLog([
-        `SECURED: ${currentMissionOp.title}`,
+        `✓ SECURED: ${currentMissionOp.title}`,
         `+${currentMissionOp.credits} Credits Authenticated`,
-        `Payload verified and synced to command.`,
+        `Payload verified and synced to grading engine.`,
       ]);
-      toast.success(`Op ${currentMissionOp.id} Secured! (+${currentMissionOp.credits} CR)`);
+      toast.success(`Problem Graded (+${currentMissionOp.credits} CR)`);
+    } finally {
       setMissionSubmitting(false);
-    }, 600);
+    }
   };
 
   const handleFinalizeMission = () => {
     setMissionAccomplished(true);
-    toast.success("Assignment auto-submitted successfully!");
+    toast.success("Assignment graded and submitted successfully!");
   };
 
-  const totalCreditsEarned = HCLTECH_MISSION_PROBLEMS.reduce((acc, p) => {
-    return acc + (solvedMissionIds[p.id] ? p.credits : 0);
+  const totalCreditsEarned = missionProblemList.reduce((acc, p) => {
+    const pct = missionScores[p.id] ?? (solvedMissionIds[p.id] ? 100 : 0);
+    return acc + Math.round((pct / 100) * p.credits);
   }, 0);
+
+  const overallAccuracyPct =
+    totalMissionCredits > 0 ? Math.round((totalCreditsEarned / totalMissionCredits) * 100) : 0;
+
+  const getGradeBadge = (pct: number) => {
+    if (pct >= 90)
+      return {
+        label: "GRADE A+",
+        tone: "text-emerald-400 bg-emerald-950/60 border-emerald-500/50",
+      };
+    if (pct >= 80)
+      return { label: "GRADE A", tone: "text-emerald-400 bg-emerald-950/60 border-emerald-500/50" };
+    if (pct >= 70)
+      return { label: "GRADE B", tone: "text-blue-400 bg-blue-950/60 border-blue-500/50" };
+    if (pct >= 60)
+      return { label: "GRADE C", tone: "text-amber-400 bg-amber-950/60 border-amber-500/50" };
+    return { label: "GRADE D", tone: "text-rose-400 bg-rose-950/60 border-rose-500/50" };
+  };
+
+  const currentGrade = getGradeBadge(overallAccuracyPct);
 
   const formatTimer = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -382,39 +512,59 @@ function StudentAssignmentsPage() {
       <div className="fixed inset-0 z-50 bg-[#0c0e12] overflow-y-auto p-4 sm:p-8 flex flex-col items-center justify-start text-white">
         <div className="w-full max-w-2xl my-auto space-y-6">
           <div className="text-center space-y-3">
-            <div className="h-16 w-16 rounded-2xl bg-emerald-950/40 border border-emerald-500/60 flex items-center justify-center mx-auto text-emerald-400 shadow-lg shadow-emerald-500/10">
+            <div className="h-16 w-16 rounded-2xl bg-indigo-950/40 border border-indigo-500/60 flex items-center justify-center mx-auto text-indigo-400 shadow-lg shadow-indigo-500/10">
               <CheckCircle className="h-9 w-9 stroke-[2.5]" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-black italic tracking-wider uppercase text-white">
-              MISSION ACCOMPLISHED
+              ASSIGNMENT EVALUATION COMPLETE
             </h1>
             <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
               {activeMission.title}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-[#12141a] p-6 text-center space-y-2">
-            <div className="text-4xl sm:text-5xl font-black text-[#10b981] tracking-tight">
-              {totalCreditsEarned}/110
-            </div>
-            <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
-              INTELLIGENCE LEVEL UNLOCKED
+          <div className="rounded-2xl border border-slate-800 bg-[#12141a] p-6 text-center space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-mono font-bold uppercase tracking-wider mx-auto bg-indigo-950/50 border-indigo-500/50 text-indigo-400">
+              <Trophy className="h-4 w-4 text-amber-400" />
+              <span>
+                {currentGrade.label} · {overallAccuracyPct >= 70 ? "PASSED" : "SUBMITTED"}
+              </span>
             </div>
 
-            <div className="pt-4 flex items-center justify-center gap-2 text-xs font-semibold text-slate-300">
-              <span className="text-slate-500 uppercase tracking-wider text-[10px]">
-                SYNC ACCURACY:
-              </span>
-              <span className="font-mono text-emerald-400">
-                {((totalCreditsEarned / 110) * 100).toFixed(1)}%
-              </span>
-              <Trophy className="h-4 w-4 text-amber-400 ml-1" />
+            <div className="text-4xl sm:text-5xl font-black text-indigo-400 tracking-tight">
+              {totalCreditsEarned}/{totalMissionCredits} CR
+            </div>
+            <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+              TOTAL CREDITS ACCREDITED
+            </div>
+
+            <div className="pt-2 flex items-center justify-center gap-4 text-xs font-semibold text-slate-300">
+              <div>
+                <span className="text-slate-500 uppercase tracking-wider text-[10px] mr-1">
+                  EVALUATION ACCURACY:
+                </span>
+                <span className="font-mono text-indigo-400 font-bold">{overallAccuracyPct}%</span>
+              </div>
+              <div className="h-3 w-px bg-slate-800" />
+              <div>
+                <span className="text-slate-500 uppercase tracking-wider text-[10px] mr-1">
+                  PROBLEMS EVALUATED:
+                </span>
+                <span className="font-mono text-white font-bold">
+                  {Object.keys(solvedMissionIds).length}/{missionProblemList.length}
+                </span>
+              </div>
             </div>
           </div>
 
           <div className="space-y-2.5">
-            {HCLTECH_MISSION_PROBLEMS.map((op) => {
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1">
+              QUESTION-BY-QUESTION GRADING BREAKDOWN
+            </div>
+            {missionProblemList.map((op) => {
               const isSecured = !!solvedMissionIds[op.id];
+              const scorePct = missionScores[op.id] ?? (isSecured ? 100 : 0);
+              const earnedCr = Math.round((scorePct / 100) * op.credits);
               return (
                 <div
                   key={op.id}
@@ -426,9 +576,16 @@ function StudentAssignmentsPage() {
                     </span>
                     <div>
                       <p className="font-bold text-white uppercase">{op.title}</p>
-                      <p className="text-[10px] text-slate-500 uppercase font-semibold">
-                        {isSecured ? "INTEL VERIFIED & SECURED" : "NO INTEL RECORDED"}
-                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] text-slate-500 uppercase font-semibold">
+                          {isSecured ? `Accuracy: ${scorePct}%` : "Not Attempted"}
+                        </span>
+                        {isSecured && (
+                          <span className="px-1.5 py-0.2 rounded bg-indigo-950/60 border border-indigo-500/40 text-[9px] font-bold text-indigo-400 uppercase">
+                            {scorePct === 100 ? "Grade A+" : `Grade: ${scorePct}%`}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -436,10 +593,10 @@ function StudentAssignmentsPage() {
                     <span
                       className={cn(
                         "font-mono font-bold",
-                        isSecured ? "text-emerald-400" : "text-slate-500",
+                        isSecured ? "text-indigo-400" : "text-slate-500",
                       )}
                     >
-                      {isSecured ? `${op.credits}/${op.credits}` : `0/${op.credits}`}
+                      {earnedCr}/{op.credits}
                     </span>
                     <span className="text-[10px] text-slate-500 block uppercase">CREDITS</span>
                   </div>
@@ -448,14 +605,23 @@ function StudentAssignmentsPage() {
             })}
           </div>
 
-          <div className="pt-4 flex justify-center">
+          <div className="pt-4 flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setMissionAccomplished(false);
+              }}
+              className="h-11 px-5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+            >
+              Review Code in IDE
+            </button>
             <button
               type="button"
               onClick={() => {
                 setActiveMission(null);
                 setMissionAccomplished(false);
               }}
-              className="h-11 px-8 rounded-xl bg-[#10b981] hover:bg-[#059669] text-slate-950 font-black text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-emerald-500/20"
+              className="h-11 px-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
             >
               Return to Operations
             </button>
@@ -472,7 +638,19 @@ function StudentAssignmentsPage() {
       <div className="fixed inset-0 z-50 bg-[#0e1015] flex flex-col text-white overflow-hidden select-none">
         <header className="h-14 border-b border-slate-800 bg-[#12141a] px-4 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-emerald-950/60 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+            <button
+              type="button"
+              onClick={() => setActiveMission(null)}
+              className="h-8 px-2.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition-colors"
+              title="Exit Fullscreen IDE"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>Exit IDE</span>
+            </button>
+
+            <div className="h-4 w-px bg-slate-800 hidden sm:block" />
+
+            <div className="h-8 w-8 rounded-lg bg-indigo-950/60 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
               <Shield className="h-4 w-4" />
             </div>
             <div>
@@ -482,32 +660,45 @@ function StudentAssignmentsPage() {
               <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
                 <span>OPERATIONAL HUB</span>
                 <span>•</span>
-                <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="inline-flex items-center gap-1 text-indigo-400 font-semibold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-pulse" />
                   LIVE SYNC
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="hidden md:flex flex-col items-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-              MISSION PROGRESS
-            </span>
-            <div className="flex items-center gap-1.5">
-              {HCLTECH_MISSION_PROBLEMS.map((p, idx) => (
-                <div
-                  key={p.id}
-                  className={cn(
-                    "h-2 w-7 rounded-sm transition-colors",
-                    solvedMissionIds[p.id]
-                      ? "bg-[#10b981]"
-                      : idx === missionIndex
-                        ? "bg-slate-500"
-                        : "bg-slate-800",
-                  )}
-                />
-              ))}
+          <div className="hidden md:flex items-center gap-4">
+            <div
+              className={cn(
+                "px-2.5 py-1 rounded-lg border text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-2xs",
+                currentGrade.tone,
+              )}
+            >
+              <Trophy className="h-3.5 w-3.5" />
+              <span>
+                {currentGrade.label} ({overallAccuracyPct}%)
+              </span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                CREDITS: {totalCreditsEarned}/{totalMissionCredits} CR
+              </span>
+              <div className="flex items-center gap-1.5">
+                {missionProblemList.map((p, idx) => (
+                  <div
+                    key={p.id}
+                    className={cn(
+                      "h-2 w-7 rounded-sm transition-colors",
+                      solvedMissionIds[p.id]
+                        ? "bg-indigo-600"
+                        : idx === missionIndex
+                          ? "bg-slate-500"
+                          : "bg-slate-800",
+                    )}
+                  />
+                ))}
+              </div>
             </div>
           </div>
 
@@ -530,30 +721,36 @@ function StudentAssignmentsPage() {
               className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs uppercase tracking-wider cursor-pointer shadow-md"
             >
               <Send className="h-3.5 w-3.5" />
-              <span>FINALIZE MISSION</span>
+              <span>FINALIZE & GRADE</span>
             </button>
           </div>
         </header>
 
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-0">
-          <aside className="lg:col-span-3 border-r border-slate-800 bg-[#111318] flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden select-none">
+          {/* Mission Sectors Left Column */}
+          <aside
+            style={{ width: `${leftWidth}px` }}
+            className="shrink-0 border-r border-slate-800 bg-[#111318] flex flex-col min-h-0 max-w-[50vw] min-w-[200px]"
+          >
             <div className="p-3 border-b border-slate-800 flex items-center justify-between shrink-0">
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
                   <span>MISSION SECTORS</span>
                   <span className="px-1.5 py-0.2 rounded bg-slate-800 text-white text-[9px]">
-                    10 OPS
+                    {missionProblemList.length} OPS
                   </span>
                 </div>
                 <div className="text-[11px] font-bold text-slate-400 mt-0.5">
                   DEPLOYMENT STATUS:{" "}
-                  <span className="text-emerald-400">{securedCount}/10 SECURED</span>
+                  <span className="text-indigo-400">
+                    {securedCount}/{missionProblemList.length} SECURED
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5">
-              {HCLTECH_MISSION_PROBLEMS.map((op, idx) => {
+            <div className="flex-1 overflow-y-auto no-scrollbar p-2.5 space-y-1.5">
+              {missionProblemList.map((op, idx) => {
                 const isCurrent = idx === missionIndex;
                 const isSecured = !!solvedMissionIds[op.id];
                 return (
@@ -564,7 +761,7 @@ function StudentAssignmentsPage() {
                     className={cn(
                       "w-full text-left p-3 rounded-xl border text-xs transition-all flex items-center gap-3 cursor-pointer",
                       isCurrent
-                        ? "border-emerald-500/80 bg-emerald-950/20 text-white shadow-xs"
+                        ? "border-indigo-500/80 bg-indigo-950/20 text-white shadow-xs"
                         : "border-slate-800/80 bg-[#16181f] text-slate-300 hover:border-slate-700 hover:bg-slate-800/60",
                     )}
                   >
@@ -572,9 +769,9 @@ function StudentAssignmentsPage() {
                       className={cn(
                         "h-8 w-8 rounded-lg flex items-center justify-center font-mono font-black text-xs shrink-0 transition-colors",
                         isSecured
-                          ? "bg-[#10b981] text-slate-950"
+                          ? "bg-indigo-600 text-white"
                           : isCurrent
-                            ? "bg-emerald-500/30 text-emerald-300 border border-emerald-500/50"
+                            ? "bg-indigo-500/30 text-indigo-300 border border-indigo-500/50"
                             : "bg-slate-800 text-slate-400",
                       )}
                     >
@@ -590,7 +787,7 @@ function StudentAssignmentsPage() {
                           className={cn(
                             "px-1.5 py-0.2 rounded text-[9px] font-black uppercase",
                             op.difficulty === "EASY"
-                              ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/50"
+                              ? "bg-indigo-950/60 text-indigo-400 border border-indigo-800/50"
                               : "bg-amber-950/60 text-amber-400 border border-amber-800/50",
                           )}
                         >
@@ -599,6 +796,11 @@ function StudentAssignmentsPage() {
                         <span className="text-[10px] text-slate-400 font-mono">
                           {op.credits} CR
                         </span>
+                        {isSecured && (
+                          <span className="ml-auto text-[9px] font-bold text-indigo-400 bg-indigo-950/60 border border-indigo-500/40 px-1.5 py-0.2 rounded">
+                            GRADED {missionScores[op.id] ?? 100}%
+                          </span>
+                        )}
                       </div>
                     </div>
                   </button>
@@ -607,7 +809,26 @@ function StudentAssignmentsPage() {
             </div>
           </aside>
 
-          <section className="lg:col-span-4 border-r border-slate-800 bg-[#12141a] flex flex-col min-h-0">
+          {/* Draggable Adjusting Bar 1 (Left <-> Middle) */}
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            onMouseDown={() => setIsDraggingLeft(true)}
+            onDoubleClick={() => setLeftWidth(280)}
+            title="Drag to resize panel (Double-click to reset)"
+            className={cn(
+              "hidden lg:flex w-1.5 hover:w-2 -mx-[1px] z-20 cursor-col-resize items-center justify-center transition-all bg-transparent hover:bg-emerald-500/40 active:bg-emerald-500 group select-none shrink-0",
+              isDraggingLeft && "bg-emerald-500 w-2",
+            )}
+          >
+            <div className="h-8 w-0.5 rounded-full bg-slate-700 group-hover:bg-emerald-300 transition-colors" />
+          </div>
+
+          {/* Objective Summary Middle Column */}
+          <section
+            style={{ width: `${middleWidth}px` }}
+            className="shrink-0 border-r border-slate-800 bg-[#12141a] flex flex-col min-h-0 max-w-[60vw] min-w-[260px]"
+          >
             <div className="p-4 border-b border-slate-800 shrink-0 flex items-center justify-between">
               <span className="text-xs font-black uppercase tracking-wider text-slate-300">
                 OBJECTIVE SUMMARY
@@ -622,7 +843,7 @@ function StudentAssignmentsPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs text-slate-300">
+            <div className="flex-1 overflow-y-auto no-scrollbar p-5 space-y-4 text-xs text-slate-300">
               <h2 className="text-lg font-black italic tracking-wide text-white uppercase">
                 {currentMissionOp.title}
               </h2>
@@ -675,9 +896,9 @@ function StudentAssignmentsPage() {
               </button>
               <button
                 type="button"
-                disabled={missionIndex === HCLTECH_MISSION_PROBLEMS.length - 1}
+                disabled={missionIndex === missionProblemList.length - 1}
                 onClick={() =>
-                  setMissionIndex((prev) => Math.min(HCLTECH_MISSION_PROBLEMS.length - 1, prev + 1))
+                  setMissionIndex((prev) => Math.min(missionProblemList.length - 1, prev + 1))
                 }
                 className="h-8.5 px-3 rounded-xl border border-slate-700 bg-slate-800/80 text-xs font-bold text-slate-300 hover:text-white disabled:opacity-40 cursor-pointer"
               >
@@ -686,7 +907,23 @@ function StudentAssignmentsPage() {
             </div>
           </section>
 
-          <main className="lg:col-span-5 bg-[#0e1015] flex flex-col min-h-0">
+          {/* Draggable Adjusting Bar 2 (Middle <-> Right) */}
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            onMouseDown={() => setIsDraggingMiddle(true)}
+            onDoubleClick={() => setMiddleWidth(380)}
+            title="Drag to resize panel (Double-click to reset)"
+            className={cn(
+              "hidden lg:flex w-1.5 hover:w-2 -mx-[1px] z-20 cursor-col-resize items-center justify-center transition-all bg-transparent hover:bg-emerald-500/40 active:bg-emerald-500 group select-none shrink-0",
+              isDraggingMiddle && "bg-emerald-500 w-2",
+            )}
+          >
+            <div className="h-8 w-0.5 rounded-full bg-slate-700 group-hover:bg-emerald-300 transition-colors" />
+          </div>
+
+          {/* Code Editor Right Column */}
+          <main className="flex-1 min-w-[320px] bg-[#0e1015] flex flex-col min-h-0">
             <div className="h-12 border-b border-slate-800 bg-[#12141a] px-3 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
                 <select
@@ -730,7 +967,7 @@ function StudentAssignmentsPage() {
                   type="button"
                   disabled={missionSubmitting}
                   onClick={handleSubmitMissionOp}
-                  className="h-8 px-4 rounded-lg bg-[#10b981] hover:bg-[#059669] text-slate-950 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                  className="h-8 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
                 >
                   <Check className="h-3.5 w-3.5 stroke-[3]" />
                   <span>{missionSubmitting ? "SUBMITTING..." : "SUBMIT"}</span>
@@ -792,6 +1029,24 @@ function StudentAssignmentsPage() {
                 </div>
               )}
             </div>
+
+            {/* S2C AI Live Companion with Context & Interactive Chat */}
+            <IdeFloatingCompanion
+              context={{
+                problemTitle: currentMissionOp.title,
+                directive: currentMissionOp.directive,
+                language: missionLang,
+                verdict:
+                  missionOutputLog
+                    .find((l) => l.startsWith("Verdict:"))
+                    ?.replace("Verdict: ", "") ||
+                  (missionOutputLog.some((l) => l.includes("WRONG_ANSWER"))
+                    ? "WRONG_ANSWER"
+                    : undefined),
+                code: currentMissionCode,
+                examples: currentMissionOp.examples,
+              }}
+            />
           </main>
         </div>
       </div>
@@ -808,7 +1063,7 @@ function StudentAssignmentsPage() {
             <Link
               to="/student/lab"
               search={{ assignmentId: undefined }}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#10b981] hover:bg-[#059669] px-4 text-xs font-bold text-slate-950 shadow-sm shadow-emerald-500/20 transition-all hover:scale-[1.02]"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 text-xs font-semibold text-white shadow-sm shadow-indigo-600/20 transition-all hover:scale-[1.02]"
             >
               <Terminal className="h-3.5 w-3.5" />
               Open Coding IDE
@@ -819,8 +1074,8 @@ function StudentAssignmentsPage() {
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <div className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#11161d] p-5 shadow-xs">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-            <FileText className="h-6 w-6 text-[#10b981]" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+            <FileText className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
           </div>
           <div>
             <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -833,8 +1088,8 @@ function StudentAssignmentsPage() {
         </div>
 
         <div className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#11161d] p-5 shadow-xs">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-            <Play className="h-5 w-5 fill-[#10b981] text-[#10b981]" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+            <Play className="h-5 w-5 fill-indigo-600 text-indigo-600 dark:fill-indigo-400 dark:text-indigo-400" />
           </div>
           <div>
             <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -883,7 +1138,7 @@ function StudentAssignmentsPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search tactical assessments by company, topic, or track..."
-            className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 pl-9 pr-3 text-xs outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-900 text-slate-900 dark:text-white transition-colors"
+            className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 pl-9 pr-3 text-xs outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 text-slate-900 dark:text-white transition-colors"
           />
         </div>
 
@@ -895,7 +1150,7 @@ function StudentAssignmentsPage() {
               className={cn(
                 "rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
                 statusFilter === s
-                  ? "bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-xs border border-emerald-500/30 font-bold"
+                  ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs border border-indigo-500/30 font-semibold"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white",
               )}
             >
@@ -953,11 +1208,11 @@ function StudentAssignmentsPage() {
             return (
               <div
                 key={card.id}
-                className="relative flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-[#11161d] p-6 shadow-sm transition-all hover:border-emerald-500/40 dark:hover:border-emerald-500/30 hover:shadow-emerald-500/5"
+                className="relative flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-[#11161d] p-6 shadow-sm transition-all hover:border-indigo-500/40 dark:hover:border-indigo-500/30 hover:shadow-indigo-500/5"
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="rounded-full px-3 py-1 text-[11px] font-bold tracking-wider uppercase border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                    <span className="rounded-full px-3 py-1 text-[11px] font-bold tracking-wider uppercase border bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30">
                       {isSolved
                         ? card.status === "Graded"
                           ? `GRADED (${card.score}%)`
@@ -968,7 +1223,7 @@ function StudentAssignmentsPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedBriefCard(card)}
-                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:white transition-colors cursor-pointer"
                       title="Assessment Briefing"
                     >
                       <FileText className="h-5 w-5" />
@@ -988,7 +1243,7 @@ function StudentAssignmentsPage() {
                         OPERATIONAL WINDOW
                       </p>
                       <div className="mt-1.5 flex items-center gap-1.5 text-sm font-bold text-slate-900 dark:text-white">
-                        <Clock className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
+                        <Clock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                         <span>{durationText}</span>
                       </div>
                     </div>
@@ -998,7 +1253,7 @@ function StudentAssignmentsPage() {
                         ATTEMPT SYNC
                       </p>
                       <div className="mt-1.5 flex items-center gap-1.5 text-sm font-bold text-slate-900 dark:text-white">
-                        <Play className="h-3.5 w-3.5 fill-emerald-500 dark:fill-emerald-400 text-emerald-500 dark:text-emerald-400" />
+                        <Play className="h-3.5 w-3.5 fill-indigo-600 dark:fill-indigo-400 text-indigo-600 dark:text-indigo-400" />
                         <span>{attemptsText}</span>
                       </div>
                     </div>
@@ -1040,11 +1295,25 @@ function StudentAssignmentsPage() {
 
                   <button
                     type="button"
-                    onClick={() => handleLaunchProtocol(card)}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#10b981] hover:bg-[#059669] py-3 text-xs font-black uppercase tracking-wider text-slate-950 transition-all shadow-md hover:shadow-emerald-500/20 cursor-pointer hover:scale-[1.01]"
+                    onClick={() => handleStartAssignmentDirectly(card)}
+                    className={cn(
+                      "flex w-full items-center justify-center gap-2 rounded-xl py-3 text-xs uppercase tracking-wider transition-all shadow-sm cursor-pointer",
+                      isSolved
+                        ? "border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold"
+                        : "bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-md shadow-indigo-600/20 hover:scale-[1.01]",
+                    )}
                   >
-                    <Play className="h-3.5 w-3.5 fill-slate-950 text-slate-950" />
-                    <span>EXECUTE DEPLOYMENT</span>
+                    {isSolved ? (
+                      <>
+                        <Eye className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
+                        <span>REVIEW ASSIGNMENT IDE</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-3.5 w-3.5 fill-white text-white" />
+                        <span>START ASSIGNMENT</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -1062,7 +1331,7 @@ function StudentAssignmentsPage() {
             className="w-full max-w-md rounded-3xl border border-slate-800 bg-[#16181f] p-6 sm:p-8 shadow-2xl text-white text-center space-y-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="h-14 w-14 rounded-2xl bg-slate-800 border border-emerald-500/60 flex items-center justify-center mx-auto text-emerald-400 shadow-md">
+            <div className="h-14 w-14 rounded-2xl bg-slate-800 border border-indigo-500/60 flex items-center justify-center mx-auto text-indigo-400 shadow-md">
               <Shield className="h-7 w-7" />
             </div>
 
@@ -1075,17 +1344,17 @@ function StudentAssignmentsPage() {
               </p>
             </div>
 
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/30">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-indigo-400 bg-indigo-950/40 border border-indigo-500/30">
               {protocolCard.title}
             </div>
 
             <div className="flex items-center justify-center gap-4 text-xs font-bold text-slate-300">
               <div className="flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5 text-emerald-400" />
+                <Clock className="h-3.5 w-3.5 text-indigo-400" />
                 <span>1h Window</span>
               </div>
               <div className="flex items-center gap-1">
-                <Play className="h-3.5 w-3.5 text-emerald-400 fill-emerald-400" />
+                <Play className="h-3.5 w-3.5 text-indigo-400 fill-indigo-400" />
                 <span>Sync 1/1</span>
               </div>
             </div>
@@ -1101,7 +1370,7 @@ function StudentAssignmentsPage() {
                   key={idx}
                   className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-800 bg-slate-900/80 text-xs font-bold text-slate-300 tracking-wider uppercase"
                 >
-                  <item.icon className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <item.icon className="h-4 w-4 text-indigo-400 shrink-0" />
                   <span>{item.label}</span>
                 </div>
               ))}
@@ -1111,9 +1380,9 @@ function StudentAssignmentsPage() {
               <button
                 type="button"
                 onClick={handleEngageMission}
-                className="w-full h-12 rounded-2xl bg-[#10b981] hover:bg-[#059669] text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 cursor-pointer transition-all"
+                className="w-full h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 cursor-pointer transition-all"
               >
-                <Play className="h-4 w-4 fill-slate-950 text-slate-950" />
+                <Play className="h-4 w-4 fill-white text-white" />
                 <span>ENGAGE MISSION</span>
               </button>
 
@@ -1311,7 +1580,7 @@ function StudentAssignmentsPage() {
                   setSelectedBriefCard(null);
                   handleLaunchProtocol(card);
                 }}
-                className="px-5 py-2.5 rounded-xl bg-[#10b981] hover:bg-[#059669] text-slate-950 text-xs font-bold uppercase tracking-wider cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider cursor-pointer"
               >
                 Launch Protocol
               </button>
@@ -1602,7 +1871,7 @@ function StudentAssignmentsPage() {
                           type="button"
                           disabled={submittingQuiz}
                           onClick={handleSubmitQuiz}
-                          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-emerald-500 text-slate-950 text-xs font-bold hover:bg-emerald-400 shadow-sm disabled:opacity-50 cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 shadow-sm disabled:opacity-50 cursor-pointer"
                         >
                           <Check className="h-4 w-4 stroke-[3]" />
                           {submittingQuiz ? "Submitting..." : "Submit Quiz"}

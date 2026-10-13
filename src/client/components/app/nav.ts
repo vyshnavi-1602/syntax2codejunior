@@ -59,7 +59,7 @@ export const navByRole: Record<RoleId, NavGroup[]> = {
         { label: "Questions", to: "/teacher/questions", icon: "BookOpen" },
         { label: "Assignments", to: "/teacher/assignments", icon: "ClipboardList" },
         { label: "MCQ Assessment", to: "/teacher/questions", icon: "ClipboardCheck" },
-        { label: "Meetings", to: "/teacher/classes", icon: "Video", activeColor: "emerald" },
+        { label: "Meetings", to: "/teacher/classes", icon: "Video", activeColor: "indigo" },
         { label: "Groups", to: "/teacher/classes", icon: "Layers" },
       ],
     },

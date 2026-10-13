@@ -332,8 +332,8 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                         active
                           ? item.activeColor === "purple"
                             ? "bg-[#7e3af2] font-semibold text-white shadow-xs"
-                            : item.activeColor === "emerald"
-                              ? "bg-[#10b981] font-semibold text-white shadow-xs"
+                            : item.activeColor === "indigo"
+                              ? "bg-indigo-600 font-semibold text-white shadow-xs"
                               : "bg-indigo-50 dark:bg-indigo-950/40 font-semibold text-indigo-700 dark:text-indigo-300"
                           : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100",
                       )}

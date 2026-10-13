@@ -104,6 +104,12 @@ function applySecurityHeaders(response: Response): Response {
   headers.set("X-Frame-Options", "DENY");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  if (!headers.has("Strict-Transport-Security")) {
+    headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+  }
+  if (!headers.has("Cross-Origin-Opener-Policy")) {
+    headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  }
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,

@@ -382,7 +382,7 @@ function StudentMcqPage() {
             <Link
               to="/student/lab"
               search={{ assignmentId: undefined }}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#10b981] hover:bg-[#059669] px-4 text-xs font-bold text-white shadow-sm shadow-emerald-500/20 transition-all hover:scale-[1.02]"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 text-xs font-semibold text-white shadow-sm shadow-indigo-500/20 transition-all hover:scale-[1.02]"
             >
               <Terminal className="h-3.5 w-3.5" />
               Open Coding IDE
@@ -393,8 +393,8 @@ function StudentMcqPage() {
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <div className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#11161d] p-5 shadow-xs">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-            <HelpCircle className="h-6 w-6 text-[#10b981]" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+            <HelpCircle className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
           </div>
           <div>
             <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -407,8 +407,8 @@ function StudentMcqPage() {
         </div>
 
         <div className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#11161d] p-5 shadow-xs">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-            <Play className="h-5 w-5 fill-[#10b981] text-[#10b981]" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+            <Play className="h-5 w-5 fill-indigo-600 text-indigo-600 dark:fill-indigo-400 dark:text-indigo-400" />
           </div>
           <div>
             <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -421,8 +421,8 @@ function StudentMcqPage() {
         </div>
 
         <div className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#11161d] p-5 shadow-xs">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-            <Clock className="h-5 w-5 text-emerald-500" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
+            <Clock className="h-5 w-5 text-sky-400" />
           </div>
           <div>
             <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -458,7 +458,7 @@ function StudentMcqPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search MCQ tests by topic, concept, or subject..."
-            className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 pl-9 pr-3 text-xs outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-900 text-slate-900 dark:text-white transition-colors"
+            className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 pl-9 pr-3 text-xs outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 text-slate-900 dark:text-white transition-colors"
           />
         </div>
 
@@ -470,7 +470,7 @@ function StudentMcqPage() {
               className={cn(
                 "rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
                 statusFilter === s
-                  ? "bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-xs border border-emerald-500/30 font-bold"
+                  ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs border border-indigo-500/30 font-semibold"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white",
               )}
             >
@@ -491,7 +491,7 @@ function StudentMcqPage() {
           return (
             <div
               key={card.id}
-              className="relative flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-[#11161d] p-6 shadow-sm transition-all hover:border-emerald-500/40 dark:hover:border-emerald-500/30 hover:shadow-emerald-500/5"
+              className="relative flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-[#11161d] p-6 shadow-sm transition-all hover:border-indigo-500/40 dark:hover:border-indigo-500/30 hover:shadow-indigo-500/5"
             >
               <div>
                 {/* Top Bar */}
@@ -500,8 +500,8 @@ function StudentMcqPage() {
                     className={cn(
                       "rounded-full px-3 py-1 text-[11px] font-bold tracking-wider uppercase border",
                       isSolved
-                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                        : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+                        ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30"
+                        : "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30",
                     )}
                   >
                     {isSolved
@@ -536,7 +536,7 @@ function StudentMcqPage() {
                       OPERATIONAL WINDOW
                     </p>
                     <div className="mt-1.5 flex items-center gap-1.5 text-sm font-bold text-slate-900 dark:text-white">
-                      <Clock className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
+                      <Clock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                       <span>{durationText}</span>
                     </div>
                   </div>
@@ -546,7 +546,7 @@ function StudentMcqPage() {
                       ATTEMPT SYNC
                     </p>
                     <div className="mt-1.5 flex items-center gap-1.5 text-sm font-bold text-slate-900 dark:text-white">
-                      <Play className="h-3.5 w-3.5 fill-emerald-500 dark:fill-emerald-400 text-emerald-500 dark:text-emerald-400" />
+                      <Play className="h-3.5 w-3.5 fill-indigo-600 dark:fill-indigo-400 text-indigo-600 dark:text-indigo-400" />
                       <span>{attemptsText}</span>
                     </div>
                   </div>
@@ -555,7 +555,7 @@ function StudentMcqPage() {
                 {/* Pill Bar: Questions & Credits */}
                 <div className="mt-5 flex items-center justify-around rounded-xl border border-slate-200/80 dark:border-slate-800/90 bg-slate-50/80 dark:bg-slate-950/50 py-2.5 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300">
                   <div className="flex items-center gap-2">
-                    <HelpCircle className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" />
+                    <HelpCircle className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
                     <span>{questionsCount} QUESTIONS</span>
                   </div>
                   <div className="h-3 w-px bg-slate-200 dark:bg-slate-800" />
@@ -592,9 +592,9 @@ function StudentMcqPage() {
                 <button
                   type="button"
                   onClick={() => handleStartMcqQuiz(card)}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#34d399] hover:bg-[#10b981] py-3 text-xs font-extrabold uppercase tracking-wider text-slate-950 transition-all shadow-md hover:shadow-emerald-500/20 cursor-pointer hover:scale-[1.01]"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 py-3 text-xs font-semibold uppercase tracking-wider text-white transition-all shadow-md hover:shadow-indigo-500/20 cursor-pointer hover:scale-[1.01]"
                 >
-                  <Play className="h-3.5 w-3.5 fill-slate-950 text-slate-950" />
+                  <Play className="h-3.5 w-3.5 fill-white text-white" />
                   {isSolved ? "REVIEW ASSIGNMENT" : "START ASSIGNMENT"}
                 </button>
               </div>
@@ -1022,7 +1022,7 @@ function StudentMcqPage() {
                           type="button"
                           disabled={submittingQuiz}
                           onClick={handleSubmitQuiz}
-                          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#10b981] hover:bg-[#059669] text-white text-xs font-bold shadow-sm shadow-emerald-500/20 disabled:opacity-50 cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm shadow-indigo-500/20 disabled:opacity-50 cursor-pointer"
                         >
                           <Check className="h-4 w-4 stroke-[3]" />
                           {submittingQuiz ? "Submitting..." : "Submit Quiz"}

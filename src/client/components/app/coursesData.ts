@@ -4,6 +4,15 @@ export interface CourseModule {
   title: string;
   topics: string[];
   questionsCount: number;
+  contentMarkdown?: string | undefined;
+  quiz?:
+    | {
+        questionText: string;
+        options: string[];
+        correctAnswerIndex: number;
+        explanation?: string | undefined;
+      }
+    | undefined;
 }
 
 export interface CourseFeedback {
@@ -28,11 +37,12 @@ export interface CourseItem {
   level: CourseLevel;
   status: CourseStatus;
   version: string;
-  description?: string;
+  description?: string | undefined;
   modules: CourseModule[];
-  feedbacks?: CourseFeedback[];
-  enrolled?: boolean;
-  visualType?: "lock" | "globe" | "laptop";
+  feedbacks?: CourseFeedback[] | undefined;
+  enrolled?: boolean | undefined;
+  visualType?: "lock" | "globe" | "laptop" | undefined;
+  pathId?: number | undefined;
 }
 
 export const DEFAULT_COURSES: CourseItem[] = [
@@ -273,23 +283,24 @@ export const DEFAULT_COURSES: CourseItem[] = [
   },
 ];
 
+const SHARED_COURSES_KEY = "s2c_shared_courses_v2";
 const TEACHER_COURSES_KEY = "s2c_teacher_courses_v1";
-const SCHOOL_COURSES_KEY = "s2c_school_courses_v1";
 const STUDENT_COURSES_KEY = "s2c_student_courses_v1";
 
-export function loadCourses(portal: "teacher" | "school" | "student"): CourseItem[] {
+export function loadCourses(_portal?: "teacher" | "school" | "student"): CourseItem[] {
   if (typeof window === "undefined") return DEFAULT_COURSES;
-  const key =
-    portal === "teacher"
-      ? TEACHER_COURSES_KEY
-      : portal === "school"
-        ? SCHOOL_COURSES_KEY
-        : STUDENT_COURSES_KEY;
   try {
-    const raw = localStorage.getItem(key);
+    const raw = localStorage.getItem(SHARED_COURSES_KEY);
     if (!raw) {
-      localStorage.setItem(key, JSON.stringify(DEFAULT_COURSES));
-      return DEFAULT_COURSES;
+      const legacyTeacher = localStorage.getItem(TEACHER_COURSES_KEY);
+      const legacyStudent = localStorage.getItem(STUDENT_COURSES_KEY);
+      const initial = legacyTeacher
+        ? JSON.parse(legacyTeacher)
+        : legacyStudent
+          ? JSON.parse(legacyStudent)
+          : DEFAULT_COURSES;
+      localStorage.setItem(SHARED_COURSES_KEY, JSON.stringify(initial));
+      return Array.isArray(initial) && initial.length > 0 ? initial : DEFAULT_COURSES;
     }
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_COURSES;
@@ -298,16 +309,11 @@ export function loadCourses(portal: "teacher" | "school" | "student"): CourseIte
   }
 }
 
-export function saveCourses(portal: "teacher" | "school" | "student", courses: CourseItem[]) {
+export function saveCourses(_portal: "teacher" | "school" | "student", courses: CourseItem[]) {
   if (typeof window === "undefined") return;
-  const key =
-    portal === "teacher"
-      ? TEACHER_COURSES_KEY
-      : portal === "school"
-        ? SCHOOL_COURSES_KEY
-        : STUDENT_COURSES_KEY;
   try {
-    localStorage.setItem(key, JSON.stringify(courses));
+    localStorage.setItem(SHARED_COURSES_KEY, JSON.stringify(courses));
+    window.dispatchEvent(new CustomEvent("s2c-courses-updated", { detail: courses }));
   } catch (err) {
     console.error("Failed to save courses:", err);
   }

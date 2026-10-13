@@ -4,9 +4,17 @@ import * as schema from "../src/server/db/schema";
 import { eq, inArray } from "drizzle-orm";
 
 async function main() {
-  console.log("Hashing password 'Password@123'...");
-  const newHash = await hashPassword("Password@123");
-  console.log("Generated hash:", newHash);
+  const targetPassword = process.env.RESET_PASSWORD || (process.env.NODE_ENV !== "production" ? "Password@123" : null);
+  if (!targetPassword) {
+    console.error("Error: RESET_PASSWORD environment variable must be specified in production environments.");
+    process.exit(1);
+  }
+  if (!process.env.RESET_PASSWORD) {
+    console.warn("WARNING: Using default password 'Password@123' for local development reset. Do not use in production.");
+  }
+  console.log("Hashing password...");
+  const newHash = await hashPassword(targetPassword);
+  console.log("Generated hash successfully.");
 
   const emails = [
     "teacher@syntax2code.com",
@@ -19,10 +27,7 @@ async function main() {
   console.log(`Found ${users.length} users to update.`);
 
   for (const u of users) {
-    const existing = await db
-      .select()
-      .from(schema.account)
-      .where(eq(schema.account.userId, u.id));
+    const existing = await db.select().from(schema.account).where(eq(schema.account.userId, u.id));
 
     if (existing.length > 0) {
       await db

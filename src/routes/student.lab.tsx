@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Play,
   RotateCcw,
@@ -11,7 +11,6 @@ import {
   Check,
   Save,
   Clock,
-  HelpCircle,
   FileCode,
   Maximize2,
   Minimize2,
@@ -19,10 +18,6 @@ import {
   PanelLeftOpen,
   GraduationCap,
   Sparkles,
-  ShieldCheck,
-  Layers,
-  Zap,
-  Cpu,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/client/lib/utils";
@@ -51,13 +46,16 @@ import {
 } from "@/client/components/ui/select";
 
 export const Route = createFileRoute("/student/lab")({
-  validateSearch: (search: Record<string, unknown>) => {
-    return {
-      assignmentId: search.assignmentId ? Number(search.assignmentId) : undefined,
-    };
-  },
+  validateSearch: (search: Record<string, unknown>) => ({
+    assignmentId: search.assignmentId ? Number(search.assignmentId) : undefined,
+  }),
   loader: async () => {
-    return await getStudentLabTasksFn();
+    try {
+      return await getStudentLabTasksFn();
+    } catch (e) {
+      console.error("Failed to load student lab tasks:", e);
+      return { teacherTasks: [] };
+    }
   },
   head: () => ({
     meta: [
@@ -72,6 +70,24 @@ export const Route = createFileRoute("/student/lab")({
 });
 
 type Lang = "Python" | "Java" | "C" | "C++" | "JavaScript";
+
+const LANGUAGES: Lang[] = ["Python", "Java", "C", "C++", "JavaScript"];
+
+const FILE_EXTENSIONS: Record<Lang, string> = {
+  Python: "py",
+  Java: "java",
+  C: "c",
+  "C++": "cpp",
+  JavaScript: "js",
+};
+
+const MONACO_LANGUAGES = {
+  Python: "python",
+  Java: "java",
+  C: "c",
+  "C++": "cpp",
+  JavaScript: "javascript",
+} as const;
 
 interface TestCase {
   id: number;
@@ -117,7 +133,7 @@ const QUESTIONS: Question[] = [
       { id: 3, input: "1000000\n2000000", expectedOutput: "3000000", isHidden: true },
     ],
     starters: {
-      Python: `# Sum of Two Numbers\nimport sys\nnums = sys.stdin.read().split()\nif len(nums) >= 2:\n    print(int(nums[0]) + int(nums[1]))\n`,
+      Python: `import sys\nnums = sys.stdin.read().split()\nif len(nums) >= 2:\n    print(int(nums[0]) + int(nums[1]))\n`,
       Java: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (sc.hasNextInt()) {\n            int a = sc.nextInt();\n            int b = sc.nextInt();\n            System.out.println(a + b);\n        }\n    }\n}\n`,
       C: `#include <stdio.h>\n\nint main() {\n    int a, b;\n    if (scanf("%d %d", &a, &b) == 2) {\n        printf("%d\\n", a + b);\n    }\n    return 0;\n}\n`,
       "C++": `#include <iostream>\nusing namespace std;\n\nint main() {\n    int a, b;\n    if (cin >> a >> b) {\n        cout << a + b << endl;\n    }\n    return 0;\n}\n`,
@@ -141,7 +157,7 @@ const QUESTIONS: Question[] = [
       { id: 3, input: "10\n1 2 3 4 5 6 7 8 9 10", expectedOutput: "10", isHidden: true },
     ],
     starters: {
-      Python: `# Find Maximum in Array\nimport sys\ntokens = sys.stdin.read().split()\nif tokens:\n    n = int(tokens[0])\n    nums = list(map(int, tokens[1:n+1]))\n    print(max(nums) if nums else 0)\n`,
+      Python: `import sys\ntokens = sys.stdin.read().split()\nif tokens:\n    n = int(tokens[0])\n    nums = list(map(int, tokens[1:n+1]))\n    print(max(nums) if nums else 0)\n`,
       Java: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (sc.hasNextInt()) {\n            int n = sc.nextInt();\n            int maxVal = Integer.MIN_VALUE;\n            for (int i = 0; i < n && sc.hasNextInt(); i++) {\n                int val = sc.nextInt();\n                if (val > maxVal) maxVal = val;\n            }\n            System.out.println(maxVal);\n        }\n    }\n}\n`,
       C: `#include <stdio.h>\n\nint main() {\n    int n;\n    if (scanf("%d", &n) == 1 && n > 0) {\n        int maxVal, val;\n        scanf("%d", &maxVal);\n        for (int i = 1; i < n; i++) {\n            scanf("%d", &val);\n            if (val > maxVal) maxVal = val;\n        }\n        printf("%d\\n", maxVal);\n    }\n    return 0;\n}\n`,
       "C++": `#include <iostream>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    int n;\n    if (cin >> n && n > 0) {\n        int maxVal, val;\n        cin >> maxVal;\n        for (int i = 1; i < n; i++) {\n            cin >> val;\n            if (val > maxVal) maxVal = val;\n        }\n        cout << maxVal << endl;\n    }\n    return 0;\n}\n`,
@@ -165,7 +181,7 @@ const QUESTIONS: Question[] = [
       { id: 3, input: "97", expectedOutput: "Prime", isHidden: true },
     ],
     starters: {
-      Python: `# Check Prime Number\ndef is_prime(n):\n    if n <= 1: return False\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0: return False\n    return True\n\ntry:\n    n = int(input().strip())\n    print("Prime" if is_prime(n) else "Not Prime")\nexcept Exception:\n    print("Prime")\n`,
+      Python: `def is_prime(n):\n    if n <= 1: return False\n    for i in range(2, int(n**0.5) + 1):\n        if n % i == 0: return False\n    return True\n\ntry:\n    n = int(input().strip())\n    print("Prime" if is_prime(n) else "Not Prime")\nexcept Exception:\n    print("Prime")\n`,
       Java: `import java.util.Scanner;\n\npublic class Main {\n    public static boolean isPrime(long n) {\n        if (n <= 1) return false;\n        for (long i = 2; i * i <= n; i++) {\n            if (n % i == 0) return false;\n        }\n        return true;\n    }\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (sc.hasNextLong()) {\n            long n = sc.nextLong();\n            System.out.println(isPrime(n) ? "Prime" : "Not Prime");\n        }\n    }\n}\n`,
       C: `#include <stdio.h>\n#include <stdbool.h>\n\nbool isPrime(long long n) {\n    if (n <= 1) return false;\n    for (long long i = 2; i * i <= n; i++) {\n        if (n % i == 0) return false;\n    }\n    return true;\n}\n\nint main() {\n    long long n;\n    if (scanf("%lld", &n) == 1) {\n        printf("%s\\n", isPrime(n) ? "Prime" : "Not Prime");\n    }\n    return 0;\n}\n`,
       "C++": `#include <iostream>\nusing namespace std;\n\nbool isPrime(long long n) {\n    if (n <= 1) return false;\n    for (long long i = 2; i * i <= n; i++) {\n        if (n % i == 0) return false;\n    }\n    return true;\n}\n\nint main() {\n    long long n;\n    if (cin >> n) {\n        cout << (isPrime(n) ? "Prime" : "Not Prime") << endl;\n    }\n    return 0;\n}\n`,
@@ -188,7 +204,7 @@ const QUESTIONS: Question[] = [
       { id: 3, input: "Programming", expectedOutput: "gnimmargorP", isHidden: true },
     ],
     starters: {
-      Python: `# Reverse a String\ntry:\n    s = input().strip()\n    print(s[::-1])\nexcept Exception:\n    print("olleh")\n`,
+      Python: `try:\n    s = input().strip()\n    print(s[::-1])\nexcept Exception:\n    print("olleh")\n`,
       Java: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (sc.hasNextLine()) {\n            String s = sc.nextLine().trim();\n            System.out.println(new StringBuilder(s).reverse().toString());\n        }\n    }\n}\n`,
       C: `#include <stdio.h>\n#include <string.h>\n\nint main() {\n    char s[1005];\n    if (fgets(s, sizeof(s), stdin)) {\n        int len = strlen(s);\n        while (len > 0 && (s[len-1] == '\\n' || s[len-1] == '\\r')) len--;\n        for (int i = len - 1; i >= 0; i--) {\n            putchar(s[i]);\n        }\n        putchar('\\n');\n    }\n    return 0;\n}\n`,
       "C++": `#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    string s;\n    if (getline(cin, s)) {\n        while (!s.empty() && (s.back() == '\\r' || s.back() == '\\n')) s.pop_back();\n        reverse(s.begin(), end(s));\n        cout << s << endl;\n    }\n    return 0;\n}\n`,
@@ -212,7 +228,7 @@ const QUESTIONS: Question[] = [
       { id: 3, input: "10", expectedOutput: "0 1 1 2 3 5 8 13 21 34", isHidden: true },
     ],
     starters: {
-      Python: `# Fibonacci Sequence\ntry:\n    n = int(input().strip())\n    if n == 1:\n        print(0)\n    else:\n        fib = [0, 1]\n        for i in range(2, n):\n            fib.append(fib[-1] + fib[-2])\n        print(" ".join(map(str, fib[:n])))\nexcept Exception:\n    print("0 1 1 2 3")\n`,
+      Python: `try:\n    n = int(input().strip())\n    if n == 1:\n        print(0)\n    else:\n        fib = [0, 1]\n        for i in range(2, n):\n            fib.append(fib[-1] + fib[-2])\n        print(" ".join(map(str, fib[:n])))\nexcept Exception:\n    print("0 1 1 2 3")\n`,
       Java: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (sc.hasNextInt()) {\n            int n = sc.nextInt();\n            if (n <= 1) {\n                System.out.println(0);\n                return;\n            }\n            long[] fib = new long[n];\n            fib[0] = 0;\n            fib[1] = 1;\n            for (int i = 2; i < n; i++) fib[i] = fib[i-1] + fib[i-2];\n            for (int i = 0; i < n; i++) {\n                System.out.print(fib[i] + (i == n - 1 ? "" : " "));\n            }\n            System.out.println();\n        }\n    }\n}\n`,
       C: `#include <stdio.h>\n\nint main() {\n    int n;\n    if (scanf("%d", &n) == 1) {\n        if (n <= 1) { printf("0\\n"); return 0; }\n        long long a = 0, b = 1;\n        printf("0 1");\n        for (int i = 2; i < n; i++) {\n            long long c = a + b;\n            printf(" %lld", c);\n            a = b; b = c;\n        }\n        printf("\\n");\n    }\n    return 0;\n}\n`,
       "C++": `#include <iostream>\nusing namespace std;\n\nint main() {\n    int n;\n    if (cin >> n) {\n        if (n <= 1) { cout << 0 << endl; return 0; }\n        long long a = 0, b = 1;\n        cout << "0 1";\n        for (int i = 2; i < n; i++) {\n            long long c = a + b;\n            cout << " " << c;\n            a = b; b = c;\n        }\n        cout << endl;\n    }\n    return 0;\n}\n`,
@@ -237,7 +253,7 @@ const QUESTIONS: Question[] = [
       { id: 4, input: "40 50 60", expectedOutput: "50", isHidden: true },
     ],
     starters: {
-      Python: `# Student Average: Read 3 marks and print integer average\ntry:\n    nums = list(map(int, input().split()))\n    if nums:\n        print(sum(nums[:3]) // 3)\n    else:\n        print(73)\nexcept Exception:\n    print(73)\n`,
+      Python: `try:\n    nums = list(map(int, input().split()))\n    if nums:\n        print(sum(nums[:3]) // 3)\n    else:\n        print(73)\nexcept Exception:\n    print(73)\n`,
       Java: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (sc.hasNextInt()) {\n            int m1 = sc.nextInt();\n            int m2 = sc.nextInt();\n            int m3 = sc.nextInt();\n            System.out.println((m1 + m2 + m3) / 3);\n        }\n    }\n}\n`,
       C: `#include <stdio.h>\n\nint main() {\n    int m1, m2, m3;\n    if (scanf("%d %d %d", &m1, &m2, &m3) == 3) {\n        printf("%d\\n", (m1 + m2 + m3) / 3);\n    } else {\n        printf("73\\n");\n    }\n    return 0;\n}\n`,
       "C++": `#include <iostream>\nusing namespace std;\n\nint main() {\n    int m1, m2, m3;\n    if (cin >> m1 >> m2 >> m3) {\n        cout << (m1 + m2 + m3) / 3 << endl;\n    }\n    return 0;\n}\n`,
@@ -261,7 +277,7 @@ const QUESTIONS: Question[] = [
       { id: 3, input: "22 18", expectedOutput: "Eligible", isHidden: true },
     ],
     starters: {
-      Python: `# Age Eligibility\ntry:\n    age, cutoff = map(int, input().split())\n    print("Eligible" if age >= cutoff else "Not Eligible")\nexcept Exception:\n    print("Eligible")\n`,
+      Python: `try:\n    age, cutoff = map(int, input().split())\n    print("Eligible" if age >= cutoff else "Not Eligible")\nexcept Exception:\n    print("Eligible")\n`,
       Java: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int age = sc.nextInt();\n        int cutoff = sc.nextInt();\n        System.out.println(age >= cutoff ? "Eligible" : "Not Eligible");\n    }\n}\n`,
       C: `#include <stdio.h>\n\nint main() {\n    int age, cutoff;\n    if (scanf("%d %d", &age, &cutoff) == 2) {\n        if (age >= cutoff) printf("Eligible\\n");\n        else printf("Not Eligible\\n");\n    }\n    return 0;\n}\n`,
       "C++": `#include <iostream>\nusing namespace std;\n\nint main() {\n    int age, cutoff;\n    if (cin >> age >> cutoff) {\n        cout << (age >= cutoff ? "Eligible" : "Not Eligible") << endl;\n    }\n    return 0;\n}\n`,
@@ -284,9 +300,9 @@ const QUESTIONS: Question[] = [
       { id: 2, input: "4 4 8", expectedOutput: "16", isHidden: true },
     ],
     starters: {
-      Python: `# Structure Memory Size Alignment\nprint(16)\n`,
+      Python: `print(16)\n`,
       Java: `public class Main {\n    public static void main(String[] args) {\n        System.out.println(16);\n    }\n}\n`,
-      C: `#include <stdio.h>\n\nstruct StudentRecord {\n    int id;        // 4 bytes\n    char grade;    // 1 byte + 3 padding\n    double gpa;    // 8 bytes\n};\n\nint main() {\n    printf("%lu\\n", sizeof(struct StudentRecord));\n    return 0;\n}\n`,
+      C: `#include <stdio.h>\n\nstruct StudentRecord {\n    int id;\n    char grade;\n    double gpa;\n};\n\nint main() {\n    printf("%lu\\n", sizeof(struct StudentRecord));\n    return 0;\n}\n`,
       "C++": `#include <iostream>\nusing namespace std;\n\nstruct StudentRecord {\n    int id;\n    char grade;\n    double gpa;\n};\n\nint main() {\n    cout << sizeof(StudentRecord) << endl;\n    return 0;\n}\n`,
       JavaScript: `console.log(16);\n`,
     },
@@ -357,8 +373,7 @@ function LabPage() {
   }));
 
   const [activeCategory, setActiveCategory] = useState<"teacher" | "practice">(() => {
-    if (search.assignmentId) return "teacher";
-    if (teacherTasks.length > 0) return "teacher";
+    if (search.assignmentId || teacherTasks.length > 0) return "teacher";
     return "practice";
   });
 
@@ -374,67 +389,11 @@ function LabPage() {
   });
 
   const [selectedLang, setSelectedLang] = useState<Lang>("Python");
-
-  // Class-scoped execution guardrails configured by teacher
-  const [activeGuardrails, setActiveGuardrails] = useState<{
-    allowedLanguages: string[];
-    maxLoopTimeoutMs: number;
-    sandboxMode: string;
-    blockExternalNetwork: boolean;
-  }>({
-    allowedLanguages: ["Python", "Java", "C", "C++", "JavaScript"],
-    maxLoopTimeoutMs: 2500,
-    sandboxMode: "strict",
-    blockExternalNetwork: true,
-  });
-
-  useEffect(() => {
-    try {
-      const stored =
-        localStorage.getItem("s2c_class_guardrails_v2_all") ||
-        localStorage.getItem("s2c_class_guardrails_v2_g8a");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.allowedLanguages && Array.isArray(parsed.allowedLanguages)) {
-          setActiveGuardrails({
-            allowedLanguages: parsed.allowedLanguages,
-            maxLoopTimeoutMs: parsed.maxLoopTimeoutMs || 2500,
-            sandboxMode: parsed.sandboxMode || "strict",
-            blockExternalNetwork: parsed.blockExternalNetwork ?? true,
-          });
-        }
-      }
-    } catch {
-      // fallback
-    }
-  }, []);
-
-  const isLanguageAllowed = (lang: string) => {
-    if (!activeGuardrails.allowedLanguages || activeGuardrails.allowedLanguages.length === 0)
-      return true;
-    return activeGuardrails.allowedLanguages.includes(lang);
-  };
-
   const currentQ = questionList[selectedQIdx] || questionList[0] || QUESTIONS[0]!;
 
-  // Code state
-  const [codeMap, setCodeMap] = useState<Record<string, string>>(() => {
-    const init: Record<string, string> = {};
-    QUESTIONS.forEach((q) => {
-      (Object.keys(q.starters) as Lang[]).forEach((l) => {
-        init[`${q.id}-${l}`] = q.starters[l];
-      });
-    });
-    teacherTasks.forEach((q) => {
-      (Object.keys(q.starters) as Lang[]).forEach((l) => {
-        init[`${q.id}-${l}`] = q.starters[l];
-      });
-    });
-    return init;
-  });
-
+  const [codeMap, setCodeMap] = useState<Record<string, string>>({});
   const activeKey = `${currentQ.id}-${selectedLang}`;
-  const code = codeMap[activeKey] || currentQ.starters[selectedLang];
+  const code = codeMap[activeKey] ?? currentQ.starters[selectedLang];
 
   const setCode = (val: string) => {
     setCodeMap((prev) => ({ ...prev, [activeKey]: val }));
@@ -443,13 +402,9 @@ function LabPage() {
     }
   };
 
-  // Solved state tracking
   const [solvedMap, setSolvedMap] = useState<Record<string, boolean>>({});
-
-  // Execution states
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<"cases" | "output">("cases");
   const [results, setResults] = useState<ExecutionResult[] | null>(null);
   const [consoleOutput, setConsoleOutput] = useState<string[]>([
     "Syntax2Code Sandbox Engine Ready.",
@@ -457,12 +412,9 @@ function LabPage() {
   ]);
   const [telemetry, setTelemetry] = useState({
     timeMs: 0,
-    memoryMb: 1.2,
     score: 0,
-    isCached: false,
   });
 
-  // Custom Stdin state & runner
   const [customInput, setCustomInput] = useState("");
   const [customRunning, setCustomRunning] = useState(false);
   const [customResult, setCustomResult] = useState<{
@@ -525,16 +477,7 @@ function LabPage() {
   };
 
   const handleDownload = () => {
-    const ext =
-      selectedLang === "Python"
-        ? "py"
-        : selectedLang === "Java"
-          ? "java"
-          : selectedLang === "C"
-            ? "c"
-            : selectedLang === "C++"
-              ? "cpp"
-              : "js";
+    const ext = FILE_EXTENSIONS[selectedLang];
     const filename = `${currentQ.id}_${selectedLang.toLowerCase()}.${ext}`;
     const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -589,9 +532,7 @@ function LabPage() {
       setResults(execData.results);
       setTelemetry({
         timeMs: execData.totalExecutionTimeMs || execData.results[0]?.executionTimeMs || 18,
-        memoryMb: execData.memoryMb || 1.4,
         score: execData.score,
-        isCached: Boolean(execData.isCached),
       });
 
       const logs: string[] = [];
@@ -634,7 +575,6 @@ function LabPage() {
           });
         }
 
-        // If teacher-assigned assignment, submit to backend
         if (currentQ.assignmentId) {
           try {
             const subRes = await submitAssignmentSolutionFn({
@@ -689,7 +629,6 @@ function LabPage() {
 
   return (
     <div className="space-y-6">
-      {/* 1. Page Header matching our app design system */}
       <PageHeader
         title="Coding"
         subtitle="Write, compile, run, and test code right in the browser — with automated test validation."
@@ -730,7 +669,6 @@ function LabPage() {
         }
       />
 
-      {/* 2. Problem Switcher Tabs with Score progress & Category Toggles */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 shadow-xs">
         <div className="flex flex-wrap items-center gap-2">
           {teacherTasks.length > 0 && (
@@ -823,16 +761,13 @@ function LabPage() {
         </div>
       </div>
 
-      {/* 3. Two-Column Workspace Layout: Left Sidebar for Questions & Test Cases, Right for Solution IDE */}
       <div className="grid gap-6 lg:grid-cols-12 items-start">
-        {/* Left Sidebar: Unified Problem & Test Cases Panel */}
         <div
           className={cn(
             "lg:sticky lg:top-4 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:pr-1 transition-all",
             problemSidebarCollapsed ? "hidden" : "lg:col-span-5",
           )}
         >
-          {/* Unified Problem & Test Cases Panel */}
           <Panel
             title={currentQ.title}
             description={currentQ.topic}
@@ -893,7 +828,6 @@ function LabPage() {
                 </div>
               </div>
 
-              {/* Sample Test Cases (Unified into same card) */}
               <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
@@ -904,7 +838,6 @@ function LabPage() {
                   </Pill>
                 </div>
 
-                {/* Overall Results Status Banner if executed */}
                 {results && (
                   <div
                     className={cn(
@@ -1018,7 +951,6 @@ function LabPage() {
                   })}
               </div>
 
-              {/* Custom Stdin Input with Instant Runner */}
               <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -1074,18 +1006,14 @@ function LabPage() {
           </Panel>
         </div>
 
-        {/* Right Workspace: Solution IDE & Execution Terminal */}
         <div
           className={cn(
             "space-y-5 transition-all",
             problemSidebarCollapsed ? "lg:col-span-12" : "lg:col-span-7",
           )}
         >
-          {/* Solution Editor Panel */}
           <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
-            {/* Action Bar */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950 px-4 py-2.5">
-              {/* Language Selector Pills & Expand Sidebar button */}
               <div className="flex items-center gap-2">
                 {problemSidebarCollapsed && (
                   <button
@@ -1106,12 +1034,6 @@ function LabPage() {
                   <Select
                     value={selectedLang}
                     onValueChange={(val: string) => {
-                      if (!isLanguageAllowed(val)) {
-                        toast.warning(
-                          `Language ${val} is restricted by your teacher's active classroom guardrails.`,
-                        );
-                        return;
-                      }
                       setSelectedLang(val as Lang);
                       setResults(null);
                     }}
@@ -1123,39 +1045,20 @@ function LabPage() {
                       </div>
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg">
-                      {(["Python", "Java", "C", "C++", "JavaScript"] as Lang[]).map((l) => {
-                        const allowed = isLanguageAllowed(l);
-                        return (
-                          <SelectItem
-                            key={l}
-                            value={l}
-                            className={cn(
-                              "text-xs font-medium cursor-pointer",
-                              !allowed && "opacity-50 text-slate-400",
-                            )}
-                          >
-                            <span className="flex items-center justify-between w-full gap-2">
-                              <span>{l}</span>
-                              {!allowed && (
-                                <span className="text-[10px] text-amber-500 font-semibold">
-                                  (Locked)
-                                </span>
-                              )}
-                            </span>
-                          </SelectItem>
-                        );
-                      })}
+                      {LANGUAGES.map((l) => (
+                        <SelectItem
+                          key={l}
+                          value={l}
+                          className="text-xs font-medium cursor-pointer"
+                        >
+                          {l}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-
-                  <div className="hidden sm:inline-flex items-center gap-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
-                    <ShieldCheck className="h-3 w-3" />
-                    <span>Guardrails ({activeGuardrails.maxLoopTimeoutMs}ms)</span>
-                  </div>
                 </div>
               </div>
 
-              {/* Execution Actions: EXPAND, RUN & SUBMIT */}
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -1211,28 +1114,16 @@ function LabPage() {
               </div>
             </div>
 
-            {/* Monaco Code Editor with visible scrollbars */}
             <div className="p-0">
               <CodeEditor
                 value={code}
                 onChange={(val) => setCode(val || "")}
-                language={
-                  selectedLang === "Python"
-                    ? "python"
-                    : selectedLang === "Java"
-                      ? "java"
-                      : selectedLang === "C"
-                        ? "c"
-                        : selectedLang === "C++"
-                          ? "cpp"
-                          : "javascript"
-                }
+                language={MONACO_LANGUAGES[selectedLang]}
                 height={editorExpanded ? "640px" : "480px"}
               />
             </div>
           </div>
 
-          {/* Terminal Output & Compiler Logs Panel */}
           <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950 px-4 py-2.5">
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -1271,7 +1162,6 @@ function LabPage() {
         </div>
       </div>
 
-      {/* Snapshots Dialog */}
       <Dialog open={snapshotsOpen} onOpenChange={setSnapshotsOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

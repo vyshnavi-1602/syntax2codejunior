@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
 import { cn } from "@/client/lib/utils";
 
-export type Tone = "slate" | "sky" | "violet" | "amber" | "emerald" | "teal" | "rose";
+export type Tone = "slate" | "sky" | "violet" | "indigo" | "amber" | "emerald" | "teal" | "rose";
 
 const toneMap: Record<Tone, string> = {
   slate:
@@ -9,6 +9,8 @@ const toneMap: Record<Tone, string> = {
   sky: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800",
   violet:
     "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/60 dark:text-violet-300 dark:border-violet-800",
+  indigo:
+    "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800",
   amber:
     "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800",
   emerald:

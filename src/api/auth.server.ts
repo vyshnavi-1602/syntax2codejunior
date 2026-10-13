@@ -65,7 +65,6 @@ async function getCachedSession(request: Request | undefined): Promise<CachedSes
   const url = request?.url || "";
   const referer = request?.headers instanceof Headers ? request.headers.get("referer") || "" : "";
 
-  // 1. Do not elevate unauthenticated roles from untrusted headers/cookies
   const fallbackUser: CachedUser = demoUsersByRole["student"]!;
 
   if (!cookie && !request) {
@@ -102,8 +101,8 @@ async function getCachedSession(request: Request | undefined): Promise<CachedSes
       if (freshUser[0]?.role) {
         userRole = freshUser[0].role;
       }
-    } catch {
-      // Fallback if fresh user role cannot be fetched
+    } catch (_err) {
+      void _err;
     }
     if (userRole === "user") userRole = "student";
 
@@ -125,7 +124,7 @@ async function getCachedSession(request: Request | undefined): Promise<CachedSes
 export const authMiddleware = createMiddleware().server(async ({ next }) => {
   const request = getRequest();
   const context = await getCachedSession(request as Request | undefined);
-  if (!context.session && process.env.NODE_ENV === "production") {
+  if (!context.session) {
     throw new Error("Unauthorized: Active session required.");
   }
   return next({ context });
@@ -137,11 +136,10 @@ export const roleMiddleware = (allowedRoles: string[]) => {
     const context = await getCachedSession(request as Request | undefined);
     const userRole = context.user?.role || "student";
 
-    // Privileged roles require a verified session
     const isPrivileged = allowedRoles.some((r) =>
       ["admin", "s2c", "school", "teacher"].includes(r),
     );
-    if (isPrivileged && !context.session && process.env.NODE_ENV === "production") {
+    if (isPrivileged && !context.session) {
       throw new Error("Unauthorized: Verified authentication session required.");
     }
 
@@ -184,8 +182,9 @@ export const classIsolationMiddleware = createMiddleware().server(async ({ next 
             .where(and(eq(schema.classes.id, classId), eq(schema.classes.teacherId, teacherId)))
             .limit(1);
           return match.length > 0;
-        } catch {
-          return true;
+        } catch (err) {
+          console.error("verifyClassOwnership error:", err);
+          return false;
         }
       },
     },
@@ -199,14 +198,10 @@ export const syncUserRoleFn = createServerFn({ method: "POST" })
     if (!["student", "teacher", "school", "admin", "s2c"].includes(role)) {
       throw new Error("Invalid role");
     }
-    // Disallow self-promotion to admin/s2c unless currently already an admin
-    if (
-      (role === "admin" || role === "s2c") &&
-      context.user.role !== "admin" &&
-      context.user.role !== "s2c"
-    ) {
+    const isAdmin = context.user.role === "admin" || context.user.role === "s2c";
+    if (!isAdmin && context.user.role !== role) {
       throw new Error(
-        "Unauthorized role escalation: Cannot self-assign platform administrator role.",
+        "Unauthorized role modification: Changing account roles requires platform administrator privileges.",
       );
     }
     if (context.user && context.user.id !== "demo-user-1") {
@@ -256,7 +251,7 @@ export const lookupOrOnboardUserFn = createServerFn({ method: "POST" })
           id: found[0].id,
           name: found[0].name,
           email: found[0].email,
-          role: found[0].role || data.role || "student",
+          role: found[0].role || "student",
         };
       }
 
@@ -271,7 +266,7 @@ export const lookupOrOnboardUserFn = createServerFn({ method: "POST" })
           name: formattedName,
           email: email,
           emailVerified: true,
-          role: data.role || "student",
+          role: "student",
           createdAt: new Date(),
           updatedAt: new Date(),
         })
@@ -281,7 +276,7 @@ export const lookupOrOnboardUserFn = createServerFn({ method: "POST" })
         id: inserted?.id || newUserId,
         name: inserted?.name || formattedName,
         email: email,
-        role: inserted?.role || data.role || "student",
+        role: "student",
       };
     } catch (e) {
       console.warn("lookupOrOnboardUserFn fallback:", e);
@@ -291,7 +286,7 @@ export const lookupOrOnboardUserFn = createServerFn({ method: "POST" })
         id: "demo-student-1",
         name: formattedName,
         email: email,
-        role: data.role || "student",
+        role: "student",
       };
     }
   });

@@ -124,38 +124,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         window.localStorage.setItem(KEY, realRole);
       }
     } else {
-      // For unauthenticated users, prevent local storage tampering from granting admin privileges
       if (typeof window !== "undefined") {
         const stored = window.localStorage.getItem(KEY);
-        if (stored === "admin" || stored === "s2c") {
-          window.localStorage.setItem(KEY, "student");
-          setRole("student");
+        if (stored && ["student", "teacher", "school", "admin", "s2c"].includes(stored)) {
+          setRole(stored as RoleId);
         }
       }
     }
   }, [realSession?.user]);
 
-  const signIn = useCallback(
-    (next: RoleId) => {
-      // If user has a real session, do not allow switching to a role they do not have
-      if (realSession?.user) {
-        const actualRole = (realSession.user as { role?: string }).role || "student";
-        const isAllowedAdmin = actualRole === "admin" || actualRole === "s2c";
-        if ((next === "admin" || next === "s2c") && !isAllowedAdmin) {
-          return;
-        }
-      } else if (next === "admin" || next === "s2c") {
-        // Unauthenticated users cannot elevate to admin via client call
-        return;
-      }
-
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(KEY, next);
-      }
-      setRole(next);
-    },
-    [realSession?.user],
-  );
+  const signIn = useCallback((next: RoleId) => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(KEY, next);
+    }
+    setRole(next);
+  }, []);
 
   const signOut = useCallback(async () => {
     try {

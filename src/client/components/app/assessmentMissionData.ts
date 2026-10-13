@@ -552,3 +552,460 @@ int main() {
     },
   },
 ];
+
+export const COGNIZANT_MISSION_PROBLEMS: MissionProblem[] = [
+  {
+    id: 1,
+    title: "TWO SUM",
+    difficulty: "EASY",
+    credits: 10,
+    directive:
+      "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nYou can return the answer in any order.",
+    examples: [
+      {
+        input: "nums = [2,7,11,15], target = 9",
+        output: "[0,1]",
+        explanation: "Because nums[0] + nums[1] == 9, we return [0, 1].",
+      },
+      {
+        input: "nums = [3,2,4], target = 6",
+        output: "[1,2]",
+      },
+      {
+        input: "nums = [3,3], target = 6",
+        output: "[0,1]",
+      },
+    ],
+    constraints: [
+      "2 <= nums.length <= 10^4",
+      "-10^9 <= nums[i] <= 10^9",
+      "-10^9 <= target <= 10^9",
+      "Only one valid answer exists.",
+    ],
+    testCases: [
+      { id: 1, input: "2 7 11 15\n9", expectedOutput: "[0,1]" },
+      { id: 2, input: "3 2 4\n6", expectedOutput: "[1,2]" },
+      { id: 3, input: "3 3\n6", expectedOutput: "[0,1]" },
+    ],
+    starters: {
+      C: `#include <stdio.h>
+
+int main() {
+    printf("Hello, World!\\n");
+    return 0;
+}`,
+      Java: `public class Main {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}`,
+      Python: `import sys
+
+def two_sum():
+    lines = sys.stdin.read().strip().split('\\n')
+    if not lines or len(lines) < 2:
+        return
+    nums = list(map(int, lines[0].split()))
+    target = int(lines[1])
+    seen = {}
+    for i, num in enumerate(nums):
+        complement = target - num
+        if complement in seen:
+            print(f"[{seen[complement]},{i}]")
+            return
+        seen[num] = i
+
+if __name__ == "__main__":
+    two_sum()
+`,
+      "C++": `#include <iostream>
+#include <vector>
+#include <unordered_map>
+using namespace std;
+
+int main() {
+    cout << "[0,1]" << endl;
+    return 0;
+}`,
+      JavaScript: `console.log("[0,1]");`,
+    },
+  },
+  {
+    id: 2,
+    title: "BEST TIME TO BUY AND SELL STOCK",
+    difficulty: "EASY",
+    credits: 10,
+    directive:
+      "You are given an array prices where prices[i] is the price of a given stock on the ith day.\n\nYou want to maximize your profit by choosing a single day to buy one stock and choosing a different day in the future to sell that stock.\n\nReturn the maximum profit you can achieve from this transaction. If you cannot achieve any profit, return 0.",
+    examples: [
+      {
+        input: "prices = [7,1,5,3,6,4]",
+        output: "5",
+        explanation: "Buy on day 2 (price = 1) and sell on day 5 (price = 6), profit = 6-1 = 5.",
+      },
+      {
+        input: "prices = [7,6,4,3,1]",
+        output: "0",
+        explanation: "In this case, no transactions are done and max profit = 0.",
+      },
+    ],
+    constraints: ["1 <= prices.length <= 10^5", "0 <= prices[i] <= 10^4"],
+    testCases: [
+      { id: 1, input: "7 1 5 3 6 4", expectedOutput: "5" },
+      { id: 2, input: "7 6 4 3 1", expectedOutput: "0" },
+    ],
+    starters: {
+      C: `#include <stdio.h>
+
+int main() {
+    printf("5\\n");
+    return 0;
+}`,
+      Java: `public class Main {
+    public static void main(String[] args) {
+        System.out.println("5");
+    }
+}`,
+      Python: `import sys
+
+prices = list(map(int, sys.stdin.read().split()))
+min_p = float('inf')
+max_profit = 0
+for p in prices:
+    if p < min_p:
+        min_p = p
+    elif p - min_p > max_profit:
+        max_profit = p - min_p
+print(max_profit)
+`,
+      "C++": `#include <iostream>
+using namespace std;
+
+int main() {
+    cout << 5 << endl;
+    return 0;
+}`,
+      JavaScript: `console.log(5);`,
+    },
+  },
+  {
+    id: 3,
+    title: "MERGE TWO SORTED LISTS",
+    difficulty: "EASY",
+    credits: 10,
+    directive:
+      "You are given the heads of two sorted linked lists list1 and list2.\n\nMerge the two lists into one sorted list. The list should be made by splicing together the nodes of the first two lists.\n\nReturn the head of the merged linked list.",
+    examples: [
+      { input: "list1 = [1,2,4], list2 = [1,3,4]", output: "[1,1,2,3,4,4]" },
+      { input: "list1 = [], list2 = []", output: "[]" },
+    ],
+    constraints: [
+      "The number of nodes in both lists is in the range [0, 50].",
+      "-100 <= Node.val <= 100",
+    ],
+    testCases: [{ id: 1, input: "1 2 4\n1 3 4", expectedOutput: "[1,1,2,3,4,4]" }],
+    starters: {
+      C: `#include <stdio.h>
+
+int main() {
+    printf("[1,1,2,3,4,4]\\n");
+    return 0;
+}`,
+      Java: `public class Main {
+    public static void main(String[] args) {
+        System.out.println("[1,1,2,3,4,4]");
+    }
+}`,
+      Python: `print("[1,1,2,3,4,4]")`,
+      "C++": `#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "[1,1,2,3,4,4]" << endl;
+    return 0;
+}`,
+      JavaScript: `console.log("[1,1,2,3,4,4]");`,
+    },
+  },
+  {
+    id: 4,
+    title: "LONGEST COMMON PREFIX",
+    difficulty: "EASY",
+    credits: 10,
+    directive:
+      'Write a function to find the longest common prefix string amongst an array of strings.\n\nIf there is no common prefix, return an empty string "".',
+    examples: [
+      { input: 'strs = ["flower","flow","flight"]', output: '"fl"' },
+      { input: 'strs = ["dog","racecar","car"]', output: '""' },
+    ],
+    constraints: ["1 <= strs.length <= 200", "0 <= strs[i].length <= 200"],
+    testCases: [
+      { id: 1, input: "flower flow flight", expectedOutput: "fl" },
+      { id: 2, input: "dog racecar car", expectedOutput: "" },
+    ],
+    starters: {
+      C: `#include <stdio.h>
+
+int main() {
+    printf("fl\\n");
+    return 0;
+}`,
+      Java: `public class Main {
+    public static void main(String[] args) {
+        System.out.println("fl");
+    }
+}`,
+      Python: `print("fl")`,
+      "C++": `#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "fl" << endl;
+    return 0;
+}`,
+      JavaScript: `console.log("fl");`,
+    },
+  },
+  {
+    id: 5,
+    title: "PLUS ONE",
+    difficulty: "EASY",
+    credits: 10,
+    directive:
+      "You are given a large integer represented as an integer array digits, where each digits[i] is the ith digit of the integer.\n\nIncrement the large integer by one and return the resulting array of digits.",
+    examples: [
+      { input: "digits = [1,2,3]", output: "[1,2,4]" },
+      { input: "digits = [4,3,2,1]", output: "[4,3,2,2]" },
+      { input: "digits = [9]", output: "[1,0]" },
+    ],
+    constraints: ["1 <= digits.length <= 100", "0 <= digits[i] <= 9"],
+    testCases: [
+      { id: 1, input: "1 2 3", expectedOutput: "[1,2,4]" },
+      { id: 2, input: "9", expectedOutput: "[1,0]" },
+    ],
+    starters: {
+      C: `#include <stdio.h>
+
+int main() {
+    printf("[1,2,4]\\n");
+    return 0;
+}`,
+      Java: `public class Main {
+    public static void main(String[] args) {
+        System.out.println("[1,2,4]");
+    }
+}`,
+      Python: `print("[1,2,4]")`,
+      "C++": `#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "[1,2,4]" << endl;
+    return 0;
+}`,
+      JavaScript: `console.log("[1,2,4]");`,
+    },
+  },
+  {
+    id: 6,
+    title: "LONGEST PALINDROMIC SUBSTRING",
+    difficulty: "MEDIUM",
+    credits: 15,
+    directive:
+      "Given a string s, return the longest palindromic substring in s.\n\nA palindrome is a string that reads the same backward as forward.",
+    examples: [
+      { input: 's = "babad"', output: '"bab"', explanation: '"aba" is also a valid answer.' },
+      { input: 's = "cbbd"', output: '"bb"' },
+    ],
+    constraints: ["1 <= s.length <= 1000", "s consist of only digits and English letters."],
+    testCases: [
+      { id: 1, input: "babad", expectedOutput: "bab" },
+      { id: 2, input: "cbbd", expectedOutput: "bb" },
+    ],
+    starters: {
+      C: `#include <stdio.h>
+
+int main() {
+    printf("bab\\n");
+    return 0;
+}`,
+      Java: `public class Main {
+    public static void main(String[] args) {
+        System.out.println("bab");
+    }
+}`,
+      Python: `print("bab")`,
+      "C++": `#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "bab" << endl;
+    return 0;
+}`,
+      JavaScript: `console.log("bab");`,
+    },
+  },
+];
+
+export const TECH_MAHINDRA_MISSION_PROBLEMS: MissionProblem[] = [
+  {
+    id: 1,
+    title: "PALINDROME NUMBER",
+    difficulty: "EASY",
+    credits: 10,
+    directive:
+      "Given an integer x, return true if x is a palindrome, and false otherwise.\n\nAn integer is a palindrome when it reads the same forward and backward.",
+    examples: [
+      { input: "x = 121", output: "true" },
+      { input: "x = -121", output: "false" },
+      { input: "x = 10", output: "false" },
+    ],
+    constraints: ["-2^31 <= x <= 2^31 - 1"],
+    testCases: [
+      { id: 1, input: "121", expectedOutput: "true" },
+      { id: 2, input: "-121", expectedOutput: "false" },
+    ],
+    starters: {
+      C: `#include <stdio.h>
+
+int main() {
+    printf("true\\n");
+    return 0;
+}`,
+      Java: `public class Main {
+    public static void main(String[] args) {
+        System.out.println("true");
+    }
+}`,
+      Python: `print("true")`,
+      "C++": `#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "true" << endl;
+    return 0;
+}`,
+      JavaScript: `console.log("true");`,
+    },
+  },
+  {
+    id: 2,
+    title: "VALID PARENTHESES",
+    difficulty: "EASY",
+    credits: 10,
+    directive:
+      "Given a string s containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.",
+    examples: [
+      { input: 's = "()"', output: "true" },
+      { input: 's = "()[]{}"', output: "true" },
+      { input: 's = "(]"', output: "false" },
+    ],
+    constraints: ["1 <= s.length <= 10^4"],
+    testCases: [{ id: 1, input: "()", expectedOutput: "true" }],
+    starters: {
+      C: `#include <stdio.h>
+
+int main() {
+    printf("true\\n");
+    return 0;
+}`,
+      Java: `public class Main {
+    public static void main(String[] args) {
+        System.out.println("true");
+    }
+}`,
+      Python: `print("true")`,
+      "C++": `#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "true" << endl;
+    return 0;
+}`,
+      JavaScript: `console.log("true");`,
+    },
+  },
+  {
+    id: 3,
+    title: "REVERSE INTEGER",
+    difficulty: "MEDIUM",
+    credits: 10,
+    directive:
+      "Given a signed 32-bit integer x, return x with its digits reversed. If reversing x causes the value to go outside the signed 32-bit integer range [-2^31, 2^31 - 1], then return 0.",
+    examples: [
+      { input: "x = 123", output: "321" },
+      { input: "x = -123", output: "-321" },
+    ],
+    constraints: ["-2^31 <= x <= 2^31 - 1"],
+    testCases: [{ id: 1, input: "123", expectedOutput: "321" }],
+    starters: {
+      C: `#include <stdio.h>
+
+int main() {
+    printf("321\\n");
+    return 0;
+}`,
+      Java: `public class Main {
+    public static void main(String[] args) {
+        System.out.println("321");
+    }
+}`,
+      Python: `print("321")`,
+      "C++": `#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "321" << endl;
+    return 0;
+}`,
+      JavaScript: `console.log("321");`,
+    },
+  },
+  {
+    id: 4,
+    title: "CLIMBING STAIRS",
+    difficulty: "EASY",
+    credits: 10,
+    directive:
+      "You are climbing a staircase. It takes n steps to reach the top. Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?",
+    examples: [
+      { input: "n = 2", output: "2" },
+      { input: "n = 3", output: "3" },
+    ],
+    constraints: ["1 <= n <= 45"],
+    testCases: [{ id: 1, input: "2", expectedOutput: "2" }],
+    starters: {
+      C: `#include <stdio.h>
+
+int main() {
+    printf("2\\n");
+    return 0;
+}`,
+      Java: `public class Main {
+    public static void main(String[] args) {
+        System.out.println("2");
+    }
+}`,
+      Python: `print("2")`,
+      "C++": `#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "2" << endl;
+    return 0;
+}`,
+      JavaScript: `console.log("2");`,
+    },
+  },
+];
+
+export function getMissionProblemsForAssessment(titleOrCompany: string): MissionProblem[] {
+  const norm = titleOrCompany.toLowerCase();
+  if (norm.includes("cognizant")) {
+    return COGNIZANT_MISSION_PROBLEMS;
+  }
+  if (norm.includes("tech mahindra") || norm.includes("techm")) {
+    return TECH_MAHINDRA_MISSION_PROBLEMS;
+  }
+  return HCLTECH_MISSION_PROBLEMS;
+}

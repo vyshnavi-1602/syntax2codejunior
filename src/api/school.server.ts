@@ -459,6 +459,13 @@ export const deleteTeacherFn = createServerFn({ method: "POST" })
   .validator((teacherId: string) => teacherId)
   .handler(async ({ data: teacherId, context }) => {
     const school = await getEffectiveSchool(context);
+    const userRole = ((context.user as Record<string, unknown>)?.role as string) || "";
+    if (userRole === "school") {
+      const target = await db.query.user.findFirst({ where: eq(schema.user.id, teacherId) });
+      if (!target || target.schoolId !== school.id) {
+        throw new Error("Unauthorized: Teacher does not belong to your school");
+      }
+    }
     const otherTeachers = await db
       .select({ id: schema.user.id })
       .from(schema.user)
@@ -739,7 +746,15 @@ export const bulkImportStudentsFn = createServerFn({ method: "POST" })
 export const toggleStudentStatusFn = createServerFn({ method: "POST" })
   .middleware([roleMiddleware(["school", "s2c", "admin"])])
   .validator((data: { studentId: string; active: boolean }) => data)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const school = await getEffectiveSchool(context);
+    const userRole = ((context.user as Record<string, unknown>)?.role as string) || "";
+    if (userRole === "school") {
+      const target = await db.query.user.findFirst({ where: eq(schema.user.id, data.studentId) });
+      if (!target || target.schoolId !== school.id || target.role !== "student") {
+        throw new Error("Unauthorized: Student does not belong to your school");
+      }
+    }
     await db
       .update(schema.user)
       .set({ active: data.active, updatedAt: new Date() })
@@ -750,7 +765,23 @@ export const toggleStudentStatusFn = createServerFn({ method: "POST" })
 export const assignStudentClassFn = createServerFn({ method: "POST" })
   .middleware([roleMiddleware(["school", "s2c", "admin"])])
   .validator((data: { studentId: string; classId: number | null }) => data)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const school = await getEffectiveSchool(context);
+    const userRole = ((context.user as Record<string, unknown>)?.role as string) || "";
+    if (userRole === "school") {
+      const target = await db.query.user.findFirst({ where: eq(schema.user.id, data.studentId) });
+      if (!target || target.schoolId !== school.id) {
+        throw new Error("Unauthorized: Student does not belong to your school");
+      }
+      if (data.classId) {
+        const cls = await db.query.classes.findFirst({
+          where: eq(schema.classes.id, data.classId),
+        });
+        if (!cls || cls.schoolId !== school.id) {
+          throw new Error("Unauthorized: Target class does not belong to your school");
+        }
+      }
+    }
     await db
       .update(schema.studentProfiles)
       .set({ classId: data.classId })

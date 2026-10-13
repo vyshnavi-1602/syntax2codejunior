@@ -78,28 +78,7 @@ export const getTeacherClassesFn = createServerFn({ method: "GET" })
         .innerJoin(schema.user, eq(schema.classes.teacherId, schema.user.id))
         .where(eq(schema.classes.teacherId, teacherId));
 
-      let teacherClasses = myClasses;
-
-      if (teacherClasses.length === 0) {
-        const allFetched = await db
-          .select({
-            id: schema.classes.id,
-            name: schema.classes.name,
-            grade: schema.classes.grade,
-            section: schema.classes.section,
-            teacher: schema.user.name,
-            teacherId: schema.classes.teacherId,
-          })
-          .from(schema.classes)
-          .innerJoin(schema.user, eq(schema.classes.teacherId, schema.user.id));
-
-        const seenNames = new Set<string>();
-        teacherClasses = allFetched.filter((c) => {
-          if (seenNames.has(c.name)) return false;
-          seenNames.add(c.name);
-          return true;
-        });
-      }
+      const teacherClasses = myClasses;
 
       if (teacherClasses.length === 0) {
         return defaultClasses;
@@ -401,6 +380,21 @@ export const gradeProjectFn = createServerFn({ method: "POST" })
     });
 
     if (!submission) throw new Error("Submission not found");
+
+    const isSupervisor = ["admin", "s2c", "school"].includes(
+      ((context.user as Record<string, unknown>)?.role as string) || "",
+    );
+    if (!isSupervisor && submission.assignmentId) {
+      const assignment = await db.query.assignments.findFirst({
+        where: eq(schema.assignments.id, submission.assignmentId),
+      });
+      if (assignment && assignment.teacherId !== teacherId) {
+        throw new Error(
+          "Unauthorized: You do not have permission to grade this assignment submission.",
+        );
+      }
+    }
+
     if (submission.status !== "SUBMITTED")
       throw new Error("Submission already graded or not submitted");
 
@@ -1166,10 +1160,27 @@ export const updateAssignmentFn = createServerFn({ method: "POST" })
       randomQuestionsCount?: number | undefined;
     }) => data,
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     if (!data.id) throw new Error("Assignment ID is required");
     if (!data.title || !data.title.trim()) {
       throw new Error("Assignment title cannot be blank");
+    }
+
+    const teacherId = context.user.id;
+    const isSupervisor = ["admin", "s2c", "school"].includes(context.user.role);
+
+    const existing = await db
+      .select({ id: schema.assignments.id, teacherId: schema.assignments.teacherId })
+      .from(schema.assignments)
+      .where(eq(schema.assignments.id, data.id))
+      .limit(1);
+
+    if (existing.length === 0) {
+      throw new Error("Assignment not found");
+    }
+
+    if (!isSupervisor && existing[0]?.teacherId !== teacherId) {
+      throw new Error("Forbidden: You can only modify your own assignments.");
     }
 
     let classRecords = await db
@@ -1249,7 +1260,7 @@ export const duplicateAssignmentFn = createServerFn({ method: "POST" })
       newTitle?: string | undefined;
     }) => data,
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const orig = await db
       .select()
       .from(schema.assignments)
@@ -1258,6 +1269,13 @@ export const duplicateAssignmentFn = createServerFn({ method: "POST" })
 
     if (!orig.length) throw new Error("Original assignment not found");
     const a = orig[0]!;
+
+    const isSupervisor = ["admin", "s2c", "school"].includes(
+      ((context.user as Record<string, unknown>)?.role as string) || "",
+    );
+    if (!isSupervisor && a.teacherId !== context.user.id) {
+      throw new Error("Unauthorized: You do not have permission to duplicate this assignment.");
+    }
 
     let classId = a.classId;
     if (data.targetClassName) {
@@ -1306,7 +1324,7 @@ export interface AssignmentSubmissionDetail {
 export const getAssignmentSubmissionsFn = createServerFn({ method: "GET" })
   .middleware([roleMiddleware(["teacher", "s2c"])])
   .validator((assignmentId: number) => assignmentId)
-  .handler(async ({ data: assignmentId }) => {
+  .handler(async ({ data: assignmentId, context }) => {
     const assignRow = await db
       .select({
         assignment: schema.assignments,
@@ -1320,6 +1338,15 @@ export const getAssignmentSubmissionsFn = createServerFn({ method: "GET" })
 
     if (!assignRow.length) throw new Error("Assignment not found");
     const a = assignRow[0]!;
+
+    const isSupervisor = ["admin", "s2c", "school"].includes(
+      ((context.user as Record<string, unknown>)?.role as string) || "",
+    );
+    if (!isSupervisor && a.assignment.teacherId !== context.user.id) {
+      throw new Error(
+        "Unauthorized: You do not have permission to view submissions for this assignment.",
+      );
+    }
 
     // Enrolled students in this class
     const studentProfiles = await db
@@ -1531,10 +1558,27 @@ export const deleteAssignmentFn = createServerFn({ method: "POST" })
     }
     return Number(data);
   })
-  .handler(async ({ data: assignmentId }) => {
+  .handler(async ({ data: assignmentId, context }) => {
     const id = Number(assignmentId);
     if (!id || isNaN(id)) {
       throw new Error("Invalid assignment ID");
+    }
+
+    const teacherId = context.user.id;
+    const isSupervisor = ["admin", "s2c", "school"].includes(context.user.role);
+
+    const existing = await db
+      .select({ id: schema.assignments.id, teacherId: schema.assignments.teacherId })
+      .from(schema.assignments)
+      .where(eq(schema.assignments.id, id))
+      .limit(1);
+
+    if (existing.length === 0) {
+      throw new Error("Assignment not found");
+    }
+
+    if (!isSupervisor && existing[0]?.teacherId !== teacherId) {
+      throw new Error("Forbidden: You can only delete your own assignments.");
     }
 
     await db.transaction(async (tx) => {
@@ -1891,4 +1935,139 @@ export const triggerPipelineExecutionFn = createServerFn({ method: "POST" })
         exitCode: newLog.exitCode,
       },
     };
+  });
+
+export interface TeacherCoursePayload {
+  title: string;
+  description: string;
+  difficulty?: string | undefined;
+  modules: Array<{
+    title: string;
+    contentMarkdown?: string | undefined;
+    xpReward?: number | undefined;
+    quiz?:
+      | {
+          questionText: string;
+          options: string[];
+          correctAnswer: string;
+        }
+      | undefined;
+  }>;
+}
+
+export const createTeacherCourseFn = createServerFn({ method: "POST" })
+  .middleware([roleMiddleware(["teacher", "s2c", "admin"])])
+  .validator((data: TeacherCoursePayload) => data)
+  .handler(async ({ data }) => {
+    const [path] = await db
+      .insert(schema.learningPaths)
+      .values({
+        title: data.title.trim(),
+        description: data.description?.trim() || "Teacher curated course curriculum",
+        difficulty: (data.difficulty || "Beginner").toLowerCase(),
+      })
+      .returning();
+
+    if (!path) throw new Error("Failed to create learning path");
+
+    const createdLessons: (typeof schema.lessons.$inferSelect)[] = [];
+    if (data.modules && data.modules.length > 0) {
+      for (let i = 0; i < data.modules.length; i++) {
+        const m = data.modules[i]!;
+        const [lesson] = await db
+          .insert(schema.lessons)
+          .values({
+            pathId: path.id,
+            title: m.title.trim(),
+            contentMarkdown:
+              m.contentMarkdown?.trim() ||
+              `# ${m.title}\n\nWelcome to this lesson module curated by your instructor. Read the material carefully and complete the knowledge check below.`,
+            xpReward: m.xpReward || 50,
+            orderIdx: i + 1,
+          })
+          .returning();
+
+        if (lesson && m.quiz && m.quiz.questionText && m.quiz.options?.length > 0) {
+          await db.insert(schema.quizzes).values({
+            lessonId: lesson.id,
+            questionText: m.quiz.questionText.trim(),
+            options: m.quiz.options,
+            correctAnswer: m.quiz.correctAnswer || m.quiz.options[0] || "",
+          });
+        }
+        if (lesson) createdLessons.push(lesson);
+      }
+    }
+
+    return { success: true, path, lessons: createdLessons };
+  });
+
+export const deleteTeacherCourseFn = createServerFn({ method: "POST" })
+  .middleware([roleMiddleware(["teacher", "s2c", "admin"])])
+  .validator((pathId: number) => pathId)
+  .handler(async ({ data: pathId }) => {
+    const lessonRows = await db
+      .select({ id: schema.lessons.id })
+      .from(schema.lessons)
+      .where(eq(schema.lessons.pathId, pathId));
+
+    if (lessonRows.length > 0) {
+      const lessonIds = lessonRows.map((l) => l.id);
+      await db.delete(schema.quizzes).where(inArray(schema.quizzes.lessonId, lessonIds));
+      await db
+        .delete(schema.completedLessons)
+        .where(inArray(schema.completedLessons.lessonId, lessonIds));
+      await db.delete(schema.lessons).where(eq(schema.lessons.pathId, pathId));
+    }
+    await db.delete(schema.learningPaths).where(eq(schema.learningPaths.id, pathId));
+    return { success: true };
+  });
+
+export const addLessonToCourseFn = createServerFn({ method: "POST" })
+  .middleware([roleMiddleware(["teacher", "s2c", "admin"])])
+  .validator(
+    (data: {
+      pathId: number;
+      title: string;
+      contentMarkdown?: string | undefined;
+      xpReward?: number | undefined;
+      quiz?:
+        | {
+            questionText: string;
+            options: string[];
+            correctAnswer: string;
+          }
+        | undefined;
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const existing = await db
+      .select({ id: schema.lessons.id })
+      .from(schema.lessons)
+      .where(eq(schema.lessons.pathId, data.pathId));
+
+    const nextOrder = existing.length + 1;
+    const [lesson] = await db
+      .insert(schema.lessons)
+      .values({
+        pathId: data.pathId,
+        title: data.title.trim(),
+        contentMarkdown:
+          data.contentMarkdown?.trim() ||
+          `# ${data.title}\n\nReview this module and solve the questions to earn XP.`,
+        xpReward: data.xpReward || 50,
+        orderIdx: nextOrder,
+      })
+      .returning();
+
+    if (lesson && data.quiz && data.quiz.questionText && data.quiz.options?.length > 0) {
+      await db.insert(schema.quizzes).values({
+        lessonId: lesson.id,
+        questionText: data.quiz.questionText.trim(),
+        options: data.quiz.options,
+        correctAnswer: data.quiz.correctAnswer || data.quiz.options[0] || "",
+      });
+    }
+
+    return { success: true, lesson };
   });

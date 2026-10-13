@@ -271,7 +271,7 @@ function SchoolCoursesPage() {
       {/* Header Section matching reference */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-500 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-indigo-500 flex items-center gap-2">
             Course Management
           </h1>
           <p className="text-xs text-slate-400 mt-1">
@@ -283,7 +283,7 @@ function SchoolCoursesPage() {
           <button
             type="button"
             onClick={handleToggleExpandAll}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-700 bg-[#1e2129] px-4 text-xs font-semibold text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer shadow-xs"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer shadow-xs"
           >
             {isAllExpanded ? (
               <ChevronUp className="h-4 w-4" />
@@ -296,7 +296,7 @@ function SchoolCoursesPage() {
           <button
             type="button"
             onClick={handleOpenAddCourse}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#10B981] hover:bg-[#059669] px-4 text-xs font-bold text-slate-950 transition-colors cursor-pointer shadow-xs"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 text-xs font-semibold text-white transition-colors cursor-pointer shadow-xs"
           >
             <Plus className="h-4 w-4" />
             <span>+ Add Course</span>
@@ -312,12 +312,12 @@ function SchoolCoursesPage() {
           return (
             <div
               key={course.id}
-              className="rounded-2xl border border-slate-800 bg-[#16181f] p-5 shadow-sm space-y-4 transition-all"
+              className="rounded-2xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-[#16181f] p-5 shadow-sm space-y-4 transition-all hover:border-indigo-500/30 dark:hover:border-indigo-500/30"
             >
               {/* Card Header & Controls */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <h3 className="text-base sm:text-lg font-bold text-white tracking-wide">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                     {course.title}
                   </h3>
 
@@ -326,17 +326,17 @@ function SchoolCoursesPage() {
                     className={cn(
                       "text-[10px] font-semibold px-2 py-0.5 rounded-full border",
                       course.status === "Published"
-                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                        ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30"
                         : course.status === "Archived"
-                          ? "bg-slate-800 text-slate-400 border-slate-700"
-                          : "bg-amber-500/10 text-amber-400 border-amber-500/30",
+                          ? "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+                          : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
                     )}
                   >
                     {course.status}
                   </span>
 
                   {/* Version Badge */}
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700/80">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700/80">
                     {course.version || "v1"}
                   </span>
                 </div>
@@ -346,7 +346,7 @@ function SchoolCoursesPage() {
                   <button
                     type="button"
                     onClick={() => handleTogglePublish(course.id)}
-                    className="h-8 px-3 rounded-lg border border-slate-700 bg-[#1e2129] hover:bg-slate-800 text-xs font-medium text-slate-300 transition-colors cursor-pointer"
+                    className="h-8 px-3 rounded-lg border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/70 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                   >
                     {course.status === "Published" ? "Unpublish" : "Publish"}
                   </button>
@@ -354,7 +354,7 @@ function SchoolCoursesPage() {
                   <button
                     type="button"
                     onClick={() => handleArchiveCourse(course.id)}
-                    className="h-8 px-3 rounded-lg border border-slate-700 bg-[#1e2129] hover:bg-slate-800 text-xs font-medium text-slate-300 transition-colors cursor-pointer"
+                    className="h-8 px-3 rounded-lg border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/70 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                   >
                     Archive
                   </button>
@@ -362,12 +362,12 @@ function SchoolCoursesPage() {
                   <button
                     type="button"
                     onClick={() => setFeedbackModalCourse(course)}
-                    className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-slate-700 bg-[#1e2129] hover:bg-slate-800 text-xs font-medium text-slate-300 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/70 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                   >
                     <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
                     <span>Feedback</span>
                     {course.feedbacks && course.feedbacks.length > 0 && (
-                      <span className="text-[10px] font-bold text-emerald-400">
+                      <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
                         ({course.feedbacks.length})
                       </span>
                     )}
@@ -376,7 +376,7 @@ function SchoolCoursesPage() {
                   <button
                     type="button"
                     onClick={() => handleOpenEditCourse(course)}
-                    className="inline-flex items-center gap-1 h-8 px-3 rounded-lg border border-slate-700 bg-[#1e2129] hover:bg-slate-800 text-xs font-medium text-slate-300 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1 h-8 px-3 rounded-lg border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/70 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                   >
                     <Edit3 className="h-3.5 w-3.5 text-slate-400" />
                     <span>Edit</span>
@@ -386,7 +386,7 @@ function SchoolCoursesPage() {
                     type="button"
                     onClick={() => handleDeleteCourse(course.id)}
                     title="Delete Course"
-                    className="h-8 w-8 rounded-lg border border-slate-700 bg-[#1e2129] hover:bg-rose-950/40 hover:border-rose-800 flex items-center justify-center text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                    className="h-8 w-8 rounded-lg border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/70 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:border-rose-300 dark:hover:border-rose-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -395,7 +395,7 @@ function SchoolCoursesPage() {
                     type="button"
                     onClick={() => handleToggleCourse(course.id)}
                     title={isExpanded ? "Collapse Course" : "Expand Course"}
-                    className="h-8 w-8 rounded-lg border border-slate-700 bg-[#1e2129] hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+                    className="h-8 w-8 rounded-lg border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/70 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
                   >
                     {isExpanded ? (
                       <ChevronUp className="h-4 w-4" />
@@ -408,9 +408,11 @@ function SchoolCoursesPage() {
 
               {/* Subtitle / Metadata row matching screenshot */}
               <div className="space-y-2">
-                <div className="text-xs text-slate-400">
+                <div className="text-xs text-slate-500 dark:text-slate-400">
                   <span>Instructor: </span>
-                  <span className="font-semibold text-slate-200">{course.instructor}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {course.instructor}
+                  </span>
                   <span> • {course.totalQuestions} questions</span>
                 </div>
 
@@ -419,26 +421,30 @@ function SchoolCoursesPage() {
                   {course.languages.map((lang) => (
                     <span
                       key={lang}
-                      className="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-[#1e2129] text-slate-300 border border-slate-700"
+                      className="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
                     >
                       {lang}
                     </span>
                   ))}
                 </div>
 
-                <div className="text-xs text-slate-400">
+                <div className="text-xs text-slate-500 dark:text-slate-400">
                   <span>Category: </span>
-                  <span className="font-semibold text-slate-200">{course.category}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {course.category}
+                  </span>
                   <span> • Level: </span>
-                  <span className="font-semibold text-slate-200">{course.level}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {course.level}
+                  </span>
                 </div>
               </div>
 
               {/* Expandable Module / Day-by-Day Syllabus Section */}
               {isExpanded && (
-                <div className="pt-4 border-t border-slate-800/80 space-y-3">
+                <div className="pt-4 border-t border-slate-200 dark:border-slate-800/80 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                       Institutional Curriculum Modules ({course.modules.length} Days)
                     </span>
                     <button
@@ -448,7 +454,7 @@ function SchoolCoursesPage() {
                         setModuleTitle("");
                         setModuleTopicsText("");
                       }}
-                      className="text-xs font-semibold text-emerald-400 hover:underline cursor-pointer"
+                      className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
                     >
                       + Add Day / Module
                     </button>
@@ -458,18 +464,18 @@ function SchoolCoursesPage() {
                     {course.modules.map((mod) => (
                       <div
                         key={mod.id}
-                        className="p-3.5 rounded-xl border border-slate-800 bg-[#12141a] space-y-2"
+                        className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#12141a] space-y-2"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+                          <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
                             Day {mod.day}
                           </span>
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400">
                             {mod.questionsCount} questions
                           </span>
                         </div>
 
-                        <h4 className="text-xs font-semibold text-white leading-tight">
+                        <h4 className="text-xs font-semibold text-slate-900 dark:text-white leading-tight">
                           {mod.title}
                         </h4>
 
@@ -477,7 +483,7 @@ function SchoolCoursesPage() {
                           {mod.topics.map((t, idx) => (
                             <span
                               key={idx}
-                              className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-300"
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300"
                             >
                               {t}
                             </span>
@@ -493,12 +499,12 @@ function SchoolCoursesPage() {
         })}
 
         {courses.length === 0 && (
-          <div className="p-12 text-center rounded-2xl border border-slate-800 bg-[#16181f] text-slate-400 space-y-3">
-            <BookOpen className="h-8 w-8 text-emerald-500 mx-auto" />
+          <div className="p-12 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-[#16181f] text-slate-500 dark:text-slate-400 space-y-3">
+            <BookOpen className="h-8 w-8 text-indigo-500 mx-auto" />
             <p className="text-sm font-semibold">No courses created yet.</p>
             <button
               onClick={handleOpenAddCourse}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 text-xs font-bold hover:bg-emerald-600 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 cursor-pointer shadow-xs"
             >
               <Plus className="h-4 w-4" />
               <span>Create First Course</span>
@@ -511,19 +517,19 @@ function SchoolCoursesPage() {
       {/* MODAL 1: ADD / EDIT COURSE                                */}
       {/* ========================================================= */}
       <Dialog open={addCourseModalOpen} onOpenChange={setAddCourseModalOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto bg-[#16181f] border-slate-800 text-white">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-[#16181f] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
           <DialogHeader>
-            <DialogTitle className="text-white">
+            <DialogTitle className="text-slate-900 dark:text-white">
               {editingCourse ? "Edit Course" : "Create New Institutional Course"}
             </DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogDescription className="text-slate-500 dark:text-slate-400">
               Set up bootcamps, modules, and configure allowed programming languages.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSaveCourse} className="space-y-4 py-2">
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                 Course Title *
               </label>
               <input
@@ -531,26 +537,26 @@ function SchoolCoursesPage() {
                 placeholder="e.g. C Programming Bootcamp - 9 Days"
                 value={formTitle}
                 onChange={(e) => setFormTitle(e.target.value)}
-                className="h-9 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 text-xs text-white outline-none focus:border-emerald-500"
+                className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs text-slate-900 dark:text-white outline-none focus:border-indigo-500"
                 required
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                   Instructor Name
                 </label>
                 <input
                   type="text"
                   value={formInstructor}
                   onChange={(e) => setFormInstructor(e.target.value)}
-                  className="h-8.5 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 text-xs text-white outline-none focus:border-emerald-500"
+                  className="h-8.5 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs text-slate-900 dark:text-white outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                   Duration (Days)
                 </label>
                 <input
@@ -560,14 +566,16 @@ function SchoolCoursesPage() {
                   value={formDaysCount}
                   onChange={(e) => setFormDaysCount(Number(e.target.value))}
                   disabled={Boolean(editingCourse)}
-                  className="h-8.5 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 text-xs text-white outline-none focus:border-emerald-500 disabled:opacity-50"
+                  className="h-8.5 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs text-slate-900 dark:text-white outline-none focus:border-indigo-500 disabled:opacity-50"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">Category</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Category
+                </label>
                 <select
                   value={formCategory}
                   onChange={(e) =>
@@ -575,7 +583,7 @@ function SchoolCoursesPage() {
                       e.target.value as "Academics" | "Placements" | "Competitive" | "Foundation",
                     )
                   }
-                  className="h-8.5 w-full rounded-xl border border-slate-700 bg-slate-900 px-2.5 text-xs text-white outline-none focus:border-emerald-500"
+                  className="h-8.5 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 text-xs text-slate-900 dark:text-white outline-none focus:border-indigo-500"
                 >
                   <option value="Academics">Academics</option>
                   <option value="Placements">Placements</option>
@@ -585,7 +593,7 @@ function SchoolCoursesPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                   Target Level
                 </label>
                 <select
@@ -593,7 +601,7 @@ function SchoolCoursesPage() {
                   onChange={(e) =>
                     setFormLevel(e.target.value as "Beginner" | "Intermediate" | "Advanced")
                   }
-                  className="h-8.5 w-full rounded-xl border border-slate-700 bg-slate-900 px-2.5 text-xs text-white outline-none focus:border-emerald-500"
+                  className="h-8.5 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 text-xs text-slate-900 dark:text-white outline-none focus:border-indigo-500"
                 >
                   <option value="Beginner">Beginner</option>
                   <option value="Intermediate">Intermediate</option>
@@ -603,7 +611,7 @@ function SchoolCoursesPage() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
                 Allowed Programming Languages *
               </label>
               <div className="flex flex-wrap gap-2">
@@ -617,8 +625,8 @@ function SchoolCoursesPage() {
                       className={cn(
                         "px-3 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer",
                         isChecked
-                          ? "bg-emerald-500 text-slate-950 border-emerald-500"
-                          : "bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-600",
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                          : "bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-400",
                       )}
                     >
                       {isChecked ? "✓ " : "+ "}
@@ -630,7 +638,7 @@ function SchoolCoursesPage() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                 Course Description (Optional)
               </label>
               <textarea
@@ -638,21 +646,21 @@ function SchoolCoursesPage() {
                 placeholder="Institutional course goals and outcomes..."
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-900 p-2.5 text-xs text-white outline-none focus:border-emerald-500"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2.5 text-xs text-slate-900 dark:text-white outline-none focus:border-indigo-500"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setAddCourseModalOpen(false)}
-                className="h-8.5 px-4 rounded-xl border border-slate-700 text-xs font-medium text-slate-300 hover:bg-slate-800 cursor-pointer"
+                className="h-8.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="h-8.5 px-5 rounded-xl bg-[#10B981] hover:bg-[#059669] text-slate-950 text-xs font-bold cursor-pointer shadow-xs"
+                className="h-8.5 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer shadow-xs"
               >
                 {editingCourse ? "Update Course" : "Create Course"}
               </button>
@@ -668,30 +676,32 @@ function SchoolCoursesPage() {
         open={Boolean(feedbackModalCourse)}
         onOpenChange={(open) => !open && setFeedbackModalCourse(null)}
       >
-        <DialogContent className="sm:max-w-md bg-[#16181f] border-slate-800 text-white">
+        <DialogContent className="sm:max-w-md bg-white dark:bg-[#16181f] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
           <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-emerald-400" />
+            <DialogTitle className="text-slate-900 dark:text-white flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               <span>Student Feedback & Ratings</span>
             </DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogDescription className="text-slate-500 dark:text-slate-400">
               {feedbackModalCourse?.title}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 py-2 max-h-72 overflow-y-auto">
             {!feedbackModalCourse?.feedbacks || feedbackModalCourse.feedbacks.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-6">
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-6">
                 No student feedback recorded for this course yet.
               </p>
             ) : (
               feedbackModalCourse.feedbacks.map((fb) => (
                 <div
                   key={fb.id}
-                  className="p-3 rounded-xl border border-slate-800 bg-[#12141a] space-y-1.5"
+                  className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#12141a] space-y-1.5"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">{fb.studentName}</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">
+                      {fb.studentName}
+                    </span>
                     <span className="text-[10px] text-slate-500">{fb.date}</span>
                   </div>
                   <div className="flex items-center gap-1 text-amber-400">
@@ -699,7 +709,9 @@ function SchoolCoursesPage() {
                       <Star key={i} className="h-3 w-3 fill-amber-400" />
                     ))}
                   </div>
-                  <p className="text-xs text-slate-300 leading-relaxed">{fb.comment}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {fb.comment}
+                  </p>
                 </div>
               ))
             )}
@@ -714,17 +726,19 @@ function SchoolCoursesPage() {
         open={Boolean(addModuleCourseId)}
         onOpenChange={(open) => !open && setAddModuleCourseId(null)}
       >
-        <DialogContent className="sm:max-w-md bg-[#16181f] border-slate-800 text-white">
+        <DialogContent className="sm:max-w-md bg-white dark:bg-[#16181f] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
           <DialogHeader>
-            <DialogTitle className="text-white">Add Curriculum Day / Module</DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogTitle className="text-slate-900 dark:text-white">
+              Add Curriculum Day / Module
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 dark:text-slate-400">
               Add a day-wise training block to the course.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSaveNewModule} className="space-y-4 py-2">
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                 Module Title *
               </label>
               <input
@@ -732,13 +746,13 @@ function SchoolCoursesPage() {
                 placeholder="e.g. Memory Layout & Pointer Arithmetic"
                 value={moduleTitle}
                 onChange={(e) => setModuleTitle(e.target.value)}
-                className="h-9 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 text-xs text-white outline-none focus:border-emerald-500"
+                className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs text-slate-900 dark:text-white outline-none focus:border-indigo-500"
                 required
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                 Topics (Comma separated)
               </label>
               <input
@@ -746,12 +760,12 @@ function SchoolCoursesPage() {
                 placeholder="e.g. malloc, free, dangling pointers, memory leaks"
                 value={moduleTopicsText}
                 onChange={(e) => setModuleTopicsText(e.target.value)}
-                className="h-8.5 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 text-xs text-white outline-none focus:border-emerald-500"
+                className="h-8.5 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs text-slate-900 dark:text-white outline-none focus:border-indigo-500"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                 Estimated Questions
               </label>
               <input
@@ -760,21 +774,21 @@ function SchoolCoursesPage() {
                 max={50}
                 value={moduleQuestionsCount}
                 onChange={(e) => setModuleQuestionsCount(Number(e.target.value))}
-                className="h-8.5 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 text-xs text-white outline-none focus:border-emerald-500"
+                className="h-8.5 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs text-slate-900 dark:text-white outline-none focus:border-indigo-500"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setAddModuleCourseId(null)}
-                className="h-8.5 px-4 rounded-xl border border-slate-700 text-xs font-medium text-slate-300 hover:bg-slate-800 cursor-pointer"
+                className="h-8.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="h-8.5 px-5 rounded-xl bg-[#10B981] hover:bg-[#059669] text-slate-950 text-xs font-bold cursor-pointer shadow-xs"
+                className="h-8.5 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer shadow-xs"
               >
                 Add Module
               </button>

@@ -115,8 +115,15 @@ export const manageUserRoleFn = createServerFn({ method: "POST" })
     const targetUser = await db.query.user.findFirst({ where: eq(schema.user.id, targetUserId) });
     if (!targetUser) throw new Error("Target user not found");
 
-    if (userRole === "school" && targetUser.schoolId !== userSchoolId) {
-      throw new Error("Unauthorized to manage users in this school");
+    if (userRole === "school") {
+      if (targetUser.schoolId !== userSchoolId) {
+        throw new Error("Unauthorized to manage users in this school");
+      }
+      if (newRole && !["student", "teacher"].includes(newRole)) {
+        throw new Error(
+          "Unauthorized: School administrators can only assign student or teacher roles.",
+        );
+      }
     }
 
     const updates: Partial<typeof schema.user.$inferInsert> = {};

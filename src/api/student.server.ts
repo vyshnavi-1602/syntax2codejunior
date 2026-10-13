@@ -441,7 +441,23 @@ export const getStudentAssignmentsFn = createServerFn({ method: "GET" })
             }
             if (parsed.isMcqTest || Array.isArray(parsed.mcqQuestions)) {
               if (Array.isArray(parsed.mcqQuestions)) {
-                mcqQuestions = parsed.mcqQuestions;
+                mcqQuestions = parsed.mcqQuestions.map(
+                  (q: {
+                    id: string;
+                    questionText: string;
+                    options: string[];
+                    difficulty?: string;
+                    xp?: number;
+                  }) => ({
+                    id: q.id,
+                    questionText: q.questionText,
+                    options: q.options,
+                    correctAnswer: "",
+                    explanation: undefined,
+                    difficulty: q.difficulty,
+                    xp: q.xp,
+                  }),
+                );
               }
               if (parsed.subject) subject = parsed.subject;
               if (parsed.passingScore) passingScore = Number(parsed.passingScore);
@@ -613,7 +629,12 @@ export const submitProject = createServerFn({ method: "POST" })
             status: data.submittedUrl ? "submitted" : "pending",
             updatedAt: new Date(),
           })
-          .where(eq(schema.projects.id, Number(data.projectId)));
+          .where(
+            and(
+              eq(schema.projects.id, Number(data.projectId)),
+              eq(schema.projects.studentId, userId),
+            ),
+          );
       } else {
         const metadata = JSON.stringify({
           briefName: data.briefName || "Python Text Adventure",
@@ -641,9 +662,19 @@ export const submitProject = createServerFn({ method: "POST" })
 export const deleteProjectFn = createServerFn({ method: "POST" })
   .middleware([roleMiddleware(["student", "teacher", "s2c"])])
   .validator((data: { projectId: string | number }) => data)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const userId = context.user.id;
+    const isSupervisor = ["admin", "s2c", "teacher"].includes(
+      ((context.user as Record<string, unknown>)?.role as string) || "",
+    );
     try {
-      await db.delete(schema.projects).where(eq(schema.projects.id, Number(data.projectId)));
+      const whereClause = isSupervisor
+        ? eq(schema.projects.id, Number(data.projectId))
+        : and(
+            eq(schema.projects.id, Number(data.projectId)),
+            eq(schema.projects.studentId, userId),
+          );
+      await db.delete(schema.projects).where(whereClause);
     } catch (e) {
       console.warn("Delete project error:", e);
     }
@@ -716,9 +747,6 @@ export const getPracticeItemsFn = createServerFn({ method: "GET" })
           xp: 20,
           prompt: q.questionText,
           options: q.options,
-          answer:
-            q.options.indexOf(q.correctAnswer) !== -1 ? q.options.indexOf(q.correctAnswer) : 0,
-          explain: "This is the correct answer based on the lesson material.",
           solved: false,
         }));
       }
@@ -1806,12 +1834,37 @@ export const submitAssignmentSolutionFn = createServerFn({ method: "POST" })
 
     const teacherId = assignRow[0]!.teacherId;
 
-    // 2. Check if submission already exists
+    // 2. Check if submission already exists for this specific student
     const existing = await db
       .select()
       .from(schema.submissions)
-      .where(eq(schema.submissions.assignmentId, data.assignmentId))
+      .where(
+        and(
+          eq(schema.submissions.assignmentId, data.assignmentId),
+          eq(schema.submissions.studentId, studentId),
+        ),
+      )
       .limit(1);
+
+    // Re-verify test cases and score server-side to prevent client score tampering
+    let verifiedScore = Math.max(0, Math.min(100, Math.round(Number(data.score) || 0)));
+    let verifiedPassed = Math.max(0, Number(data.passedCount) || 0);
+    let verifiedTotal = Math.max(1, Number(data.totalCount) || 1);
+
+    if (assignRow[0]!.instructions) {
+      try {
+        const parsed = JSON.parse(assignRow[0]!.instructions);
+        const testCases = Array.isArray(parsed.testCases) ? parsed.testCases : [];
+        if (testCases.length > 0) {
+          const evalRes = executeCode(data.code, data.language, testCases);
+          verifiedScore = evalRes.score;
+          verifiedPassed = evalRes.passed;
+          verifiedTotal = evalRes.total;
+        }
+      } catch {
+        // Keep bounded verifiedScore
+      }
+    }
 
     let submissionId: number;
 
@@ -1822,6 +1875,7 @@ export const submitAssignmentSolutionFn = createServerFn({ method: "POST" })
         .set({
           code: data.code,
           status: "SUBMITTED",
+          notes: `Evaluated ${verifiedPassed}/${verifiedTotal} tests in ${data.language}`,
           updatedAt: new Date(),
         })
         .where(eq(schema.submissions.id, submissionId));
@@ -1833,7 +1887,7 @@ export const submitAssignmentSolutionFn = createServerFn({ method: "POST" })
           studentId,
           status: "SUBMITTED",
           code: data.code,
-          notes: `Evaluated ${data.passedCount}/${data.totalCount} tests in ${data.language}`,
+          notes: `Evaluated ${verifiedPassed}/${verifiedTotal} tests in ${data.language}`,
         })
         .returning({ id: schema.submissions.id });
       submissionId = inserted[0]!.id;
@@ -1850,25 +1904,25 @@ export const submitAssignmentSolutionFn = createServerFn({ method: "POST" })
       await db
         .update(schema.reviews)
         .set({
-          score: data.score,
+          score: verifiedScore,
           reviewedAt: new Date(),
-          feedback: `Automated test runner: ${data.passedCount}/${data.totalCount} test cases passed (${data.score}%).`,
+          feedback: `Automated test runner: ${verifiedPassed}/${verifiedTotal} test cases passed (${verifiedScore}%).`,
         })
         .where(eq(schema.reviews.id, existingReview[0]!.id));
     } else {
       await db.insert(schema.reviews).values({
         submissionId,
         teacherId,
-        score: data.score,
+        score: verifiedScore,
         maxScore: 100,
         status: "COMPLETED",
-        feedback: `Automated test runner: ${data.passedCount}/${data.totalCount} test cases passed (${data.score}%).`,
+        feedback: `Automated test runner: ${verifiedPassed}/${verifiedTotal} test cases passed (${verifiedScore}%).`,
       });
     }
 
     // 4. Award XP if passed >= 80%
     let xpEarned = 0;
-    if (data.score >= 80) {
+    if (verifiedScore >= 80) {
       xpEarned = 75;
       const profile = await db
         .select()

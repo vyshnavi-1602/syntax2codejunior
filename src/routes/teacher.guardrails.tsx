@@ -334,7 +334,7 @@ function TeacherGuardrailsPage() {
                 step="250"
                 value={maxLoopTimeoutMs}
                 onChange={(e) => setMaxLoopTimeoutMs(Number(e.target.value))}
-                className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#10B981]"
+                className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600"
               />
               <div className="flex justify-between text-[10px] text-slate-400">
                 <span>500ms (High Alert)</span>
@@ -373,7 +373,7 @@ function TeacherGuardrailsPage() {
                     className={cn(
                       "p-3.5 text-left rounded-xl border transition-all cursor-pointer",
                       sandboxMode === mode.id
-                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold"
+                        ? "border-indigo-500 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-semibold"
                         : "border-slate-200 dark:border-slate-800 hover:border-slate-300 text-slate-700 dark:text-slate-300",
                     )}
                   >
@@ -401,7 +401,7 @@ function TeacherGuardrailsPage() {
                 type="checkbox"
                 checked={blockExternalNetwork}
                 onChange={(e) => setBlockExternalNetwork(e.target.checked)}
-                className="h-5 w-5 rounded border-slate-300 accent-emerald-500 cursor-pointer"
+                className="h-5 w-5 rounded border-slate-300 accent-indigo-600 cursor-pointer"
               />
             </div>
 
@@ -419,7 +419,7 @@ function TeacherGuardrailsPage() {
                 type="checkbox"
                 checked={requireCodeApproval}
                 onChange={(e) => setRequireCodeApproval(e.target.checked)}
-                className="h-5 w-5 rounded border-slate-300 accent-emerald-500 cursor-pointer"
+                className="h-5 w-5 rounded border-slate-300 accent-indigo-600 cursor-pointer"
               />
             </div>
 
@@ -428,7 +428,7 @@ function TeacherGuardrailsPage() {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="inline-flex items-center gap-2 h-9 px-5 rounded-xl bg-[#10B981] hover:bg-[#059669] text-slate-950 text-xs font-bold cursor-pointer transition-colors shadow-xs disabled:opacity-50"
+                className="inline-flex items-center gap-2 h-9 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer transition-colors shadow-xs shadow-indigo-600/20 disabled:opacity-50"
               >
                 <ShieldCheck className="h-4 w-4" />
                 <span>{isSaving ? "Applying Guardrails..." : "Save Classroom Guardrails"}</span>

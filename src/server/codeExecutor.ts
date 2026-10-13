@@ -1,4 +1,5 @@
 import * as crypto from "crypto";
+import * as vm from "node:vm";
 
 export interface TestCaseItem {
   input: string;
@@ -59,32 +60,38 @@ function normalizeOutput(str: string): string {
 }
 
 /**
- * Sandboxed JavaScript runner that runs purely in-isolate.
- * Completely blocks access to `process`, `require`, `fs`, `child_process`, and host APIs.
+ * Sandboxed JavaScript runner that runs inside an isolated node:vm context
+ * with an enforced 1200ms wall-clock timeout and strict prototype/global isolation.
  */
 function runSandboxedJS(
   code: string,
   input: string,
-): { stdout: string; stderr: string; status: "SUCCESS" | "RUNTIME_ERROR" | "COMPILATION_ERROR" } {
-  // Disallow obvious dangerous identifiers
-  const dangerousPatterns = [
-    /\bprocess\b/,
-    /\brequire\b/,
-    /\bimport\b/,
-    /\bchild_process\b/,
-    /\bfs\b/,
-    /\beval\b/,
-    /\bFunction\b/,
-    /\bglobalThis\b/,
-    /\b__proto__\b/,
-    /\bconstructor\b/,
+): {
+  stdout: string;
+  stderr: string;
+  status: "SUCCESS" | "RUNTIME_ERROR" | "COMPILATION_ERROR" | "TIME_LIMIT_EXCEEDED";
+} {
+  const blockedPatterns = [
+    /process/i,
+    /require/i,
+    /import/i,
+    /child_process/i,
+    /\bfs\b/i,
+    /eval/i,
+    /Function/i,
+    /globalThis/i,
+    /__proto__/i,
+    /constructor/i,
+    /prototype/i,
+    /Reflect/i,
+    /mainModule/i,
   ];
 
-  for (const pattern of dangerousPatterns) {
+  for (const pattern of blockedPatterns) {
     if (pattern.test(code)) {
       return {
         stdout: "",
-        stderr: `Security restriction: access to '${pattern.source.replace(/\\b/g, "")}' is prohibited in student lab.`,
+        stderr: "Security restriction: forbidden identifier or prototype access detected.",
         status: "COMPILATION_ERROR",
       };
     }
@@ -112,31 +119,38 @@ function runSandboxedJS(
   const readline = () => lines[lineIdx++] || "";
 
   try {
-    // Create an isolated evaluation scope with shadowed sensitive globals
-    const runner = new Function(
-      "console",
-      "readline",
-      "input",
-      "process",
-      "require",
-      "global",
-      "window",
-      "document",
-      "fetch",
-      `"use strict";\n${code}`,
-    );
-
-    runner(
-      fakeConsole,
+    const sandbox = {
+      console: Object.freeze(fakeConsole),
       readline,
       input,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-    );
+      Math,
+      parseInt,
+      parseFloat,
+      isNaN,
+      isFinite,
+      String,
+      Number,
+      Boolean,
+      Array,
+      Object,
+      JSON,
+      process: undefined,
+      require: undefined,
+      global: undefined,
+      globalThis: undefined,
+      Buffer: undefined,
+    };
+
+    const script = new vm.Script(`"use strict";\n${code}`, {
+      filename: "student-code.js",
+    });
+
+    const context = vm.createContext(sandbox);
+    script.runInContext(context, {
+      timeout: 1200,
+      breakOnSigint: true,
+    });
+
     return {
       stdout: logs.join("\n").trim(),
       stderr: "",
@@ -144,6 +158,13 @@ function runSandboxedJS(
     };
   } catch (err: unknown) {
     const errMsg = (err as Error)?.message || String(err);
+    if (errMsg.includes("timed out") || errMsg.includes("Execution timed out")) {
+      return {
+        stdout: logs.join("\n").trim(),
+        stderr: "Time Limit Exceeded (execution exceeded 1200ms limit).",
+        status: "TIME_LIMIT_EXCEEDED",
+      };
+    }
     return {
       stdout: logs.join("\n").trim(),
       stderr: errMsg,
@@ -163,7 +184,8 @@ function evaluateAlgorithmicProblem(
 ): {
   output: string;
   error?: string;
-  status: "ACCEPTED" | "WRONG_ANSWER" | "COMPILATION_ERROR" | "RUNTIME_ERROR";
+  status:
+    "ACCEPTED" | "WRONG_ANSWER" | "COMPILATION_ERROR" | "RUNTIME_ERROR" | "TIME_LIMIT_EXCEEDED";
 } {
   const cleanCode = code.trim();
   const lowerCode = cleanCode.toLowerCase();
@@ -203,8 +225,8 @@ function evaluateAlgorithmicProblem(
     if (res.status === "COMPILATION_ERROR") {
       return { output: "", error: res.stderr, status: "COMPILATION_ERROR" };
     }
-    if (res.status === "RUNTIME_ERROR") {
-      return { output: res.stdout, error: res.stderr, status: "RUNTIME_ERROR" };
+    if (res.status === "RUNTIME_ERROR" || res.status === "TIME_LIMIT_EXCEEDED") {
+      return { output: res.stdout, error: res.stderr, status: res.status };
     }
     return { output: res.stdout, status: "ACCEPTED" };
   }
@@ -344,7 +366,11 @@ export function executeCode(
     let status: ExecutionResultItem["status"] = evalRes.status;
     let passed = false;
 
-    if (evalRes.status === "COMPILATION_ERROR" || evalRes.status === "RUNTIME_ERROR") {
+    if (
+      evalRes.status === "COMPILATION_ERROR" ||
+      evalRes.status === "RUNTIME_ERROR" ||
+      evalRes.status === "TIME_LIMIT_EXCEEDED"
+    ) {
       status = evalRes.status;
       passed = false;
     } else {
@@ -366,11 +392,14 @@ export function executeCode(
   });
 
   const totalTime = Date.now() - startTime;
+  const hasTimeLimitError = results.some((r) => r.status === "TIME_LIMIT_EXCEEDED");
   const hasCompileError = results.some((r) => r.status === "COMPILATION_ERROR");
   const hasRuntimeError = results.some((r) => r.status === "RUNTIME_ERROR");
 
   let verdict: ExecutionResponse["verdict"] = "ACCEPTED";
-  if (hasCompileError) {
+  if (hasTimeLimitError) {
+    verdict = "TIME_LIMIT_EXCEEDED";
+  } else if (hasCompileError) {
     verdict = "COMPILATION_ERROR";
   } else if (hasRuntimeError) {
     verdict = "RUNTIME_ERROR";

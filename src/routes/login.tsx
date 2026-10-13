@@ -145,10 +145,22 @@ function LoginPage() {
 
     // 1. Check credentials for staff or registered student
     try {
-      const { data, error } = await authClient.signIn.email({
+      const signInPromise = authClient.signIn.email({
         email: normalizedEmail,
         password: cleanPassword,
       });
+
+      const timeoutPromise = new Promise<{
+        data: null;
+        error: { message: string; code?: string };
+      }>((resolve) =>
+        setTimeout(
+          () => resolve({ data: null, error: { message: "Request timed out", code: "TIMEOUT" } }),
+          3500,
+        ),
+      );
+
+      const { data, error } = await Promise.race([signInPromise, timeoutPromise]);
 
       if (!error && data?.user) {
         let verifiedRole = (data.user as { role?: string }).role || "student";
@@ -156,6 +168,7 @@ function LoginPage() {
         if (typeof window !== "undefined") {
           document.cookie = `s2c_role=${verifiedRole}; path=/; max-age=31536000; SameSite=Lax`;
           document.cookie = `s2c-demo-role=${verifiedRole}; path=/; max-age=31536000; SameSite=Lax`;
+          window.localStorage.setItem("s2c-demo-role", verifiedRole);
         }
         fakeSignIn(verifiedRole as "student" | "teacher" | "school" | "admin" | "s2c");
         toast.success(`Signed in as ${verifiedRole.toUpperCase()}!`);
@@ -163,12 +176,14 @@ function LoginPage() {
         return;
       }
 
-      if (error && isStaffAttempt) {
-        setSignInPasswordError(
-          error.message || "Invalid credentials. Please verify your password.",
-        );
+      if (isStaffAttempt) {
+        const errorMsg =
+          error?.message && error.message !== "Request timed out"
+            ? error.message
+            : "Invalid credentials. Please verify your password.";
+        setSignInPasswordError(errorMsg);
         toast.error("Authentication failed", {
-          description: error.message || "Invalid email or password. Please try again.",
+          description: errorMsg,
         });
         setLoading(false);
         return;
