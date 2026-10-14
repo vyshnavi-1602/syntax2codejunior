@@ -69,7 +69,9 @@ function Index() {
           <h1 className="font-display mt-6 text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
             Welcome to Syntax2Code
           </h1>
-          <p className="mt-2 text-slate-500 dark:text-slate-400">Select your portal to continue to the login screen.</p>
+          <p className="mt-2 text-slate-500 dark:text-slate-400">
+            Select your portal to continue to the login screen.
+          </p>
         </div>
 
         <div className="grid gap-3">

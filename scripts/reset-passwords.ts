@@ -4,13 +4,18 @@ import * as schema from "../src/server/db/schema";
 import { eq, inArray } from "drizzle-orm";
 
 async function main() {
-  const targetPassword = process.env.RESET_PASSWORD || (process.env.NODE_ENV !== "production" ? "Password@123" : null);
+  const targetPassword =
+    process.env.RESET_PASSWORD || (process.env.NODE_ENV !== "production" ? "Password@123" : null);
   if (!targetPassword) {
-    console.error("Error: RESET_PASSWORD environment variable must be specified in production environments.");
+    console.error(
+      "Error: RESET_PASSWORD environment variable must be specified in production environments.",
+    );
     process.exit(1);
   }
   if (!process.env.RESET_PASSWORD) {
-    console.warn("WARNING: Using default password 'Password@123' for local development reset. Do not use in production.");
+    console.warn(
+      "WARNING: Using default password 'Password@123' for local development reset. Do not use in production.",
+    );
   }
   console.log("Hashing password...");
   const newHash = await hashPassword(targetPassword);

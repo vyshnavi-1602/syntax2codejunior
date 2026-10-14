@@ -128,11 +128,7 @@ export function InteractiveCodeRunner({
             className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
             title="Copy Code"
           >
-            {copied ? (
-              <Check className="h-3 w-3 text-emerald-400" />
-            ) : (
-              <Copy className="h-3 w-3" />
-            )}
+            {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
             <span className="hidden sm:inline">{copied ? "Copied" : "Copy"}</span>
           </button>
 

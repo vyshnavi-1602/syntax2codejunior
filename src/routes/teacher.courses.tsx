@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import {
   Plus,
@@ -19,7 +19,10 @@ import {
   Check,
   X,
   Star,
+  ExternalLink,
+  ArrowRight,
 } from "lucide-react";
+import { Button } from "@/client/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/client/lib/utils";
 import {
@@ -69,6 +72,11 @@ function TeacherCoursesPage() {
   const [editingCourse, setEditingCourse] = useState<CourseItem | null>(null);
   const [feedbackModalCourse, setFeedbackModalCourse] = useState<CourseItem | null>(null);
   const [addModuleCourseId, setAddModuleCourseId] = useState<string | null>(null);
+  const [selectedModuleData, setSelectedModuleData] = useState<{
+    courseTitle: string;
+    courseId: string;
+    module: CourseModule;
+  } | null>(null);
 
   // Form State for Add / Edit Course
   const [formTitle, setFormTitle] = useState("");
@@ -562,18 +570,27 @@ function TeacherCoursesPage() {
                     {course.modules.map((mod) => (
                       <div
                         key={mod.id}
-                        className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#12141a] space-y-2"
+                        onClick={() =>
+                          setSelectedModuleData({
+                            courseTitle: course.title,
+                            courseId: course.id,
+                            module: mod,
+                          })
+                        }
+                        className="group p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#12141a] hover:bg-white dark:hover:bg-slate-900/90 hover:border-indigo-400 dark:hover:border-indigo-500/70 hover:shadow-md cursor-pointer transition-all active:scale-[0.99] space-y-2 relative"
+                        title="Click to view module syllabus and coding questions"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-                            Day {mod.day}
+                          <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider group-hover:underline flex items-center gap-1">
+                            Day {mod.day}{" "}
+                            <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                           </span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-200/60 dark:bg-slate-800/80 px-2 py-0.5 rounded-full font-medium">
                             {mod.questionsCount} questions
                           </span>
                         </div>
 
-                        <h4 className="text-xs font-semibold text-slate-900 dark:text-white leading-tight">
+                        <h4 className="text-xs font-semibold text-slate-900 dark:text-white leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                           {mod.title}
                         </h4>
 
@@ -586,6 +603,11 @@ function TeacherCoursesPage() {
                               {t}
                             </span>
                           ))}
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800/70 flex items-center justify-between text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
+                          <span>View syllabus & questions</span>
+                          <ExternalLink className="h-3 w-3" />
                         </div>
                       </div>
                     ))}
@@ -915,6 +937,170 @@ function TeacherCoursesPage() {
               </button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ========================================================= */}
+      {/* MODAL 4: VIEW DAY / MODULE SYLLABUS & PROBLEMS            */}
+      {/* ========================================================= */}
+      <Dialog
+        open={Boolean(selectedModuleData)}
+        onOpenChange={(open) => !open && setSelectedModuleData(null)}
+      >
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-[#16181f] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white p-6">
+          {selectedModuleData && (
+            <div className="space-y-5">
+              <DialogHeader>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-wider border border-indigo-200/60 dark:border-indigo-800/60">
+                    Day {selectedModuleData.module.day}
+                  </span>
+                  <span className="text-xs text-slate-500 font-medium truncate max-w-xs">
+                    {selectedModuleData.courseTitle}
+                  </span>
+                </div>
+                <DialogTitle className="text-lg font-bold text-slate-900 dark:text-white mt-2">
+                  {selectedModuleData.module.title}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+                  Curriculum syllabus, practical coding problem sets, and test assessments.
+                </DialogDescription>
+              </DialogHeader>
+
+              {/* STATS BAR */}
+              <div className="grid grid-cols-3 gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 text-center">
+                <div>
+                  <div className="text-[10px] text-slate-500 uppercase font-semibold">Problems</div>
+                  <div className="text-lg font-bold text-slate-900 dark:text-white">
+                    {selectedModuleData.module.questionsCount}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-slate-500 uppercase font-semibold">
+                    Reward XP
+                  </div>
+                  <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                    +{selectedModuleData.module.questionsCount * 25} XP
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-slate-500 uppercase font-semibold">
+                    Estimated Time
+                  </div>
+                  <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                    {selectedModuleData.module.questionsCount * 15} Mins
+                  </div>
+                </div>
+              </div>
+
+              {/* TOPICS COVERED */}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                  Topics & Learning Objectives
+                </h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedModuleData.module.topics.map((t, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2.5 py-1 rounded-lg bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/60 text-indigo-800 dark:text-indigo-300 text-xs font-medium"
+                    >
+                      ✓ {t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* CURRICULUM QUESTIONS / PROBLEMS LIST */}
+              <div>
+                <div className="flex items-center justify-between mb-2.5">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Day {selectedModuleData.module.day} Coding Challenges (
+                    {selectedModuleData.module.questionsCount})
+                  </h4>
+                  <Link
+                    to="/student/lab"
+                    search={{ assignmentId: undefined }}
+                    className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1"
+                  >
+                    Launch in Code Lab <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </div>
+
+                <div className="space-y-2.5 max-h-[280px] overflow-y-auto pr-1">
+                  {Array.from({ length: selectedModuleData.module.questionsCount }).map((_, i) => {
+                    const topic =
+                      selectedModuleData.module.topics[
+                        i % selectedModuleData.module.topics.length
+                      ] || "Core Syntax";
+                    const isHard = i % 3 === 2;
+                    const isMed = i % 3 === 1;
+                    const diff = isHard ? "Hard" : isMed ? "Medium" : "Easy";
+                    const diffColor = isHard
+                      ? "text-rose-600 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900"
+                      : isMed
+                        ? "text-amber-600 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900"
+                        : "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900";
+
+                    return (
+                      <div
+                        key={i}
+                        className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-700 transition-colors flex items-center justify-between gap-3"
+                      >
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                              Problem {i + 1}: Hands-on with {topic}
+                            </span>
+                            <span
+                              className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${diffColor}`}
+                            >
+                              {diff}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                            Write, compile, and execute test cases for {topic.toLowerCase()}{" "}
+                            concepts.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Link
+                            to="/student/lab"
+                            search={{ assignmentId: undefined }}
+                            className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs font-medium transition-colors"
+                          >
+                            Open Lab
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* DIALOG ACTIONS */}
+              <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    toast.success(`Added question prompt for Day ${selectedModuleData.module.day}`);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 text-xs font-semibold hover:bg-indigo-50/50 dark:hover:bg-indigo-950/50 cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>+ Add Problem to Day {selectedModuleData.module.day}</span>
+                </button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedModuleData(null)}
+                  className="cursor-pointer"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
