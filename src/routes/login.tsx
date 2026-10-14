@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Sparkles, ArrowRight, Loader2, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useSession as useRealSession } from "@/client/lib/auth-client";
 import { authClient } from "@/client/lib/auth-client";
@@ -403,9 +403,6 @@ function LoginPage() {
         </Link>
 
         <div className="w-full max-w-md">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
-            <Sparkles className="h-3.5 w-3.5" /> Authentication
-          </div>
           <h2 className="font-display text-2xl font-semibold tracking-tight text-slate-900">
             Welcome Back
           </h2>
