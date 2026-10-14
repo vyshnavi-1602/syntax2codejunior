@@ -303,8 +303,7 @@ function LoginPage() {
 
     // Non-blocking background registration
     try {
-      authClient
-        .signUp
+      authClient.signUp
         .email({
           email: cleanEmail,
           password: signUpPassword,
@@ -410,7 +409,9 @@ function LoginPage() {
           <h2 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
             Welcome Back
           </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Sign in to access your dashboard.</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Sign in to access your dashboard.
+          </p>
 
           <Tabs defaultValue="login" className="mt-8">
             <TabsList className="grid w-full grid-cols-2">
@@ -651,9 +652,7 @@ function LoginPage() {
                     <Button type="button" variant="outline" onClick={() => setForgotOpen(false)}>
                       Cancel
                     </Button>
-                    <Button type="submit">
-                      Send Reset Instructions
-                    </Button>
+                    <Button type="submit">Send Reset Instructions</Button>
                   </div>
                 </form>
               ) : (

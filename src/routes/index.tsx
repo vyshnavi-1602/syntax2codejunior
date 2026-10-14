@@ -66,10 +66,10 @@ function Index() {
           <span className="inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-600 to-teal-500 text-xl font-bold text-white shadow-xl shadow-indigo-200">
             S2
           </span>
-          <h1 className="font-display mt-6 text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="font-display mt-6 text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
             Welcome to Syntax2Code
           </h1>
-          <p className="mt-2 text-slate-500">Select your portal to continue to the login screen.</p>
+          <p className="mt-2 text-slate-500 dark:text-slate-400">Select your portal to continue to the login screen.</p>
         </div>
 
         <div className="grid gap-3">
@@ -79,7 +79,7 @@ function Index() {
               onClick={() => {
                 navigate({ to: "/login", search: { role: r.id } });
               }}
-              className="group flex w-full items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left transition-all hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-100 cursor-pointer"
+              className="group flex w-full items-center gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 text-left transition-all hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-100 dark:hover:shadow-indigo-950/50 cursor-pointer"
             >
               <div
                 className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${r.bg} ${r.color}`}
@@ -87,12 +87,12 @@ function Index() {
                 <r.icon className="h-6 w-6" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                <h3 className="font-semibold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                   {r.title}
                 </h3>
-                <p className="mt-0.5 text-xs text-slate-500">{r.desc}</p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{r.desc}</p>
               </div>
-              <ChevronRight className="h-5 w-5 text-slate-300 transition-transform group-hover:translate-x-1 group-hover:text-indigo-600" />
+              <ChevronRight className="h-5 w-5 text-slate-300 dark:text-slate-600 transition-transform group-hover:translate-x-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
             </button>
           ))}
         </div>
