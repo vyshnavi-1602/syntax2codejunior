@@ -17,51 +17,28 @@ export function ThemeToggle({ className }: { className?: string }) {
     }
   }, []);
 
-  const toggleTheme = (targetTheme: "light" | "dark") => {
-    setTheme(targetTheme);
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
     if (typeof window !== "undefined") {
-      window.localStorage.setItem("s2c-theme", targetTheme);
-      if (targetTheme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
+      window.localStorage.setItem("s2c-theme", nextTheme);
+      document.documentElement.classList.toggle("dark", nextTheme === "dark");
     }
   };
 
   return (
-    <div
-      className={`inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 p-1 shadow-sm backdrop-blur-sm z-50 ${className || ""}`}
+    <button
+      type="button"
+      onClick={toggleTheme}
+      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label="Toggle theme"
+      className={`flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer ${className || ""}`}
     >
-      <button
-        type="button"
-        onClick={() => toggleTheme("light")}
-        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all cursor-pointer ${
-          theme === "light"
-            ? "bg-amber-500/15 text-amber-700 font-semibold shadow-xs dark:bg-amber-400/20 dark:text-amber-300"
-            : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-        }`}
-        title="Switch to Light Theme"
-        aria-label="Light theme"
-      >
-        <Sun className="h-3.5 w-3.5 text-amber-500" />
-        <span>Light</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => toggleTheme("dark")}
-        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all cursor-pointer ${
-          theme === "dark"
-            ? "bg-indigo-600 text-white font-semibold shadow-xs"
-            : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-        }`}
-        title="Switch to Dark Theme"
-        aria-label="Dark theme"
-      >
-        <Moon className="h-3.5 w-3.5 text-indigo-400" />
-        <span>Dark</span>
-      </button>
-    </div>
+      {theme === "dark" ? (
+        <Sun className="h-4 w-4 text-amber-400" />
+      ) : (
+        <Moon className="h-4 w-4 text-indigo-600" />
+      )}
+    </button>
   );
 }
