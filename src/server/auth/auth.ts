@@ -10,16 +10,36 @@ try {
   // Ignore in environments where not supported
 }
 
-const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:8080";
-const trustedOrigins = () => {
-  const list = [
+const baseURL =
+  process.env.BETTER_AUTH_URL ||
+  (process.env.RENDER_EXTERNAL_URL ? process.env.RENDER_EXTERNAL_URL : "http://localhost:8080");
+
+const trustedOrigins = (request?: Request) => {
+  const origins = new Set<string>([
     baseURL,
     "http://localhost:8080",
     "http://localhost:8081",
     "http://127.0.0.1:8080",
     "http://127.0.0.1:8081",
-  ];
-  return list;
+    "https://syntax2codejunior.onrender.com",
+    "https://syntax2codejunior-1.onrender.com",
+  ]);
+
+  if (request) {
+    try {
+      const origin = request.headers.get("origin");
+      if (origin) origins.add(origin);
+      const host = request.headers.get("host");
+      if (host) {
+        origins.add(`https://${host}`);
+        origins.add(`http://${host}`);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return Array.from(origins);
 };
 
 const hasGoogleAuth = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);

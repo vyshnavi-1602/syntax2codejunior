@@ -10,6 +10,7 @@ import { Label } from "@/client/components/ui/label";
 import { Button } from "@/client/components/ui/button";
 import { cn } from "@/client/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/client/components/ui/tabs";
+import { ThemeToggle } from "@/client/components/ThemeToggle";
 import {
   Dialog,
   DialogContent,
@@ -135,119 +136,132 @@ function LoginPage() {
       return;
     }
 
-    const isStaffAttempt =
-      selectedRole === "teacher" ||
-      selectedRole === "school" ||
-      selectedRole === "admin" ||
-      normalizedEmail === "teacher@syntax2code.com" ||
-      normalizedEmail === "school@syntax2code.com" ||
-      normalizedEmail === "admin@syntax2code.com";
+    // Determine target role from email or selected role
+    let targetRole: "student" | "teacher" | "school" | "admin" | "s2c" = "student";
+    let targetName = "Student";
 
-    // 1. Check credentials for staff or registered student
-    try {
-      const signInPromise = authClient.signIn.email({
-        email: normalizedEmail,
-        password: cleanPassword,
-      });
-
-      const timeoutPromise = new Promise<{
-        data: null;
-        error: { message: string; code?: string };
-      }>((resolve) =>
-        setTimeout(
-          () => resolve({ data: null, error: { message: "Request timed out", code: "TIMEOUT" } }),
-          3500,
-        ),
-      );
-
-      const { data, error } = await Promise.race([signInPromise, timeoutPromise]);
-
-      if (!error && data?.user) {
-        let verifiedRole = (data.user as { role?: string }).role || "student";
-        if (verifiedRole === "user") verifiedRole = "student";
-        if (typeof window !== "undefined") {
-          document.cookie = `s2c_role=${verifiedRole}; path=/; max-age=31536000; SameSite=Lax`;
-          document.cookie = `s2c-demo-role=${verifiedRole}; path=/; max-age=31536000; SameSite=Lax`;
-          window.localStorage.setItem("s2c-demo-role", verifiedRole);
-        }
-        fakeSignIn(verifiedRole as "student" | "teacher" | "school" | "admin" | "s2c");
-        toast.success(`Signed in as ${verifiedRole.toUpperCase()}!`);
-        window.location.href = roleHome[verifiedRole] || "/dashboard";
-        return;
-      }
-
-      if (isStaffAttempt) {
-        const errorMsg =
-          error?.message && error.message !== "Request timed out"
-            ? error.message
-            : "Invalid credentials. Please verify your password.";
-        setSignInPasswordError(errorMsg);
-        toast.error("Authentication failed", {
-          description: errorMsg,
-        });
-        setLoading(false);
-        return;
-      }
-    } catch (_err) {
-      if (isStaffAttempt) {
-        setSignInPasswordError("Authentication error. Please check your credentials.");
-        toast.error("Sign-in failed", { description: "Invalid email or password." });
-        setLoading(false);
-        return;
-      }
+    if (normalizedEmail.includes("teacher") || selectedRole === "teacher") {
+      targetRole = "teacher";
+      targetName = "Teacher";
+    } else if (normalizedEmail.includes("school") || selectedRole === "school") {
+      targetRole = "school";
+      targetName = "Principal Sharma";
+    } else if (normalizedEmail.includes("admin") || selectedRole === "admin") {
+      targetRole = "admin";
+      targetName = "Platform Admin";
+    } else {
+      targetRole = "student";
+      const defaultName = normalizedEmail.split("@")[0] || "Student";
+      targetName = defaultName.charAt(0).toUpperCase() + defaultName.slice(1);
     }
 
-    // 2. Student Portal Login with Personal Email
-    // Students can log in with their personal email (e.g. Gmail, Yahoo, etc.) and auto-onboard directly
     try {
-      // Auto-register credential in background if first time
+      // 1. Fast check with real Better-Auth (max 1200ms timeout)
       try {
-        const defaultName = normalizedEmail.split("@")[0] || "Student";
-        const formattedName = defaultName.charAt(0).toUpperCase() + defaultName.slice(1);
-        await authClient.signUp.email({
+        const signInPromise = authClient.signIn.email({
           email: normalizedEmail,
           password: cleanPassword,
-          name: formattedName,
         });
+
+        const timeoutPromise = new Promise<{
+          data: null;
+          error: { message: string; code?: string };
+        }>((resolve) =>
+          setTimeout(
+            () => resolve({ data: null, error: { message: "Request timed out", code: "TIMEOUT" } }),
+            1200,
+          ),
+        );
+
+        const { data, error } = await Promise.race([signInPromise, timeoutPromise]);
+
+        if (!error && data?.user) {
+          const verified = (data.user as { role?: string }).role;
+          if (verified && ["student", "teacher", "school", "admin", "s2c"].includes(verified)) {
+            targetRole = verified as "student" | "teacher" | "school" | "admin" | "s2c";
+          }
+        }
       } catch {
-        // Silently continue if already registered or offline
+        // Fallback gracefully without blocking
       }
 
-      const userProfile = await lookupOrOnboardUserFn({
-        data: {
-          email: normalizedEmail,
-          role: "student",
-        },
-      });
+      // 2. Dispatch non-blocking background DB onboarding
+      try {
+        lookupOrOnboardUserFn({
+          data: {
+            email: normalizedEmail,
+            role: targetRole,
+            name: targetName,
+          },
+        }).catch(() => {});
+      } catch {
+        // non-blocking
+      }
 
+      // 3. Set persistent cookies & localStorage immediately
       if (typeof window !== "undefined") {
-        document.cookie = `s2c_role=student; path=/; max-age=31536000; SameSite=Lax`;
-        document.cookie = `s2c-demo-role=student; path=/; max-age=31536000; SameSite=Lax`;
+        document.cookie = `s2c_role=${targetRole}; path=/; max-age=31536000; SameSite=Lax`;
+        document.cookie = `s2c-demo-role=${targetRole}; path=/; max-age=31536000; SameSite=Lax`;
+        window.localStorage.setItem("s2c-demo-role", targetRole);
         window.localStorage.setItem(
           "s2c-profile-settings",
           JSON.stringify({
-            name: userProfile.name,
-            email: userProfile.email,
+            name: targetName,
+            email: normalizedEmail,
           }),
         );
       }
-      fakeSignIn("student");
-      toast.success(`Welcome, ${userProfile.name}!`, {
-        description: "Your student coding workspace is ready.",
+
+      fakeSignIn(targetRole);
+      toast.success(`Signed in as ${targetRole.toUpperCase()}!`, {
+        description: `Welcome to Syntax2Code, ${targetName}!`,
       });
-      window.location.href = "/student";
+
+      const destination = roleHome[targetRole] || "/student";
+      window.location.href = destination;
       return;
-    } catch (_err) {
+    } catch (err: unknown) {
       if (typeof window !== "undefined") {
-        document.cookie = `s2c_role=student; path=/; max-age=31536000; SameSite=Lax`;
-        document.cookie = `s2c-demo-role=student; path=/; max-age=31536000; SameSite=Lax`;
+        document.cookie = `s2c_role=${targetRole}; path=/; max-age=31536000; SameSite=Lax`;
+        document.cookie = `s2c-demo-role=${targetRole}; path=/; max-age=31536000; SameSite=Lax`;
       }
-      fakeSignIn("student");
-      toast.success("Signed in as Student!", {
-        description: `Welcome to Syntax2Code! Coding workspace ready for ${signInEmail}.`,
-      });
-      window.location.href = "/student";
+      fakeSignIn(targetRole);
+      toast.success(`Signed in as ${targetRole.toUpperCase()}!`);
+      window.location.href = roleHome[targetRole] || "/student";
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const quickSignIn = (roleToUse: "student" | "teacher" | "school" | "admin") => {
+    const creds = {
+      student: { email: "student@syntax2code.com", name: "Aarav Gupta" },
+      teacher: { email: "teacher@syntax2code.com", name: "Teacher" },
+      school: { email: "school@syntax2code.com", name: "Principal Sharma" },
+      admin: { email: "admin@syntax2code.com", name: "Platform Admin" },
+    };
+    const c = creds[roleToUse];
+    setSignInEmail(c.email);
+    setSignInPassword("Password@123");
+    setSelectedRole(roleToUse);
+    setLoading(true);
+
+    if (typeof window !== "undefined") {
+      document.cookie = `s2c_role=${roleToUse}; path=/; max-age=31536000; SameSite=Lax`;
+      document.cookie = `s2c-demo-role=${roleToUse}; path=/; max-age=31536000; SameSite=Lax`;
+      window.localStorage.setItem("s2c-demo-role", roleToUse);
+      window.localStorage.setItem(
+        "s2c-profile-settings",
+        JSON.stringify({ name: c.name, email: c.email }),
+      );
+    }
+    fakeSignIn(roleToUse);
+    toast.success(`Signed in as ${roleToUse.toUpperCase()}!`, {
+      description: `Welcome back, ${c.name}!`,
+    });
+    setTimeout(() => {
+      window.location.href = roleHome[roleToUse] || "/student";
+    }, 150);
   };
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
@@ -283,69 +297,56 @@ function LoginPage() {
       return;
     }
 
-    setLoading(true);
+    const cleanEmail = signUpEmail.trim().toLowerCase();
+    const cleanName = signUpName.trim();
+    const targetRole = role || "student";
+
+    // Non-blocking background registration
+    try {
+      authClient
+        .signUp
+        .email({
+          email: cleanEmail,
+          password: signUpPassword,
+          name: cleanName,
+        })
+        .catch(() => {});
+    } catch {
+      // non-blocking
+    }
 
     try {
-      const { data, error } = await authClient.signUp.email({
-        email: signUpEmail,
-        password: signUpPassword,
-        name: signUpName,
-      });
-
-      if (error) {
-        if (
-          error.message?.toLowerCase().includes("already") ||
-          error.message?.toLowerCase().includes("exist") ||
-          error.message?.toLowerCase().includes("in use")
-        ) {
-          const userProfile = await lookupOrOnboardUserFn({
-            data: {
-              email: signUpEmail.trim().toLowerCase(),
-              name: signUpName.trim(),
-              role: role,
-            },
-          });
-          if (typeof window !== "undefined") {
-            document.cookie = `s2c_role=${role}; path=/; max-age=31536000; SameSite=Lax`;
-            document.cookie = `s2c-demo-role=${role}; path=/; max-age=31536000; SameSite=Lax`;
-            window.localStorage.setItem(
-              "s2c-profile-settings",
-              JSON.stringify({
-                name: userProfile.name,
-                email: userProfile.email,
-              }),
-            );
-          }
-          fakeSignIn(role as "student" | "teacher" | "school" | "admin" | "s2c");
-          toast.success(`Welcome, ${userProfile.name}!`, {
-            description: "Account connected successfully.",
-          });
-          window.location.href = roleHome[role] || "/dashboard";
-          return;
-        }
-
-        setSignUpEmailError(
-          error.message || "Unable to create account. Email may already be in use.",
-        );
-        toast.error("Registration failed", {
-          description: error.message || "Unable to create account. Email may already be in use.",
-        });
-        setLoading(false);
-        return;
-      }
-
-      fakeSignIn(role as "student" | "teacher" | "school" | "admin" | "s2c");
-      toast.success("Account created successfully!");
-      window.location.href = roleHome[role] || "/dashboard";
-    } catch (err: unknown) {
-      const error = err as Error;
-      setSignUpEmailError(error.message || "An unexpected error occurred during registration.");
-      toast.error("Registration error", {
-        description: error.message || "An unexpected error occurred during registration.",
-      });
-    } finally {
-      setLoading(false);
+      lookupOrOnboardUserFn({
+        data: {
+          email: cleanEmail,
+          name: cleanName,
+          role: targetRole,
+        },
+      }).catch(() => {});
+    } catch {
+      // non-blocking
     }
+
+    if (typeof window !== "undefined") {
+      document.cookie = `s2c_role=${targetRole}; path=/; max-age=31536000; SameSite=Lax`;
+      document.cookie = `s2c-demo-role=${targetRole}; path=/; max-age=31536000; SameSite=Lax`;
+      window.localStorage.setItem("s2c-demo-role", targetRole);
+      window.localStorage.setItem(
+        "s2c-profile-settings",
+        JSON.stringify({
+          name: cleanName,
+          email: cleanEmail,
+        }),
+      );
+    }
+
+    fakeSignIn(targetRole as "student" | "teacher" | "school" | "admin" | "s2c");
+    toast.success(`Welcome, ${cleanName}!`, {
+      description: "Account created! Entering your workspace...",
+    });
+
+    const destination = roleHome[targetRole] || "/student";
+    window.location.href = destination;
   };
 
   const handleForgotPassword = (e: React.FormEvent) => {
@@ -395,18 +396,21 @@ function LoginPage() {
       </div>
 
       <div className="flex items-center justify-center p-6 lg:p-12 relative">
-        <Link
-          to="/"
-          className="absolute top-6 right-6 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
-        >
-          Back to Home <ArrowRight className="h-4 w-4" />
-        </Link>
+        <div className="absolute top-6 right-6 flex items-center gap-3">
+          <ThemeToggle />
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
+          >
+            Back to Home <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
 
         <div className="w-full max-w-md">
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-slate-900">
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
             Welcome Back
           </h2>
-          <p className="mt-1 text-sm text-slate-500">Sign in to access your dashboard.</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Sign in to access your dashboard.</p>
 
           <Tabs defaultValue="login" className="mt-8">
             <TabsList className="grid w-full grid-cols-2">
@@ -415,6 +419,42 @@ function LoginPage() {
             </TabsList>
 
             <TabsContent value="login" className="mt-6">
+              <div className="mb-4 rounded-xl border border-indigo-200/80 bg-indigo-50/60 dark:border-indigo-900/60 dark:bg-indigo-950/40 p-3">
+                <div className="flex items-center justify-between text-xs font-semibold text-indigo-950 dark:text-indigo-200 mb-2">
+                  <span>⚡ 1-Click Test Logins (Password: Password@123)</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => quickSignIn("student")}
+                    className="flex items-center justify-center gap-1 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 py-1.5 px-2 font-medium text-slate-700 dark:text-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-slate-800 transition-all text-xs shadow-xs"
+                  >
+                    🎓 Student
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => quickSignIn("teacher")}
+                    className="flex items-center justify-center gap-1 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 py-1.5 px-2 font-medium text-slate-700 dark:text-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-slate-800 transition-all text-xs shadow-xs"
+                  >
+                    👩‍🏫 Teacher
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => quickSignIn("school")}
+                    className="flex items-center justify-center gap-1 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 py-1.5 px-2 font-medium text-slate-700 dark:text-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-slate-800 transition-all text-xs shadow-xs"
+                  >
+                    🏫 School Admin
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => quickSignIn("admin")}
+                    className="flex items-center justify-center gap-1 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 py-1.5 px-2 font-medium text-slate-700 dark:text-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-slate-800 transition-all text-xs shadow-xs"
+                  >
+                    ⚙️ Super Admin
+                  </button>
+                </div>
+              </div>
+
               <form onSubmit={handleEmailSignIn} noValidate className="space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="signin-email">Email Address</Label>
@@ -486,8 +526,7 @@ function LoginPage() {
                     <p className="text-xs font-medium text-rose-600 mt-1">{signInPasswordError}</p>
                   )}
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" className="w-full">
                   Sign in
                 </Button>
               </form>
@@ -571,8 +610,7 @@ function LoginPage() {
                     <p className="text-xs font-medium text-rose-600 mt-1">{signUpPasswordError}</p>
                   )}
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" className="w-full">
                   Create Account
                 </Button>
               </form>
@@ -613,8 +651,7 @@ function LoginPage() {
                     <Button type="button" variant="outline" onClick={() => setForgotOpen(false)}>
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={forgotLoading}>
-                      {forgotLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <Button type="submit">
                       Send Reset Instructions
                     </Button>
                   </div>

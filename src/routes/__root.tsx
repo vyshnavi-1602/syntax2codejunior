@@ -124,7 +124,7 @@ function RootShell({ children }: { children: ReactNode }) {
             __html: `
               try {
                 var theme = localStorage.getItem('s2c-theme');
-                if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                if (theme === 'dark') {
                   document.documentElement.classList.add('dark');
                 } else {
                   document.documentElement.classList.remove('dark');

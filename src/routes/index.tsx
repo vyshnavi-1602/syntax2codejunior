@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useSession } from "@/client/lib/session";
 import { ChevronRight, GraduationCap, Users, School, LayoutDashboard } from "lucide-react";
+import { ThemeToggle } from "@/client/components/ThemeToggle";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -56,7 +57,10 @@ function Index() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+    <div className="relative flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950 p-6">
+      <div className="absolute top-6 right-6">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-lg">
         <div className="mb-10 text-center">
           <span className="inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-600 to-teal-500 text-xl font-bold text-white shadow-xl shadow-indigo-200">
