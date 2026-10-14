@@ -233,37 +233,6 @@ function LoginPage() {
     }
   };
 
-  const quickSignIn = (roleToUse: "student" | "teacher" | "school" | "admin") => {
-    const creds = {
-      student: { email: "student@syntax2code.com", name: "Aarav Gupta" },
-      teacher: { email: "teacher@syntax2code.com", name: "Teacher" },
-      school: { email: "school@syntax2code.com", name: "Principal Sharma" },
-      admin: { email: "admin@syntax2code.com", name: "Platform Admin" },
-    };
-    const c = creds[roleToUse];
-    setSignInEmail(c.email);
-    setSignInPassword("Password@123");
-    setSelectedRole(roleToUse);
-    setLoading(true);
-
-    if (typeof window !== "undefined") {
-      document.cookie = `s2c_role=${roleToUse}; path=/; max-age=31536000; SameSite=Lax`;
-      document.cookie = `s2c-demo-role=${roleToUse}; path=/; max-age=31536000; SameSite=Lax`;
-      window.localStorage.setItem("s2c-demo-role", roleToUse);
-      window.localStorage.setItem(
-        "s2c-profile-settings",
-        JSON.stringify({ name: c.name, email: c.email }),
-      );
-    }
-    fakeSignIn(roleToUse);
-    toast.success(`Signed in as ${roleToUse.toUpperCase()}!`, {
-      description: `Welcome back, ${c.name}!`,
-    });
-    setTimeout(() => {
-      window.location.href = roleHome[roleToUse] || "/student";
-    }, 150);
-  };
-
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignUpNameError("");
@@ -420,42 +389,6 @@ function LoginPage() {
             </TabsList>
 
             <TabsContent value="login" className="mt-6">
-              <div className="mb-4 rounded-xl border border-indigo-200/80 bg-indigo-50/60 dark:border-indigo-900/60 dark:bg-indigo-950/40 p-3">
-                <div className="flex items-center justify-between text-xs font-semibold text-indigo-950 dark:text-indigo-200 mb-2">
-                  <span>⚡ 1-Click Test Logins (Password: Password@123)</span>
-                </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => quickSignIn("student")}
-                    className="flex items-center justify-center gap-1 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 py-1.5 px-2 font-medium text-slate-700 dark:text-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-slate-800 transition-all text-xs shadow-xs"
-                  >
-                    🎓 Student
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => quickSignIn("teacher")}
-                    className="flex items-center justify-center gap-1 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 py-1.5 px-2 font-medium text-slate-700 dark:text-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-slate-800 transition-all text-xs shadow-xs"
-                  >
-                    👩‍🏫 Teacher
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => quickSignIn("school")}
-                    className="flex items-center justify-center gap-1 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 py-1.5 px-2 font-medium text-slate-700 dark:text-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-slate-800 transition-all text-xs shadow-xs"
-                  >
-                    🏫 School Admin
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => quickSignIn("admin")}
-                    className="flex items-center justify-center gap-1 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 py-1.5 px-2 font-medium text-slate-700 dark:text-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-slate-800 transition-all text-xs shadow-xs"
-                  >
-                    ⚙️ Super Admin
-                  </button>
-                </div>
-              </div>
-
               <form onSubmit={handleEmailSignIn} noValidate className="space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="signin-email">Email Address</Label>
