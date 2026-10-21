@@ -260,7 +260,7 @@ function CompetePage() {
                       href={sub.repoUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline"
+                      className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:underline"
                     >
                       <ExternalLink className="h-3 w-3" /> View Submitted Code / URL
                     </a>
@@ -290,7 +290,7 @@ function CompetePage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search tournaments…"
-                  className="h-8.5 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-xs outline-none focus:border-indigo-400"
+                  className="h-8.5 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-xs outline-none focus:border-emerald-500"
                 />
               </div>
             }
@@ -305,7 +305,7 @@ function CompetePage() {
                     className={cn(
                       "cursor-pointer rounded-2xl border p-4 transition-all shadow-xs",
                       activeId === c.id
-                        ? "border-indigo-200 bg-indigo-50/40 shadow-sm"
+                        ? "border-emerald-200 bg-emerald-50/40 shadow-sm"
                         : "border-slate-200 hover:bg-slate-50",
                     )}
                   >
@@ -347,7 +347,7 @@ function CompetePage() {
                             "h-8.5 rounded-xl px-3.5 text-xs font-semibold transition-colors shadow-xs",
                             isReg
                               ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                              : "bg-indigo-600 text-white hover:bg-indigo-700",
+                              : "bg-emerald-600 text-white hover:bg-emerald-700",
                           )}
                         >
                           {isReg ? "Registered" : "Register"}
@@ -364,7 +364,7 @@ function CompetePage() {
                 <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   {active?.name} · Tournament Rounds
                 </p>
-                <span className="text-xs text-indigo-600 font-medium">
+                <span className="text-xs text-emerald-600 font-medium">
                   {active?.rounds?.length || 0} rounds total
                 </span>
               </div>
@@ -403,7 +403,7 @@ function CompetePage() {
                         {r.state === "Live" ? (
                           <button
                             onClick={() => handleOpenSubmit(active.name, r.name)}
-                            className="inline-flex h-8 items-center gap-1 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700"
+                            className="inline-flex h-8 items-center gap-1 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700"
                           >
                             <Send className="h-3 w-3" /> Submit Entry
                           </button>
@@ -441,7 +441,7 @@ function CompetePage() {
                   className={cn(
                     "flex items-center gap-3 rounded-xl border px-3 py-2.5 shadow-xs transition-colors",
                     e.name === session?.user?.name
-                      ? "border-indigo-300 bg-indigo-50/70"
+                      ? "border-emerald-300 bg-emerald-50/70"
                       : "border-slate-100 bg-white",
                   )}
                 >
@@ -450,7 +450,7 @@ function CompetePage() {
                     <p className="truncate text-sm font-semibold text-slate-900">{e.name}</p>
                     <p className="truncate text-xs text-slate-500">{e.school}</p>
                   </div>
-                  <span className="text-sm font-bold text-indigo-700">{e.score}</span>
+                  <span className="text-sm font-bold text-emerald-700">{e.score}</span>
                 </div>
               ))}
             </div>
@@ -469,7 +469,7 @@ function CompetePage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 shadow-xs">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 shadow-xs">
                 <Code2 className="h-5 w-5" />
               </span>
               <div>
@@ -488,7 +488,7 @@ function CompetePage() {
                   value={subForm.title}
                   onChange={(e) => setSubForm({ ...subForm, title: e.target.value })}
                   placeholder="e.g. EcoTracker - Smart City Carbon Optimization"
-                  className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-indigo-400"
+                  className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-emerald-500"
                 />
               </div>
 
@@ -500,7 +500,7 @@ function CompetePage() {
                   <select
                     value={subForm.language}
                     onChange={(e) => setSubForm({ ...subForm, language: e.target.value })}
-                    className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs outline-none focus:border-indigo-400"
+                    className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs outline-none focus:border-emerald-500"
                   >
                     <option value="Python 3.12">Python 3.12</option>
                     <option value="JavaScript / React">JavaScript / React</option>
@@ -518,7 +518,7 @@ function CompetePage() {
                     value={subForm.repoUrl}
                     onChange={(e) => setSubForm({ ...subForm, repoUrl: e.target.value })}
                     placeholder="https://github.com/..."
-                    className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-indigo-400"
+                    className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
@@ -532,7 +532,7 @@ function CompetePage() {
                   value={subForm.notes}
                   onChange={(e) => setSubForm({ ...subForm, notes: e.target.value })}
                   placeholder="Briefly explain the algorithms, data structures or design patterns used…"
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-xs outline-none focus:border-indigo-400"
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-xs outline-none focus:border-emerald-500"
                 />
               </div>
 
@@ -540,7 +540,7 @@ function CompetePage() {
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
-                    <Sparkles className="h-3.5 w-3.5 text-indigo-600" /> Automated Test Suite
+                    <Sparkles className="h-3.5 w-3.5 text-emerald-600" /> Automated Test Suite
                   </div>
                   <button
                     type="button"
@@ -548,7 +548,7 @@ function CompetePage() {
                     onClick={handleRunValidator}
                     className="inline-flex items-center gap-1 rounded-lg bg-white border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
                   >
-                    <Play className="h-3 w-3 text-indigo-600" />
+                    <Play className="h-3 w-3 text-emerald-600" />
                     {validating ? "Running tests…" : "Run Validation Suite"}
                   </button>
                 </div>
@@ -576,7 +576,7 @@ function CompetePage() {
                 <button
                   type="submit"
                   disabled={!validationPassed}
-                  className="inline-flex h-9.5 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700 disabled:opacity-50"
+                  className="inline-flex h-9.5 items-center gap-1.5 rounded-xl bg-emerald-600 px-4 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-50"
                 >
                   <Send className="h-3.5 w-3.5" /> Submit to Leaderboard
                 </button>

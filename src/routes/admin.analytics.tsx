@@ -168,7 +168,7 @@ function AdminAnalytics() {
                 description: "platform_benchmarks_sep2026.csv",
               })
             }
-            className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700"
+            className="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-xs hover:bg-emerald-700"
           >
             Export analytics
           </button>
@@ -292,14 +292,14 @@ function AdminAnalytics() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Announcement title"
-              className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+              className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
             />
             <textarea
               rows={4}
               value={body}
               onChange={(e) => setBody(e.target.value)}
               placeholder="Announcement body…"
-              className="mt-3 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-400"
+              className="mt-3 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-emerald-400"
             />
             <div className="mt-3">
               <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -308,7 +308,7 @@ function AdminAnalytics() {
               <select
                 value={audience}
                 onChange={(e) => setAudience(e.target.value)}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-400"
               >
                 <option value="All schools">All schools (Admins, Teachers, Students)</option>
                 <option value="School admins only">School admins only</option>
@@ -350,7 +350,7 @@ function AdminAnalytics() {
                   setIsBroadcasting(false);
                 }
               }}
-              className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700 disabled:opacity-50"
+              className="mt-4 inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-50"
             >
               <Send className="h-4 w-4" /> {isBroadcasting ? "Transmitting…" : "Broadcast"}
             </button>
@@ -377,10 +377,10 @@ function AdminAnalytics() {
 
       {tab === "Parent Dispatches" && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/80 via-white to-blue-50/60 p-6 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50/80 via-white to-blue-50/60 p-6 shadow-xs">
             <div>
               <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
                   <Mail className="h-4 w-4" />
                 </span>
                 <h3 className="text-base font-semibold text-slate-900">
@@ -413,7 +413,7 @@ function AdminAnalytics() {
                     required
                     value={parentSubject}
                     onChange={(e) => setParentSubject(e.target.value)}
-                    className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-indigo-400"
+                    className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-emerald-400"
                   />
                 </div>
 
@@ -424,7 +424,7 @@ function AdminAnalytics() {
                   <select
                     value={parentScope}
                     onChange={(e) => setParentScope(e.target.value)}
-                    className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs outline-none focus:border-indigo-400"
+                    className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs outline-none focus:border-emerald-400"
                   >
                     <option value="All 148 Partner Schools">
                       All 148 Partner Schools (4,820 Guardians)
@@ -447,14 +447,14 @@ function AdminAnalytics() {
                     rows={4}
                     value={parentNote}
                     onChange={(e) => setParentNote(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-xs outline-none focus:border-indigo-400"
+                    className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-xs outline-none focus:border-emerald-400"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSendingParentDigest}
-                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700 disabled:opacity-50"
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-50"
                 >
                   <Send className="h-3.5 w-3.5" />
                   {isSendingParentDigest
@@ -471,7 +471,7 @@ function AdminAnalytics() {
               <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 shadow-xs">
                 <div className="rounded-lg bg-white p-4 border border-slate-100 shadow-xs space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider">
+                    <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">
                       Syntax2Code Weekly Report
                     </span>
                     <span className="text-[10px] text-slate-400">Sunday 18:00 UTC</span>
@@ -480,14 +480,14 @@ function AdminAnalytics() {
                     <h4 className="text-xs font-bold text-slate-900">{parentSubject}</h4>
                     <p className="mt-1 text-[11px] text-slate-600 leading-relaxed">{parentNote}</p>
                   </div>
-                  <div className="rounded-lg bg-indigo-50/50 p-2.5 flex items-center justify-between text-xs">
+                  <div className="rounded-lg bg-emerald-50/50 p-2.5 flex items-center justify-between text-xs">
                     <div>
-                      <p className="font-semibold text-indigo-900">Student Coding Time</p>
-                      <p className="text-[10px] text-indigo-600">
+                      <p className="font-semibold text-emerald-900">Student Coding Time</p>
+                      <p className="text-[10px] text-emerald-600">
                         3.8 hrs this week · 8 modules complete
                       </p>
                     </div>
-                    <span className="font-bold text-indigo-700 text-sm">+250 XP</span>
+                    <span className="font-bold text-emerald-700 text-sm">+250 XP</span>
                   </div>
                   <p className="text-[10px] text-slate-400 text-center pt-1 border-t border-slate-100">
                     Official progress communication verified by school faculty.
@@ -565,7 +565,7 @@ function AdminAnalytics() {
                     setSettings({ ...settings, [key]: e.target.checked });
                     toast(`${label} ${e.target.checked ? "enabled" : "disabled"}`);
                   }}
-                  className="h-4 w-4 shrink-0 accent-indigo-600"
+                  className="h-4 w-4 shrink-0 accent-emerald-600"
                 />
               </label>
             ))}

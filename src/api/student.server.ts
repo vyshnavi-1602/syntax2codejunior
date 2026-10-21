@@ -604,17 +604,21 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
   });
 
 export const submitProject = createServerFn({ method: "POST" })
-  .middleware([roleMiddleware(["student"])])
+  .middleware([roleMiddleware(["student", "s2c", "teacher", "admin"])])
   .validator(
     (data: {
       projectId?: string | number;
       lessonId?: number;
-      title: string;
+      title?: string;
       submittedUrl?: string;
       briefName?: string;
+      brief?: string;
       track?: string;
       difficulty?: string;
       xp?: number;
+      skills?: string[];
+      milestones?: Array<{ title: string; done: boolean }>;
+      status?: string;
     }) => data,
   )
   .handler(async ({ data, context }) => {
@@ -622,11 +626,45 @@ export const submitProject = createServerFn({ method: "POST" })
 
     try {
       if (data.projectId) {
+        const existing = await db
+          .select()
+          .from(schema.projects)
+          .where(
+            and(
+              eq(schema.projects.id, Number(data.projectId)),
+              eq(schema.projects.studentId, userId),
+            ),
+          )
+          .limit(1);
+
+        let existingMeta: Record<string, unknown> = {};
+        if (existing[0]?.feedback && existing[0].feedback.startsWith("{")) {
+          try {
+            existingMeta = JSON.parse(existing[0].feedback) as Record<string, unknown>;
+          } catch {
+            // ignore
+          }
+        }
+
+        const updatedMeta = {
+          ...existingMeta,
+          ...(data.brief ? { brief: data.brief } : {}),
+          ...(data.milestones ? { milestones: data.milestones } : {}),
+          ...(data.skills ? { skills: data.skills } : {}),
+          ...(data.track ? { track: data.track } : {}),
+          ...(data.difficulty ? { difficulty: data.difficulty } : {}),
+        };
+
+        const nextStatus =
+          data.status || (data.submittedUrl ? "submitted" : existing[0]?.status || "pending");
+
         await db
           .update(schema.projects)
           .set({
-            submittedUrl: data.submittedUrl || "",
-            status: data.submittedUrl ? "submitted" : "pending",
+            submittedUrl:
+              data.submittedUrl !== undefined ? data.submittedUrl : existing[0]?.submittedUrl || "",
+            status: nextStatus,
+            feedback: JSON.stringify(updatedMeta),
             updatedAt: new Date(),
           })
           .where(
@@ -637,18 +675,34 @@ export const submitProject = createServerFn({ method: "POST" })
           );
       } else {
         const metadata = JSON.stringify({
-          briefName: data.briefName || "Python Text Adventure",
-          track: data.track || "Python Backend",
+          briefName: data.briefName || data.title || "Custom Project",
+          brief:
+            data.brief ||
+            "Custom project created by student. Review milestones and project specifications in the sprint plan.",
+          track: data.track || "Software Development",
           difficulty: data.difficulty || "Beginner",
           xp: data.xp || 150,
+          skills:
+            data.skills && data.skills.length > 0
+              ? data.skills
+              : ["Architecture", "Implementation", "Sprint Planning"],
+          milestones:
+            data.milestones && data.milestones.length > 0
+              ? data.milestones
+              : [
+                  { title: "Sprint 1: Scope, requirements & architecture", done: false },
+                  { title: "Sprint 2: UI wireframing & initial setup", done: false },
+                  { title: "Sprint 3: Core functionality & logic implementation", done: false },
+                  { title: "Sprint 4: Testing, edge cases & demo presentation", done: false },
+                ],
         });
 
         await db.insert(schema.projects).values({
           studentId: userId,
           lessonId: data.lessonId || null,
-          title: data.title,
+          title: data.title || "Custom Project",
           submittedUrl: data.submittedUrl || "",
-          status: data.submittedUrl ? "submitted" : "pending",
+          status: "pending",
           feedback: metadata,
         });
       }
@@ -922,29 +976,37 @@ export const getStudentProjectsFn = createServerFn({ method: "GET" })
 
       if (userProjects.length > 0) {
         return userProjects.map((p, idx) => {
-          let meta: { briefName?: string; track?: string; difficulty?: string; xp?: number } = {};
+          let meta: {
+            briefName?: string;
+            brief?: string;
+            track?: string;
+            difficulty?: string;
+            xp?: number;
+            skills?: string[];
+            milestones?: Array<{ title: string; done: boolean }>;
+            mentorFeedback?: string;
+            mentorName?: string;
+          } = {};
           if (p.feedback && p.feedback.startsWith("{")) {
             try {
-              meta = JSON.parse(p.feedback);
+              meta = JSON.parse(p.feedback) as typeof meta;
             } catch {
               // Ignore invalid JSON feedback
             }
           }
 
           const catalogKeys = Object.keys(projectCatalog);
-          let matchedKey =
-            meta.briefName ||
-            catalogKeys.find((k) =>
-              p.title.toLowerCase().includes(k.toLowerCase().split(" ")[0] || ""),
-            ) ||
-            catalogKeys[idx % catalogKeys.length] ||
-            "Python Text Adventure";
+          const defaultKey = catalogKeys[idx % catalogKeys.length] || "Python Text Adventure";
+          const fallbackConfig =
+            projectCatalog[meta.briefName || ""] || projectCatalog[defaultKey]!;
 
-          if (!projectCatalog[matchedKey]) {
-            matchedKey = "Python Text Adventure";
-          }
-
-          const config = projectCatalog[matchedKey]!;
+          const customBrief = meta.brief || fallbackConfig.brief;
+          const customMilestones =
+            meta.milestones && meta.milestones.length > 0
+              ? meta.milestones
+              : fallbackConfig.milestones;
+          const customSkills =
+            meta.skills && meta.skills.length > 0 ? meta.skills : fallbackConfig.skills;
 
           return {
             id: p.id.toString(),
@@ -955,18 +1017,25 @@ export const getStudentProjectsFn = createServerFn({ method: "GET" })
                   : "In Progress"
                 : p.status === "approved"
                   ? "Approved"
-                  : "Needs Changes",
-            xp: meta.xp || config.xp,
+                  : p.status === "submitted"
+                    ? "Submitted"
+                    : "Needs Changes",
+            xp: meta.xp || fallbackConfig.xp,
             title: p.title,
-            brief: config.brief,
-            skills: config.skills,
-            track: meta.track || config.track,
-            difficulty: meta.difficulty || config.difficulty,
-            milestones: config.milestones,
+            brief: customBrief,
+            skills: customSkills,
+            track: meta.track || fallbackConfig.track,
+            difficulty: meta.difficulty || fallbackConfig.difficulty,
+            milestones: customMilestones,
+            submittedUrl: p.submittedUrl || "",
+            mentorFeedback:
+              meta.mentorFeedback ||
+              (p.feedback && !p.feedback.startsWith("{") ? p.feedback : null),
+            mentorName: meta.mentorName || null,
             updated: p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : "Recently",
             featured: p.status === "approved",
             student: "You",
-            className: "Java Coding Class",
+            className: "Software Engineering",
           };
         });
       }

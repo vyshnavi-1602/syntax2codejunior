@@ -158,8 +158,8 @@ export function CompanionPanel({
                 "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm leading-relaxed whitespace-pre-line",
                 m.from === "me"
                   ? isDark
-                    ? "bg-indigo-600 text-white font-semibold shadow-xs"
-                    : "bg-indigo-600 text-white"
+                    ? "bg-emerald-600 text-white font-semibold shadow-xs"
+                    : "bg-emerald-600 text-white"
                   : isDark
                     ? "border border-slate-800 bg-[#1f222d] text-slate-200"
                     : "border border-slate-200 bg-slate-50 text-slate-700",
@@ -185,8 +185,8 @@ export function CompanionPanel({
               className={cn(
                 "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer",
                 isDark
-                  ? "border-slate-800 bg-[#181b22] text-slate-300 hover:border-indigo-500/60 hover:bg-indigo-950/30 hover:text-indigo-300"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700",
+                  ? "border-slate-800 bg-[#181b22] text-slate-300 hover:border-emerald-500/60 hover:bg-emerald-950/30 hover:text-emerald-300"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700",
               )}
             >
               {s}
@@ -207,8 +207,8 @@ export function CompanionPanel({
             className={cn(
               "h-10 flex-1 rounded-xl border px-3 text-xs sm:text-sm outline-none transition-all",
               isDark
-                ? "border-slate-800 bg-[#0e1015] text-white placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/40"
-                : "border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100",
+                ? "border-slate-800 bg-[#0e1015] text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40"
+                : "border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100",
             )}
           />
           <button
@@ -216,8 +216,8 @@ export function CompanionPanel({
             className={cn(
               "inline-flex h-10 w-10 items-center justify-center rounded-xl transition-colors cursor-pointer",
               isDark
-                ? "bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
-                : "bg-indigo-600 hover:bg-indigo-700 text-white",
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                : "bg-emerald-600 hover:bg-emerald-700 text-white",
             )}
           >
             <Send className="h-4 w-4" />
@@ -234,9 +234,9 @@ export function FloatingCompanion() {
     <>
       {open && (
         <div className="fixed right-5 bottom-24 z-50 w-[22rem] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-          <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-teal-50 px-4 py-3">
+          <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-indigo-600" />
+              <Sparkles className="h-4 w-4 text-emerald-600" />
               <span className="text-sm font-semibold text-slate-900">S2C AI Companion</span>
             </div>
             <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-700">
@@ -248,7 +248,7 @@ export function FloatingCompanion() {
       )}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="fixed right-5 bottom-5 z-50 inline-flex items-center gap-2 rounded-full bg-indigo-600 hover:bg-indigo-700 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-transform hover:scale-[1.03]"
+        className="fixed right-5 bottom-5 z-50 inline-flex items-center gap-2 rounded-full bg-emerald-600 hover:bg-emerald-700 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-transform hover:scale-[1.03]"
       >
         <Bot className="h-4 w-4" />
         Ask S2C
@@ -265,7 +265,7 @@ export function IdeFloatingCompanion({ context }: { context?: IdeAiContext | und
         <div className="fixed right-6 bottom-20 z-50 w-96 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-slate-800 bg-[#16181f] shadow-2xl shadow-black/80 flex flex-col h-[32rem] animate-in fade-in slide-in-from-bottom-4 duration-200">
           <div className="flex items-center justify-between border-b border-slate-800 bg-[#12141a] px-4 py-3 shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-lg bg-indigo-950/80 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+              <div className="h-7 w-7 rounded-lg bg-emerald-950/80 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
                 <Sparkles className="h-4 w-4" />
               </div>
               <div>
@@ -273,7 +273,7 @@ export function IdeFloatingCompanion({ context }: { context?: IdeAiContext | und
                   <span className="text-xs font-black uppercase tracking-wider text-white">
                     S2C AI Companion
                   </span>
-                  <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-indigo-950 text-indigo-400 border border-indigo-800/50">
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/50">
                     LIVE TUTOR
                   </span>
                 </div>
@@ -300,7 +300,7 @@ export function IdeFloatingCompanion({ context }: { context?: IdeAiContext | und
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-6 right-6 z-40 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-full shadow-xl shadow-indigo-500/25 flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 active:scale-95"
+        className="fixed bottom-6 right-6 z-40 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-full shadow-xl shadow-emerald-500/25 flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 active:scale-95"
       >
         <Bot className="h-4 w-4 fill-white text-white" />
         <span>Ask S2C</span>

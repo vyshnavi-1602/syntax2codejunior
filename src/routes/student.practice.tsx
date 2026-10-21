@@ -8,6 +8,7 @@ import { cn } from "@/client/lib/utils";
 import { getPracticeItemsFn } from "@/api/student.server";
 import { CodeEditor } from "@/client/components/app/CodeEditor";
 import { runJavaScript, type ExecutionResult, type TestCase } from "@/client/lib/sandbox";
+import { SpaceInvadersRewardModal } from "@/client/components/app/SpaceInvadersRewardModal";
 export const Route = createFileRoute("/student/practice")({
   head: () => ({
     meta: [
@@ -62,15 +63,32 @@ function PracticePage() {
     practiceItems.filter((p) => p.solved).map((p) => p.id),
   );
 
+  const [rewardModalOpen, setRewardModalOpen] = useState(false);
+  const [rewardItem, setRewardItem] = useState<PracticeItem | null>(null);
+
   const list = practiceItems.filter(
     (p) => (type === "All" || p.type === type) && (level === "Any level" || p.difficulty === level),
   );
+
+  const goToNextChallenge = () => {
+    if (!rewardItem) return;
+    const currentIndex = list.findIndex((p) => p.id === rewardItem.id);
+    const nextItem =
+      list.slice(currentIndex + 1).find((p) => !solvedIds.includes(p.id)) ||
+      list.find((p) => p.id !== rewardItem.id) ||
+      list[0];
+    if (nextItem) {
+      openModal(nextItem);
+    }
+  };
 
   const submit = (item: PracticeItem, i: number) => {
     setPicked(i);
     if (i === item.answer) {
       setSolvedIds((s) => (s.includes(item.id) ? s : [...s, item.id]));
       toast.success(`Correct! +${item.xp} XP 🎉`, { description: item.explain });
+      setRewardItem(item);
+      setRewardModalOpen(true);
     } else {
       toast.error("Incorrect. Review the hint below!");
     }
@@ -102,6 +120,8 @@ function PracticePage() {
       if (success) {
         setSolvedIds((s) => (s.includes(item.id) ? s : [...s, item.id]));
         toast.success(`All tests passed! +${item.xp} XP 🎉`);
+        setRewardItem(item);
+        setRewardModalOpen(true);
       } else {
         toast.error("Some tests failed. Check the output.");
       }
@@ -115,6 +135,25 @@ function PracticePage() {
       <PageHeader
         title="Practice Hub"
         subtitle="Short, focused challenges with instant feedback. Every solve earns XP."
+        actions={
+          <button
+            onClick={() => {
+              setRewardItem({
+                id: "arcade-break",
+                title: "Arcade Brain Break",
+                type: "Coding",
+                difficulty: "Fun",
+                topic: "Gaming",
+                minutes: 3,
+                xp: 25,
+              });
+              setRewardModalOpen(true);
+            }}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:opacity-95 px-4 text-xs font-bold text-white shadow-md shadow-emerald-500/20 transition-all cursor-pointer"
+          >
+            👾 Play Space Invaders
+          </button>
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -170,7 +209,7 @@ function PracticePage() {
               <button
                 key={p.id}
                 onClick={() => openModal(p)}
-                className="rounded-2xl border border-slate-200 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
+                className="rounded-2xl border border-slate-200 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -246,7 +285,7 @@ function PracticePage() {
                   <button
                     onClick={() => submitCode(open)}
                     disabled={isExecuting}
-                    className="w-full rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50"
+                    className="w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
                   >
                     {isExecuting ? "Running..." : "Run & Submit"}
                   </button>
@@ -301,7 +340,7 @@ function PracticePage() {
                           state === "right" && "border-emerald-300 bg-emerald-50 text-emerald-800",
                           state === "wrong" && "border-amber-300 bg-amber-50 text-amber-800",
                           state === "idle" &&
-                            "border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/40",
+                            "border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/40",
                         )}
                       >
                         {o}
@@ -318,6 +357,17 @@ function PracticePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {rewardItem && (
+        <SpaceInvadersRewardModal
+          open={rewardModalOpen}
+          onOpenChange={setRewardModalOpen}
+          xpEarned={rewardItem.xp}
+          challengeTitle={rewardItem.title}
+          onNextQuestion={goToNextChallenge}
+          nextQuestionLabel="Next Challenge"
+        />
       )}
     </>
   );

@@ -98,7 +98,7 @@ export function InteractiveCodeRunner({
             <span className="h-2.5 w-2.5 rounded-full bg-amber-500/80" />
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
           </div>
-          <span className="ml-1 inline-flex items-center rounded-md bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-400 font-mono border border-indigo-500/20 uppercase">
+          <span className="ml-1 inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-400 font-mono border border-emerald-500/20 uppercase">
             {cleanLang}
           </span>
           <span className="text-xs text-slate-400 font-sans hidden sm:inline">
@@ -169,7 +169,7 @@ export function InteractiveCodeRunner({
             onChange={(e) => setStdin(e.target.value)}
             placeholder="Enter standard input values here..."
             rows={2}
-            className="w-full rounded-md border border-slate-700 bg-[#0f101a] p-2 font-mono text-xs text-slate-200 placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-md border border-slate-700 bg-[#0f101a] p-2 font-mono text-xs text-slate-200 placeholder:text-slate-600 focus:border-emerald-500 focus:outline-none"
           />
         </div>
       )}
@@ -210,7 +210,7 @@ export function InteractiveCodeRunner({
         <div className="border-t border-slate-800 bg-[#0d0e17] p-3 text-xs">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <Terminal className="h-3.5 w-3.5 text-indigo-400" />
+              <Terminal className="h-3.5 w-3.5 text-emerald-400" />
               <span className="font-semibold text-slate-300 font-sans">Execution Output</span>
               <span
                 className={cn(

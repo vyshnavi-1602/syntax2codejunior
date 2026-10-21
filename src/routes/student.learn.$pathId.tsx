@@ -137,7 +137,7 @@ function PathPage() {
                   onClick={() => select(i)}
                   className={cn(
                     "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
-                    active ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-50",
+                    active ? "bg-emerald-50 text-emerald-700 font-semibold" : "text-slate-600 hover:bg-slate-50",
                   )}
                 >
                   {l.status === "completed" ? (
@@ -145,7 +145,7 @@ function PathPage() {
                   ) : l.status === "locked" ? (
                     <Lock className="h-4 w-4 shrink-0 text-slate-300" />
                   ) : (
-                    <Circle className="h-4 w-4 shrink-0 text-indigo-500" />
+                    <Circle className="h-4 w-4 shrink-0 text-emerald-500" />
                   )}
                   <span className="min-w-0 flex-1 truncate">{l.title}</span>
                   <span className="text-[11px] text-slate-400">{l.xpReward} XP</span>
@@ -160,7 +160,7 @@ function PathPage() {
             title={lesson.title}
             description={`Lesson ${index + 1} of ${allLessons.length}`}
             action={
-              <Pill tone={lesson.status === "completed" ? "emerald" : "violet"}>
+              <Pill tone={lesson.status === "completed" ? "emerald" : "teal"}>
                 {lesson.status}
               </Pill>
             }
@@ -170,9 +170,9 @@ function PathPage() {
             </div>
 
             {quizzes.length > 0 && quizzes[0] && (
-              <div className="mt-8 rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4">
+              <div className="mt-8 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
                 <div className="flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4 text-indigo-600" />
+                  <Lightbulb className="h-4 w-4 text-emerald-600" />
                   <p className="text-sm font-semibold text-slate-900">Knowledge Check</p>
                 </div>
                 <p className="mt-2 text-sm text-slate-700">{quizzes[0].questionText}</p>
@@ -185,9 +185,9 @@ function PathPage() {
                         onClick={() => setPicked(i)}
                         className={cn(
                           "rounded-xl border px-3.5 py-2.5 text-left text-sm transition-colors",
-                          state === "picked" && "border-indigo-300 bg-indigo-50 text-indigo-800",
+                          state === "picked" && "border-emerald-300 bg-emerald-50 text-emerald-800",
                           state === "idle" &&
-                            "border-slate-200 bg-white text-slate-700 hover:border-indigo-200",
+                            "border-slate-200 bg-white text-slate-700 hover:border-emerald-200",
                         )}
                       >
                         {o}
@@ -209,7 +209,7 @@ function PathPage() {
               <button
                 disabled={isCompleting}
                 onClick={handleComplete}
-                className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
               >
                 {isCompleting ? "Submitting..." : "Complete & continue"}{" "}
                 <ArrowRight className="h-4 w-4" />

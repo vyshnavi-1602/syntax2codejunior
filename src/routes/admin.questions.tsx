@@ -146,7 +146,7 @@ function AdminQuestions() {
         actions={
           <button
             onClick={() => setOpen(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700"
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-xs hover:bg-emerald-700"
           >
             <Plus className="h-4 w-4" /> Add question
           </button>
@@ -194,7 +194,7 @@ function AdminQuestions() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search questions by text or concept…"
-              className="h-10 w-full rounded-xl border border-slate-200 pr-3 pl-9 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+              className="h-10 w-full rounded-xl border border-slate-200 pr-3 pl-9 text-sm outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
             />
           </div>
           <div className="mt-4 space-y-2.5">
@@ -259,7 +259,7 @@ function AdminQuestions() {
             action={
               <button
                 onClick={handleSaveConfig}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700"
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700"
               >
                 <CheckCircle2 className="h-3.5 w-3.5" /> Save Configuration
               </button>
@@ -276,13 +276,13 @@ function AdminQuestions() {
                     key={preset.name}
                     type="button"
                     onClick={() => handleApplyPreset(preset)}
-                    className="flex flex-col items-start justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-3 text-left transition-all hover:border-indigo-300 hover:bg-indigo-50/40"
+                    className="flex flex-col items-start justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-3 text-left transition-all hover:border-emerald-300 hover:bg-emerald-50/40"
                   >
                     <div>
                       <p className="text-xs font-semibold text-slate-900">{preset.name}</p>
                       <p className="mt-1 text-[11px] text-slate-500">{preset.desc}</p>
                     </div>
-                    <span className="mt-2 text-[10px] font-medium text-indigo-600">
+                    <span className="mt-2 text-[10px] font-medium text-emerald-600">
                       {preset.cfg.questions} Qs · {preset.cfg.minutes}m · {preset.cfg.attempts} Att
                     </span>
                   </button>
@@ -309,7 +309,7 @@ function AdminQuestions() {
                     max={max}
                     value={cfg[key]}
                     onChange={(e) => setCfg({ ...cfg, [key]: Number(e.target.value) })}
-                    className="mt-2 w-full accent-indigo-600"
+                    className="mt-2 w-full accent-emerald-600"
                   />
                 </div>
               ))}
@@ -328,14 +328,14 @@ function AdminQuestions() {
                     type="checkbox"
                     checked={cfg[key]}
                     onChange={(e) => setCfg({ ...cfg, [key]: e.target.checked })}
-                    className="h-4 w-4 accent-indigo-600"
+                    className="h-4 w-4 accent-emerald-600"
                   />
                 </label>
               ))}
 
               <button
                 onClick={handleSaveConfig}
-                className="h-10 w-full rounded-xl bg-indigo-600 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700"
+                className="h-10 w-full rounded-xl bg-emerald-600 text-sm font-semibold text-white shadow-xs hover:bg-emerald-700"
               >
                 Save configuration
               </button>
@@ -378,7 +378,7 @@ function AdminQuestions() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600">
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
                 <Sparkles className="h-4 w-4" /> Student Assessment Preview
               </span>
               <Pill tone="emerald">{previewQuestion.difficulty}</Pill>
@@ -418,7 +418,7 @@ function AdminQuestions() {
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
               placeholder="e.g. Asynchronous I/O"
-              className="mt-3 h-9.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-indigo-400"
+              className="mt-3 h-9.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-emerald-400"
             />
             <div className="mt-4 flex justify-end gap-2">
               <button
@@ -436,7 +436,7 @@ function AdminQuestions() {
                     setTagModalOpen(false);
                   }
                 }}
-                className="h-9 rounded-xl bg-indigo-600 px-3.5 text-xs font-semibold text-white hover:bg-indigo-700"
+                className="h-9 rounded-xl bg-emerald-600 px-3.5 text-xs font-semibold text-white hover:bg-emerald-700"
               >
                 Add Tag
               </button>
@@ -461,7 +461,7 @@ function AdminQuestions() {
               onChange={(e) => setForm({ ...form, text: e.target.value })}
               rows={3}
               placeholder="Question text"
-              className="mt-4 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-300"
+              className="mt-4 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-emerald-300"
             />
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               <select
@@ -533,7 +533,7 @@ function AdminQuestions() {
                     setIsSubmitting(false);
                   }
                 }}
-                className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                className="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
               >
                 {isSubmitting ? "Saving…" : "Save question"}
               </button>

@@ -411,7 +411,7 @@ function StudentDetail() {
     <>
       <Link
         to="/teacher/students"
-        className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-600 mb-2"
+        className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-emerald-600 mb-2"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to student roster
       </Link>
@@ -427,12 +427,12 @@ function StudentDetail() {
               onClick={() => setNotifModalOpen(true)}
               className="gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50"
             >
-              <Bell className="h-4 w-4 text-indigo-600" /> Send Notification
+              <Bell className="h-4 w-4 text-emerald-600" /> Send Notification
             </Button>
             <Button
               size="sm"
               onClick={() => setReportModalOpen(true)}
-              className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+              className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
             >
               <FileText className="h-4 w-4" /> Progress Dossier
             </Button>
@@ -504,7 +504,7 @@ function StudentDetail() {
                 </div>
                 <Bar
                   value={sk.value}
-                  tone={sk.value >= 80 ? "emerald" : sk.value >= 60 ? "indigo" : "amber"}
+                  tone={sk.value >= 80 ? "emerald" : sk.value >= 60 ? "emerald" : "amber"}
                 />
               </div>
             ))}
@@ -528,7 +528,7 @@ function StudentDetail() {
             <button
               type="button"
               onClick={() => setReportModalOpen(true)}
-              className="inline-flex items-center gap-2 h-9 rounded-xl bg-indigo-600 px-3.5 text-xs font-medium text-white hover:bg-indigo-700 shadow-sm cursor-pointer"
+              className="inline-flex items-center gap-2 h-9 rounded-xl bg-emerald-600 px-3.5 text-xs font-medium text-white hover:bg-emerald-700 shadow-sm cursor-pointer"
             >
               <FileText className="h-3.5 w-3.5" /> Official Report
             </button>
@@ -542,7 +542,7 @@ function StudentDetail() {
           title="Student Support & Intervention Plan"
           description="Assign personalized mentoring tags and intervention strategies"
           action={
-            <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+            <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
               Class Scoped
             </span>
           }
@@ -565,7 +565,7 @@ function StudentDetail() {
                   {
                     tag: "Accelerated",
                     label: "Accelerated",
-                    color: "text-violet-700 border-violet-200 bg-violet-50",
+                    color: "text-emerald-700 border-emerald-200 bg-emerald-50",
                   },
                   {
                     tag: "Mentoring required",
@@ -580,7 +580,7 @@ function StudentDetail() {
                     className={cn(
                       "rounded-xl border p-2 text-xs font-semibold text-center transition-all cursor-pointer",
                       supportTag === item.tag
-                        ? cn(item.color, "ring-2 ring-indigo-200")
+                        ? cn(item.color, "ring-2 ring-emerald-200")
                         : "border-slate-200 text-slate-600 hover:bg-slate-50",
                     )}
                   >
@@ -615,7 +615,7 @@ function StudentDetail() {
               <Button
                 type="submit"
                 disabled={isSavingSupport}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
               >
                 {isSavingSupport ? "Saving Changes..." : "Save Support Plan"}
               </Button>
@@ -629,7 +629,7 @@ function StudentDetail() {
           description="Configure coding lab sandbox limits and execution boundaries"
           action={
             <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500">
-              <Shield className="h-3.5 w-3.5 text-indigo-600" /> Active Protection
+              <Shield className="h-3.5 w-3.5 text-emerald-600" /> Active Protection
             </div>
           }
         >
@@ -651,7 +651,7 @@ function StudentDetail() {
                       className={cn(
                         "rounded-xl border p-2 text-xs font-semibold text-center transition-all cursor-pointer",
                         isAllowed
-                          ? "border-indigo-400 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200"
+                          ? "border-emerald-400 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
                           : "border-slate-200 text-slate-400 line-through bg-slate-50",
                       )}
                     >
@@ -700,7 +700,7 @@ function StudentDetail() {
                   type="checkbox"
                   checked={blockNetwork}
                   onChange={(e) => setBlockNetwork(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 />
               </label>
               <p className="text-[11px] text-slate-400">
@@ -713,7 +713,7 @@ function StudentDetail() {
               <Button
                 type="submit"
                 disabled={isSavingGuardrails}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
               >
                 {isSavingGuardrails ? "Updating Guardrails..." : "Save Sandbox Rights"}
               </Button>
@@ -737,7 +737,7 @@ function StudentDetail() {
       >
         <div className="grid gap-3 sm:grid-cols-4 mb-4">
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
-            <p className="text-lg font-bold text-indigo-600">{pipeline?.totalRuns || 48}</p>
+            <p className="text-lg font-bold text-emerald-600">{pipeline?.totalRuns || 48}</p>
             <p className="text-[10px] uppercase tracking-wider text-slate-500">Total Code Runs</p>
           </div>
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
@@ -749,7 +749,7 @@ function StudentDetail() {
             <p className="text-[10px] uppercase tracking-wider text-slate-500">Security Flags</p>
           </div>
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
-            <p className="text-lg font-bold text-purple-600">142ms</p>
+            <p className="text-lg font-bold text-emerald-600">142ms</p>
             <p className="text-[10px] uppercase tracking-wider text-slate-500">Avg Run Time</p>
           </div>
         </div>
@@ -809,7 +809,7 @@ function StudentDetail() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-indigo-600" /> Send Notification to {s.name}
+              <Bell className="h-5 w-5 text-emerald-600" /> Send Notification to {s.name}
             </DialogTitle>
             <DialogDescription>
               Direct dispatch to the student's dashboard inbox with optional parent notification.
@@ -846,7 +846,7 @@ function StudentDetail() {
                   type="checkbox"
                   checked={notifyParentCheck}
                   onChange={(e) => setNotifyParentCheck(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 />
               </label>
             </div>
@@ -858,7 +858,7 @@ function StudentDetail() {
               <Button
                 type="submit"
                 disabled={isSendingNotif}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 {isSendingNotif ? "Dispatching..." : "Dispatch Notification"}
               </Button>
@@ -983,7 +983,7 @@ function StudentDetail() {
         <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-indigo-600" />
+              <FileText className="h-5 w-5 text-emerald-600" />
               Official Student & Parent Progress Dossier
             </DialogTitle>
             <DialogDescription>
@@ -992,14 +992,14 @@ function StudentDetail() {
           </DialogHeader>
 
           <div className="border border-slate-200 rounded-2xl p-5 bg-white space-y-4 text-sm">
-            <div className="border-b border-indigo-100 pb-3 flex justify-between items-start">
+            <div className="border-b border-emerald-100 pb-3 flex justify-between items-start">
               <div>
-                <p className="font-bold text-indigo-600 text-base">Syntax2Code Academic Portal</p>
+                <p className="font-bold text-emerald-600 text-base">Syntax2Code Academic Portal</p>
                 <p className="text-xs text-slate-500">
                   Official Student Performance & Parent Assessment Report
                 </p>
               </div>
-              <span className="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded-full font-semibold">
+              <span className="bg-emerald-50 text-emerald-700 text-xs px-2.5 py-1 rounded-full font-semibold">
                 Term 2026-2027
               </span>
             </div>
@@ -1038,7 +1038,7 @@ function StudentDetail() {
 
             <div className="grid grid-cols-4 gap-2 text-center">
               <div className="border border-slate-200 p-2.5 rounded-xl">
-                <p className="text-base font-bold text-indigo-600">{s.score}</p>
+                <p className="text-base font-bold text-emerald-600">{s.score}</p>
                 <p className="text-[10px] text-slate-500 uppercase">S2C Score</p>
               </div>
               <div className="border border-slate-200 p-2.5 rounded-xl">
@@ -1072,7 +1072,7 @@ function StudentDetail() {
               <Button
                 type="button"
                 onClick={printOfficialReport}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2 shadow-sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2 shadow-sm"
               >
                 <FileText className="h-4 w-4" /> Print / Save as PDF
               </Button>

@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { Bar, Pill, Panel, PageHeader, Stat } from "@/client/components/app/primitives";
 import { getStudentDashboard, type StudentAssignmentCard } from "@/api/student.server";
 import { useSession } from "@/client/lib/auth-client";
+import { useSession as useAppSession } from "@/client/lib/session";
 import { cn } from "@/client/lib/utils";
 
 export const Route = createFileRoute("/student/")({
@@ -51,12 +52,13 @@ export const Route = createFileRoute("/student/")({
 export function StudentHome() {
   const data = Route.useLoaderData();
   const { data: session } = useSession();
+  const { user: appUser } = useAppSession();
 
   const profile = data.profile;
   const activeClass = data.activeClasses[0];
   const recommendedLesson = data.recommendedLesson;
 
-  const userName = session?.user?.name || "Student";
+  const userName = session?.user?.name || appUser?.name || "Student";
   const activePath = {
     id: 1,
     title: "Python Basics",
@@ -82,7 +84,7 @@ export function StudentHome() {
             <Link
               to="/student/learn/$pathId"
               params={{ pathId: activePath.id.toString() }}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 text-sm font-semibold text-white shadow-xs transition-colors"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 text-sm font-semibold text-white shadow-sm shadow-emerald-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               Continue learning <ArrowRight className="h-4 w-4" />
             </Link>
@@ -107,7 +109,7 @@ export function StudentHome() {
           label="Current level"
           value={`Lvl ${profile.level}`}
           sub={`${profile.xpTotal.toLocaleString()} XP earned`}
-          tone="indigo"
+          tone="emerald"
         />
         <Stat
           icon={<Zap className="h-4 w-4" />}
@@ -128,7 +130,7 @@ export function StudentHome() {
           label="Class standing"
           value="#4"
           sub="Out of 32 students"
-          tone="violet"
+          tone="emerald"
         />
       </div>
 
@@ -140,7 +142,7 @@ export function StudentHome() {
           action={
             <Link
               to="/student/learn"
-              className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+              className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
             >
               All paths
             </Link>
@@ -153,13 +155,13 @@ export function StudentHome() {
             <span className="text-slate-500">{activePath.xp.toLocaleString()} XP max</span>
           </div>
           <div className="mt-2">
-            <Bar value={activePath.progress} tone="indigo" />
+            <Bar value={activePath.progress} tone="emerald" />
           </div>
 
           {/* Clean, light-mode friendly Recommended Lesson Card */}
-          <div className="mt-5 rounded-2xl border border-indigo-200/80 dark:border-indigo-900/40 bg-gradient-to-br from-indigo-50/70 via-indigo-50/30 to-violet-50/20 dark:from-slate-800 dark:to-indigo-950/30 p-5 shadow-xs">
+          <div className="mt-5 rounded-2xl border border-emerald-200/80 dark:border-emerald-900/40 bg-gradient-to-br from-emerald-50/70 via-emerald-50/30 to-teal-50/20 dark:from-slate-800 dark:to-emerald-950/30 p-5 shadow-xs">
             <div className="flex items-center gap-2">
-              <Pill tone="indigo">Recommended Lesson</Pill>
+              <Pill tone="emerald">Recommended Lesson</Pill>
             </div>
             <p className="mt-2.5 text-base font-bold text-slate-900 dark:text-white">
               {recommendedLesson?.title || "No pending lessons"}
@@ -171,7 +173,7 @@ export function StudentHome() {
             <Link
               to="/student/learn/$pathId"
               params={{ pathId: activePath.id.toString() }}
-              className="mt-3.5 inline-flex h-9 items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 text-xs font-semibold text-white shadow-sm transition-colors"
+              className="mt-3.5 inline-flex h-9 items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 text-xs font-semibold text-white shadow-sm shadow-emerald-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               Resume lesson <ArrowRight className="h-3.5 w-3.5" />
             </Link>
@@ -182,9 +184,9 @@ export function StudentHome() {
               <Link
                 key={q.label}
                 to={q.to}
-                className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 transition-all hover:border-indigo-500/50 hover:bg-indigo-50/20 dark:hover:bg-indigo-950/20 shadow-2xs"
+                className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5 transition-all hover:border-emerald-500/50 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/20 shadow-2xs"
               >
-                <q.icon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                <q.icon className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">
                   {q.label}
                 </p>
@@ -232,7 +234,7 @@ export function StudentHome() {
           {data.assignedTeacher && (
             <Panel title="Class Mentor & Faculty" description="Your assigned academic instructor">
               <div className="flex items-start gap-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 p-4 shadow-2xs">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-500/20">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
                   <GraduationCap className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -240,9 +242,9 @@ export function StudentHome() {
                     <p className="text-sm font-semibold text-slate-900 dark:text-white">
                       {data.assignedTeacher.name}
                     </p>
-                    <Pill tone="indigo">Mentor</Pill>
+                    <Pill tone="emerald">Mentor</Pill>
                   </div>
-                  <p className="mt-0.5 text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                  <p className="mt-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                     {data.assignedTeacher.title}
                   </p>
                   <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
@@ -271,7 +273,7 @@ export function StudentHome() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              <ClipboardList className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               My Assigned Coursework & Coding Challenges
             </h2>
             <p className="text-xs text-slate-500">
@@ -281,7 +283,7 @@ export function StudentHome() {
           <Link
             to="/student/assignments"
             search={{}}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
           >
             <span>View All Assignments ({data.classAssignments?.length || 0})</span>
             <ArrowRight className="h-3.5 w-3.5" />
@@ -305,19 +307,19 @@ export function StudentHome() {
                     className={cn(
                       "group relative flex flex-col justify-between rounded-2xl border p-5 shadow-xs transition-all hover:shadow-md",
                       isSolved
-                        ? "border-indigo-200/80 dark:border-indigo-900/40 bg-white dark:bg-slate-900"
-                        : "border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-500/40",
+                        ? "border-emerald-200/80 dark:border-emerald-900/40 bg-white dark:bg-slate-900"
+                        : "border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-500/40",
                     )}
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
                         <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                          <GraduationCap className="h-3 w-3 text-indigo-600 dark:text-indigo-400" />
+                          <GraduationCap className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                           {task.className}
                         </span>
 
                         {task.status === "Graded" ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 dark:bg-indigo-950 px-2.5 py-0.5 text-[11px] font-bold text-indigo-800 dark:text-indigo-300">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
                             <Check className="h-3 w-3 stroke-[3]" />
                             Score: {task.score}%
                           </span>
@@ -334,7 +336,7 @@ export function StudentHome() {
                         )}
                       </div>
 
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                         {task.title}
                       </h3>
                       <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
@@ -348,8 +350,8 @@ export function StudentHome() {
                         >
                           {diff}
                         </Pill>
-                        <span className="inline-flex items-center gap-1 rounded bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
-                          <Sparkles className="h-3 w-3 text-indigo-600 dark:text-indigo-400" />+
+                        <span className="inline-flex items-center gap-1 rounded bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                          <Sparkles className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />+
                           {xpVal} XP
                         </span>
                         {tcCount > 0 && (
@@ -368,8 +370,8 @@ export function StudentHome() {
                           className={cn(
                             "flex h-9 w-full items-center justify-center gap-2 rounded-xl text-xs font-semibold shadow-xs transition-all",
                             isSolved
-                              ? "border border-indigo-300 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-300 hover:bg-indigo-100"
-                              : "bg-indigo-600 hover:bg-indigo-700 text-white font-semibold",
+                              ? "border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100"
+                              : "bg-emerald-600 hover:bg-emerald-700 text-white font-semibold",
                           )}
                         >
                           <Terminal className="h-3.5 w-3.5" />

@@ -85,7 +85,7 @@ function AdminSchools() {
         actions={
           <button
             onClick={() => setAdd(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
           >
             <Plus className="h-4 w-4" /> Add school
           </button>
@@ -127,7 +127,7 @@ function AdminSchools() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search schools…"
-              className="h-10 w-full rounded-xl border border-slate-200 pr-3 pl-9 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+              className="h-10 w-full rounded-xl border border-slate-200 pr-3 pl-9 text-sm outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
             />
           </div>
           <FilterChips options={plans} value={plan} onChange={setPlan} />
@@ -168,7 +168,7 @@ function AdminSchools() {
                     <div className="w-20">
                       <Bar
                         value={s.health}
-                        tone={s.health >= 80 ? "emerald" : s.health >= 60 ? "indigo" : "amber"}
+                        tone={s.health >= 80 ? "emerald" : s.health >= 60 ? "emerald" : "amber"}
                       />
                     </div>
                   </td>
@@ -189,7 +189,7 @@ function AdminSchools() {
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={() => setDetail(s)}
-                      className="text-xs font-semibold text-indigo-600 hover:underline"
+                      className="text-xs font-semibold text-emerald-600 hover:underline"
                     >
                       View
                     </button>
@@ -276,7 +276,7 @@ function AdminSchools() {
                   setIsSubmitting(false);
                 }
               }}
-              className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
             >
               {isSubmitting ? "Creating…" : "Create school"}
             </button>
@@ -376,7 +376,7 @@ function AdminSchools() {
                     description: `${detail.name} · pro-rated invoice raised.`,
                   });
                 }}
-                className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+                className="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
               >
                 Add 200 seats
               </button>

@@ -71,7 +71,7 @@ function SchoolHome() {
           <>
             <button
               onClick={handleGenerateBoardReport}
-              className="inline-flex h-10 items-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+              className="inline-flex h-10 items-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
             >
               Generate board report
             </button>
@@ -157,7 +157,7 @@ function SchoolHome() {
                 </div>
                 <Bar
                   value={r.value}
-                  tone={r.value >= 80 ? "emerald" : r.value >= 70 ? "indigo" : "amber"}
+                  tone={r.value >= 80 ? "emerald" : r.value >= 70 ? "emerald" : "amber"}
                 />
               </div>
             ))}
@@ -172,7 +172,7 @@ function SchoolHome() {
           action={
             <Link
               to="/school/classes"
-              className="text-xs font-semibold text-indigo-600 hover:underline"
+              className="text-xs font-semibold text-emerald-600 hover:underline"
             >
               Manage classes
             </Link>
@@ -192,7 +192,7 @@ function SchoolHome() {
                     <Bar
                       value={c.completion}
                       tone={
-                        c.completion >= 80 ? "emerald" : c.completion >= 65 ? "indigo" : "amber"
+                        c.completion >= 80 ? "emerald" : c.completion >= 65 ? "emerald" : "amber"
                       }
                     />
                   </div>
@@ -211,7 +211,7 @@ function SchoolHome() {
           action={
             <Link
               to="/school/teachers"
-              className="text-xs font-semibold text-indigo-600 hover:underline"
+              className="text-xs font-semibold text-emerald-600 hover:underline"
             >
               Manage teachers
             </Link>
@@ -235,7 +235,7 @@ function SchoolHome() {
             <div className="mt-2 flex justify-end">
               <Link
                 to="/school/teachers"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700"
               >
                 View all faculty profiles →
               </Link>

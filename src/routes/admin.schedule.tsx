@@ -233,9 +233,9 @@ function AdminSchedulePage() {
       case "maintenance":
         return <Wrench className="h-4 w-4 text-amber-600" />;
       case "cron_job":
-        return <Cpu className="h-4 w-4 text-indigo-600" />;
+        return <Cpu className="h-4 w-4 text-emerald-600" />;
       case "competition":
-        return <Award className="h-4 w-4 text-purple-600" />;
+        return <Award className="h-4 w-4 text-emerald-600" />;
       case "webinar":
         return <Video className="h-4 w-4 text-sky-600" />;
       case "curriculum_release":
@@ -263,7 +263,7 @@ function AdminSchedulePage() {
         actions={
           <button
             onClick={handleOpenAdd}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition"
           >
             <Plus className="h-4 w-4" /> Schedule platform task
           </button>
@@ -315,7 +315,7 @@ function AdminSchedulePage() {
               onClick={() => setActiveTab(tab.value)}
               className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition ${
                 isActive
-                  ? "bg-indigo-600 text-white shadow-xs"
+                  ? "bg-emerald-600 text-white shadow-xs"
                   : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200"
               }`}
             >
@@ -337,7 +337,7 @@ function AdminSchedulePage() {
               placeholder="Search tasks, descriptions, schools..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none"
+              className="h-9 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-none"
             />
           </div>
 
@@ -345,7 +345,7 @@ function AdminSchedulePage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-9 rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs font-medium text-slate-700 focus:border-indigo-500 focus:bg-white focus:outline-none"
+            className="h-9 rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs font-medium text-slate-700 focus:border-emerald-500 focus:bg-white focus:outline-none"
           >
             <option value="all">All Statuses</option>
             <option value="scheduled">Scheduled</option>
@@ -358,7 +358,7 @@ function AdminSchedulePage() {
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="h-9 rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs font-medium text-slate-700 focus:border-indigo-500 focus:bg-white focus:outline-none"
+            className="h-9 rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs font-medium text-slate-700 focus:border-emerald-500 focus:bg-white focus:outline-none"
           >
             <option value="all">All Priorities</option>
             <option value="critical">Critical</option>
@@ -420,7 +420,7 @@ function AdminSchedulePage() {
                     </span>
 
                     {item.isAutomated && (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                         <Zap className="h-2.5 w-2.5" /> Automated Cron
                       </span>
                     )}
@@ -478,7 +478,7 @@ function AdminSchedulePage() {
                   <button
                     onClick={() => handleExecute(item.id, item.title)}
                     disabled={executingId === item.id}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 transition"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 transition"
                   >
                     <Play className="h-3.5 w-3.5 fill-current" />
                     {executingId === item.id ? "Running..." : "Run / Trigger"}
@@ -528,7 +528,7 @@ function AdminSchedulePage() {
                 placeholder="e.g. Weekly Global XP Audit & Recalculation"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none"
+                className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
                 required
               />
             </div>
@@ -540,7 +540,7 @@ function AdminSchedulePage() {
                 placeholder="Detailed objectives or maintenance scope..."
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none"
+                className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
               />
             </div>
 
@@ -550,7 +550,7 @@ function AdminSchedulePage() {
                 <select
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                 >
                   <option value="maintenance">System Maintenance</option>
                   <option value="cron_job">Automated Cron Job</option>
@@ -566,7 +566,7 @@ function AdminSchedulePage() {
                 <select
                   value={form.priority}
                   onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                 >
                   <option value="critical">Critical</option>
                   <option value="high">High</option>
@@ -584,7 +584,7 @@ function AdminSchedulePage() {
                 <select
                   value={form.targetSchoolId}
                   onChange={(e) => setForm({ ...form, targetSchoolId: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                 >
                   <option value="all">All Partner Schools (Network-wide)</option>
                   {schools.map((s) => (
@@ -602,7 +602,7 @@ function AdminSchedulePage() {
                 <select
                   value={form.targetRole}
                   onChange={(e) => setForm({ ...form, targetRole: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                 >
                   <option value="all">All Roles (Students, Teachers, Admins)</option>
                   <option value="student">Students Only</option>
@@ -621,7 +621,7 @@ function AdminSchedulePage() {
                   type="datetime-local"
                   value={form.scheduledStart}
                   onChange={(e) => setForm({ ...form, scheduledStart: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                   required
                 />
               </div>
@@ -634,7 +634,7 @@ function AdminSchedulePage() {
                   type="datetime-local"
                   value={form.scheduledEnd}
                   onChange={(e) => setForm({ ...form, scheduledEnd: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                   required
                 />
               </div>
@@ -646,7 +646,7 @@ function AdminSchedulePage() {
                 <select
                   value={form.recurrence}
                   onChange={(e) => setForm({ ...form, recurrence: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                 >
                   <option value="once">Once (Single Run)</option>
                   <option value="daily">Daily</option>
@@ -665,7 +665,7 @@ function AdminSchedulePage() {
                     id="isAutomated"
                     checked={form.isAutomated}
                     onChange={(e) => setForm({ ...form, isAutomated: e.target.checked })}
-                    className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                   />
                   <label htmlFor="isAutomated" className="text-xs font-medium text-slate-700">
                     Automated Execution Engine
@@ -683,7 +683,7 @@ function AdminSchedulePage() {
                 placeholder="e.g. recalc_xp_streaks or https://syntax2code.junior/hackathon-2026"
                 value={form.actionPayload}
                 onChange={(e) => setForm({ ...form, actionPayload: e.target.value })}
-                className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none"
+                className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
               />
             </div>
 
@@ -698,7 +698,7 @@ function AdminSchedulePage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 transition"
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition"
               >
                 {isSubmitting ? "Saving..." : editingItem ? "Save Changes" : "Queue Schedule Task"}
               </button>

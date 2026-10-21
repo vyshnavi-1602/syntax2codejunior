@@ -30,7 +30,7 @@ function SyncRolePage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 text-slate-500">
-      <Loader2 className="h-8 w-8 animate-spin text-indigo-600 mb-4" />
+      <Loader2 className="h-8 w-8 animate-spin text-emerald-600 mb-4" />
       <p>Setting up your {role} workspace...</p>
     </div>
   );

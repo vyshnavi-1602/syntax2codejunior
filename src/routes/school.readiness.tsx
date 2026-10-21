@@ -89,7 +89,7 @@ function ReadinessPage() {
         actions={
           <button
             onClick={handleDownloadReport}
-            className="inline-flex h-10 items-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+            className="inline-flex h-10 items-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
           >
             Download index report
           </button>
@@ -147,7 +147,7 @@ function ReadinessPage() {
                 <div className="mt-1.5">
                   <Bar
                     value={r.value}
-                    tone={r.value >= 80 ? "emerald" : r.value >= 70 ? "indigo" : "amber"}
+                    tone={r.value >= 80 ? "emerald" : r.value >= 70 ? "emerald" : "amber"}
                   />
                 </div>
                 <p className="mt-1 text-[11px] text-slate-500">
@@ -179,7 +179,7 @@ function ReadinessPage() {
                 onClick={() =>
                   toast.success("Added to institutional action plan", { description: r.title })
                 }
-                className="mt-3 text-xs font-semibold text-indigo-600 hover:underline"
+                className="mt-3 text-xs font-semibold text-emerald-600 hover:underline"
               >
                 Add to action plan →
               </button>

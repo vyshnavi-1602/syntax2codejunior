@@ -188,7 +188,7 @@ function AdminGamification() {
         actions={
           <button
             onClick={handlePublishAll}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700"
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-xs hover:bg-emerald-700"
           >
             <Sparkles className="h-4 w-4" /> Publish rules
           </button>
@@ -234,7 +234,7 @@ function AdminGamification() {
                   key={prof.name}
                   type="button"
                   onClick={() => handleApplyProfile(prof)}
-                  className="flex flex-col items-start justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-4 text-left transition-all hover:border-indigo-300 hover:bg-indigo-50/40 shadow-xs"
+                  className="flex flex-col items-start justify-between rounded-xl border border-slate-200 bg-slate-50/60 p-4 text-left transition-all hover:border-emerald-300 hover:bg-emerald-50/40 shadow-xs"
                 >
                   <div>
                     <div className="flex items-center gap-1.5">
@@ -243,7 +243,7 @@ function AdminGamification() {
                     </div>
                     <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">{prof.desc}</p>
                   </div>
-                  <span className="mt-3 text-[10px] font-semibold text-indigo-600">
+                  <span className="mt-3 text-[10px] font-semibold text-emerald-600">
                     Apply Profile →
                   </span>
                 </button>
@@ -264,7 +264,7 @@ function AdminGamification() {
                   }
                   toast.success("XP rules saved successfully");
                 }}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700"
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700"
               >
                 <CheckCircle2 className="h-3.5 w-3.5" /> Save Rules
               </button>
@@ -290,7 +290,7 @@ function AdminGamification() {
                         l.map((x) => (x.id === r.id ? { ...x, value: Number(e.target.value) } : x)),
                       )
                     }
-                    className="mt-2 w-full accent-indigo-600"
+                    className="mt-2 w-full accent-emerald-600"
                   />
                 </div>
               ))}
@@ -307,7 +307,7 @@ function AdminGamification() {
                 key={l.level}
                 className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs"
               >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-teal-500 text-sm font-semibold text-white shadow-xs">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-sm font-semibold text-white shadow-xs">
                   {l.level}
                 </div>
                 <div className="min-w-32 flex-1">
@@ -317,7 +317,7 @@ function AdminGamification() {
                   </p>
                 </div>
                 <div className="w-40 hidden sm:block">
-                  <Bar value={Math.min(100, (i + 1) * 16)} tone="indigo" />
+                  <Bar value={Math.min(100, (i + 1) * 16)} tone="emerald" />
                 </div>
                 <button
                   onClick={() => {
@@ -341,7 +341,7 @@ function AdminGamification() {
           action={
             <button
               onClick={() => setOpen(true)}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-indigo-600 px-3 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700"
             >
               <Plus className="h-3.5 w-3.5" /> Create badge
             </button>
@@ -390,7 +390,7 @@ function AdminGamification() {
                       l.map((x) => (x.id === w.id ? { ...x, value: Number(e.target.value) } : x)),
                     )
                   }
-                  className="mt-2 w-full accent-indigo-600"
+                  className="mt-2 w-full accent-emerald-600"
                 />
               </div>
             ))}
@@ -415,7 +415,7 @@ function AdminGamification() {
                     });
                   }
                 }}
-                className="h-10 rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700"
+                className="h-10 rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-xs hover:bg-emerald-700"
               >
                 Save formula
               </button>
@@ -451,7 +451,7 @@ function AdminGamification() {
                   required
                   value={levelForm.title}
                   onChange={(e) => setLevelForm({ ...levelForm, title: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-indigo-400"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-emerald-400"
                 />
               </div>
               <div>
@@ -461,7 +461,7 @@ function AdminGamification() {
                   required
                   value={levelForm.xp}
                   onChange={(e) => setLevelForm({ ...levelForm, xp: Number(e.target.value) })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-indigo-400"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-emerald-400"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
@@ -474,7 +474,7 @@ function AdminGamification() {
                 </button>
                 <button
                   type="submit"
-                  className="h-9 rounded-xl bg-indigo-600 px-3.5 text-xs font-semibold text-white hover:bg-indigo-700"
+                  className="h-9 rounded-xl bg-emerald-600 px-3.5 text-xs font-semibold text-white hover:bg-emerald-700"
                 >
                   Save Level
                 </button>
@@ -499,13 +499,13 @@ function AdminGamification() {
               value={badge.name}
               onChange={(e) => setBadge({ ...badge, name: e.target.value })}
               placeholder="Badge name"
-              className="mt-4 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+              className="mt-4 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
             />
             <input
               value={badge.criteria}
               onChange={(e) => setBadge({ ...badge, criteria: e.target.value })}
               placeholder="Unlock criteria"
-              className="mt-3 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+              className="mt-3 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
             />
             <div className="mt-3">
               <p className="mb-2 text-xs font-medium text-slate-500">Colour</p>
@@ -542,7 +542,7 @@ function AdminGamification() {
                   setBadge({ name: "", criteria: "", tone: "amber" });
                   toast.success("Badge created", { description: badge.name || "New Badge" });
                 }}
-                className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+                className="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
               >
                 Create badge
               </button>

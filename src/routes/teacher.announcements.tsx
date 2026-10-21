@@ -62,14 +62,14 @@ function AnnouncementsPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Announcement title"
-            className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+            className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
           />
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={5}
             placeholder="Write your message…"
-            className="mt-3 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+            className="mt-3 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
           />
           <p className="mt-4 text-xs font-semibold tracking-wide text-slate-500 uppercase">
             Audience
@@ -82,7 +82,7 @@ function AnnouncementsPage() {
                 className={cn(
                   "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
                   audience.includes(c.name)
-                    ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                     : "border-slate-200 text-slate-600 hover:bg-slate-50",
                 )}
               >
@@ -127,7 +127,7 @@ function AnnouncementsPage() {
                   description: `${audience.length} audience group(s) notified.`,
                 });
               }}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
             >
               <Send className="h-4 w-4" /> Send now
             </button>
@@ -153,7 +153,7 @@ function AnnouncementsPage() {
               }) => (
                 <div key={a.id} className="rounded-xl border border-slate-200 p-3.5">
                   <div className="flex items-center gap-2">
-                    <Megaphone className="h-3.5 w-3.5 text-indigo-600" />
+                    <Megaphone className="h-3.5 w-3.5 text-emerald-600" />
                     <p className="text-sm font-medium text-slate-900">{a.title}</p>
                   </div>
                   <p className="mt-1 text-xs text-slate-500">{a.body}</p>

@@ -8,9 +8,9 @@ const toneMap: Record<Tone, string> = {
     "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
   sky: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800",
   violet:
-    "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/60 dark:text-violet-300 dark:border-violet-800",
+    "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800",
   indigo:
-    "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800",
+    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800",
   amber:
     "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800",
   emerald:
@@ -114,13 +114,13 @@ export function Stat({
 
 export function Bar({
   value,
-  tone = "indigo",
+  tone = "emerald",
 }: {
   value: number;
   tone?: "indigo" | "emerald" | "amber" | "sky";
 }) {
   const colors = {
-    indigo: "bg-indigo-500",
+    indigo: "bg-emerald-500",
     emerald: "bg-emerald-500",
     amber: "bg-amber-500",
     sky: "bg-sky-500",
@@ -159,7 +159,7 @@ export function PageHeader({
 
 export function Avatar({
   initials,
-  tone = "indigo",
+  tone = "emerald",
   size = "md",
 }: {
   initials: string;
@@ -170,7 +170,7 @@ export function Avatar({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-teal-500 font-semibold text-white",
+        "inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 font-semibold text-white",
         sizes[size],
       )}
       data-tone={tone}
@@ -199,8 +199,8 @@ export function FilterChips<T extends string>({
           className={cn(
             "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
             value === o
-              ? "border-indigo-200 bg-indigo-50 text-indigo-700"
-              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300",
           )}
         >
           {o}

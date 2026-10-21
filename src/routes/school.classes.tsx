@@ -181,12 +181,12 @@ function SchoolClasses() {
               onClick={() => setRolloverOpen(true)}
               className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition"
             >
-              <GraduationCap className="h-4 w-4 text-indigo-600" />
+              <GraduationCap className="h-4 w-4 text-emerald-600" />
               Promote & Rollover
             </button>
             <button
               onClick={() => setOpen(true)}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition"
             >
               <Plus className="h-4 w-4" /> Add class section
             </button>
@@ -241,7 +241,7 @@ function SchoolClasses() {
                     <span>Curriculum Completion</span>
                     <span className="font-medium text-slate-700">{c.completion}%</span>
                   </div>
-                  <Bar value={c.completion} tone={c.completion >= 80 ? "emerald" : "indigo"} />
+                  <Bar value={c.completion} tone={c.completion >= 80 ? "emerald" : "emerald"} />
                 </div>
               </div>
 
@@ -303,7 +303,7 @@ function SchoolClasses() {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="e.g. Grade 6A - Python Explorers"
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -312,7 +312,7 @@ function SchoolClasses() {
                   <select
                     value={form.grade}
                     onChange={(e) => setForm({ ...form, grade: e.target.value })}
-                    className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                    className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-400"
                   >
                     {["5", "6", "7", "8", "9", "10", "11", "12"].map((g) => (
                       <option key={g} value={g}>
@@ -326,7 +326,7 @@ function SchoolClasses() {
                   <select
                     value={form.section}
                     onChange={(e) => setForm({ ...form, section: e.target.value })}
-                    className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                    className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-400"
                   >
                     {["A", "B", "C", "D", "E"].map((s) => (
                       <option key={s} value={s}>
@@ -344,7 +344,7 @@ function SchoolClasses() {
                   required
                   value={form.teacherId}
                   onChange={(e) => setForm({ ...form, teacherId: e.target.value })}
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-400"
                 >
                   <option value="">Select a teacher...</option>
                   {teachers.map((t) => (
@@ -366,7 +366,7 @@ function SchoolClasses() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
                 >
                   <Plus className="h-4 w-4" /> Create Class
                 </button>
@@ -394,7 +394,7 @@ function SchoolClasses() {
                   required
                   value={editingClass.name}
                   onChange={(e) => setEditingClass({ ...editingClass, name: e.target.value })}
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -403,7 +403,7 @@ function SchoolClasses() {
                   <select
                     value={editingClass.grade}
                     onChange={(e) => setEditingClass({ ...editingClass, grade: e.target.value })}
-                    className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                    className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-400"
                   >
                     {["5", "6", "7", "8", "9", "10", "11", "12"].map((g) => (
                       <option key={g} value={g}>
@@ -417,7 +417,7 @@ function SchoolClasses() {
                   <select
                     value={editingClass.section}
                     onChange={(e) => setEditingClass({ ...editingClass, section: e.target.value })}
-                    className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                    className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-400"
                   >
                     {["A", "B", "C", "D", "E"].map((s) => (
                       <option key={s} value={s}>
@@ -435,7 +435,7 @@ function SchoolClasses() {
                   required
                   value={editingClass.teacherId}
                   onChange={(e) => setEditingClass({ ...editingClass, teacherId: e.target.value })}
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-400"
                 >
                   {teachers.map((t) => (
                     <option key={t.id} value={t.id}>
@@ -456,7 +456,7 @@ function SchoolClasses() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                  className="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
                 >
                   Save Changes
                 </button>
@@ -477,7 +477,7 @@ function SchoolClasses() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                 <GraduationCap className="h-5 w-5" />
               </div>
               <div>
@@ -500,7 +500,7 @@ function SchoolClasses() {
                     className={cn(
                       "flex items-center justify-center gap-1.5 rounded-xl border p-2.5 text-xs font-semibold transition",
                       rolloverMode === "transfer"
-                        ? "border-indigo-400 bg-indigo-50 text-indigo-700"
+                        ? "border-emerald-400 bg-emerald-50 text-emerald-700"
                         : "border-slate-200 text-slate-600 hover:bg-slate-50",
                     )}
                   >
@@ -512,7 +512,7 @@ function SchoolClasses() {
                     className={cn(
                       "flex items-center justify-center gap-1.5 rounded-xl border p-2.5 text-xs font-semibold transition",
                       rolloverMode === "graduate"
-                        ? "border-indigo-400 bg-indigo-50 text-indigo-700"
+                        ? "border-emerald-400 bg-emerald-50 text-emerald-700"
                         : "border-slate-200 text-slate-600 hover:bg-slate-50",
                     )}
                   >
@@ -529,7 +529,7 @@ function SchoolClasses() {
                   required
                   value={rolloverSource}
                   onChange={(e) => setRolloverSource(e.target.value)}
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-400"
                 >
                   <option value="">Select source class</option>
                   {classes.map((c) => (
@@ -549,7 +549,7 @@ function SchoolClasses() {
                     required
                     value={rolloverTarget}
                     onChange={(e) => setRolloverTarget(e.target.value)}
-                    className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                    className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-400"
                   >
                     <option value="">Select destination class</option>
                     {classes
@@ -584,7 +584,7 @@ function SchoolClasses() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
                 >
                   <GraduationCap className="h-4 w-4" /> Execute Rollover
                 </button>

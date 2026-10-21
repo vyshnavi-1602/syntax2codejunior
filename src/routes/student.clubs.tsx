@@ -239,12 +239,12 @@ function ClubsPage() {
               className={cn(
                 "cursor-pointer rounded-2xl border bg-white p-5 transition-all hover:-translate-y-0.5 hover:shadow-md",
                 activeId === c.id
-                  ? "border-indigo-300 ring-2 ring-indigo-100 shadow-sm"
+                  ? "border-emerald-300 ring-2 ring-emerald-100 shadow-sm"
                   : "border-slate-200",
               )}
             >
               <div className="flex items-center justify-between">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-50 to-teal-50 text-indigo-600">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 text-emerald-600">
                   <Users className="h-5 w-5" />
                 </span>
                 {isJoined ? (
@@ -256,8 +256,8 @@ function ClubsPage() {
               <h3 className="mt-3 text-sm font-semibold text-slate-900">{c.name}</h3>
               <p className="mt-1 text-xs leading-relaxed text-slate-500 line-clamp-2">{c.blurb}</p>
 
-              <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-indigo-100/70 bg-indigo-50/60 px-2.5 py-1 text-xs font-medium text-indigo-700 w-full">
-                <GraduationCap className="h-3.5 w-3.5 shrink-0 text-indigo-600" />
+              <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-emerald-100/70 bg-emerald-50/60 px-2.5 py-1 text-xs font-medium text-emerald-700 w-full">
+                <GraduationCap className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
                 <span className="truncate">
                   Mentor: <strong className="font-semibold">{c.mentor}</strong>
                 </span>
@@ -289,7 +289,7 @@ function ClubsPage() {
                   "mt-4 h-9 w-full rounded-xl text-xs font-semibold transition-colors cursor-pointer",
                   isJoined
                     ? "border border-slate-200 text-slate-600 hover:bg-slate-50"
-                    : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm",
+                    : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm",
                 )}
               >
                 {isJoined ? "Leave Club" : "Join Club"}
@@ -309,14 +309,14 @@ function ClubsPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setMentorModalOpen(true)}
-                className="h-8 gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-xs"
+                className="h-8 gap-1.5 border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-xs"
               >
-                <HelpCircle className="h-3.5 w-3.5 text-indigo-600" /> Ask Mentor
+                <HelpCircle className="h-3.5 w-3.5 text-emerald-600" /> Ask Mentor
               </Button>
               <Button
                 size="sm"
                 onClick={() => setPostModalOpen(true)}
-                className="h-8 gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs shadow-sm"
+                className="h-8 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs shadow-sm"
               >
                 <PlusCircle className="h-3.5 w-3.5" /> Share Update
               </Button>
@@ -334,7 +334,7 @@ function ClubsPage() {
                 className={cn(
                   "rounded-lg px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer",
                   filterCategory === cat
-                    ? "bg-indigo-50 font-bold text-indigo-700 ring-1 ring-indigo-200"
+                    ? "bg-emerald-50 font-bold text-emerald-700 ring-1 ring-emerald-200"
                     : "text-slate-600 hover:bg-slate-100",
                 )}
               >
@@ -357,7 +357,7 @@ function ClubsPage() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
+                      <div className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">
                         {f.who.substring(0, 2).toUpperCase()}
                       </div>
                       <p className="text-sm font-semibold text-slate-900">{f.who}</p>
@@ -371,7 +371,7 @@ function ClubsPage() {
                           f.category === "Question" &&
                             "bg-amber-50 text-amber-700 border border-amber-100",
                           f.category === "Announcement" &&
-                            "bg-purple-50 text-purple-700 border border-purple-100",
+                            "bg-teal-50 text-teal-700 border border-teal-100",
                           f.category === "Discussion" &&
                             "bg-sky-50 text-sky-700 border border-sky-100",
                         )}
@@ -406,7 +406,7 @@ function ClubsPage() {
                             description: "Viewing discussion thread with club members.",
                           })
                         }
-                        className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-indigo-600 cursor-pointer"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-emerald-600 cursor-pointer"
                       >
                         <MessageSquare className="h-3.5 w-3.5" />
                         <span>{f.commentsCount} comments</span>
@@ -435,7 +435,7 @@ function ClubsPage() {
               onClick={() => setPostModalOpen(true)}
               className="w-full justify-start text-xs text-slate-500 hover:text-slate-900 border-dashed"
             >
-              <PlusCircle className="mr-2 h-3.5 w-3.5 text-indigo-600" /> Share a project update,
+              <PlusCircle className="mr-2 h-3.5 w-3.5 text-emerald-600" /> Share a project update,
               question, or code tip with {active.name}...
             </Button>
           </div>
@@ -443,9 +443,9 @@ function ClubsPage() {
 
         <div className="space-y-6">
           <Panel title="Mentor Spotlight">
-            <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/50 to-white p-4">
+            <div className="rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50/50 to-white p-4">
               <div className="flex items-center gap-3">
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white font-bold text-base shadow-sm">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white font-bold text-base shadow-sm">
                   {active.mentor
                     .split(" ")
                     .map((n: string) => n[0])
@@ -463,7 +463,7 @@ function ClubsPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setMentorModalOpen(true)}
-                className="mt-3 w-full text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                className="mt-3 w-full text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50"
               >
                 Send Question to Mentor
               </Button>
@@ -486,7 +486,7 @@ function ClubsPage() {
                     onClick={() =>
                       toast.success("Reminder set!", { description: `${c.name} · ${c.meets}` })
                     }
-                    className="text-xs font-semibold text-indigo-600 hover:underline cursor-pointer"
+                    className="text-xs font-semibold text-emerald-600 hover:underline cursor-pointer"
                   >
                     Remind me
                   </button>
@@ -502,7 +502,7 @@ function ClubsPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Code2 className="h-5 w-5 text-indigo-600" /> Share with {active.name}
+              <Code2 className="h-5 w-5 text-emerald-600" /> Share with {active.name}
             </DialogTitle>
             <DialogDescription>
               Post an update, demo your latest project build, or spark a conversation with club
@@ -527,7 +527,7 @@ function ClubsPage() {
                     className={cn(
                       "rounded-lg border p-2 text-xs font-medium text-center transition-colors cursor-pointer",
                       postCategory === item.id
-                        ? "border-indigo-600 bg-indigo-50 font-bold text-indigo-700 ring-1 ring-indigo-200"
+                        ? "border-emerald-600 bg-emerald-50 font-bold text-emerald-700 ring-1 ring-emerald-200"
                         : "border-slate-200 text-slate-600 hover:bg-slate-50",
                     )}
                   >
@@ -565,7 +565,7 @@ function ClubsPage() {
                 type="checkbox"
                 checked={notifyMentor}
                 onChange={(e) => setNotifyMentor(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
               />
               <label htmlFor="notify-mentor" className="text-xs text-slate-600 cursor-pointer">
                 Tag club mentor <strong>{active.mentor}</strong> for review
@@ -578,7 +578,7 @@ function ClubsPage() {
               </Button>
               <Button
                 type="submit"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
               >
                 <Send className="h-3.5 w-3.5" /> Publish Post
               </Button>
@@ -592,15 +592,15 @@ function ClubsPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5 text-indigo-600" /> Ask {active.mentor}
+              <GraduationCap className="h-5 w-5 text-emerald-600" /> Ask {active.mentor}
             </DialogTitle>
             <DialogDescription>
               Direct question to your club faculty lead. Responses appear in your club inquiry feed.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAskMentor} className="space-y-4 py-2">
-            <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 text-xs text-indigo-800">
-              <Sparkles className="inline h-3.5 w-3.5 mr-1 text-indigo-600" />
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3 text-xs text-emerald-800">
+              <Sparkles className="inline h-3.5 w-3.5 mr-1 text-emerald-600" />
               Mentors provide architectural guidance, debugging tips, and project direction.
             </div>
 
@@ -622,7 +622,7 @@ function ClubsPage() {
               </Button>
               <Button
                 type="submit"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
               >
                 <Send className="h-3.5 w-3.5" /> Submit to Mentor
               </Button>

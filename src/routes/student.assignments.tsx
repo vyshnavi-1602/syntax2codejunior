@@ -1,5 +1,5 @@
 import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Search,
   CheckCircle2,
@@ -25,6 +25,9 @@ import {
   Eye,
   ListFilter,
   CheckCircle,
+  Lock,
+  Unlock,
+  Expand,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/client/components/app/primitives";
@@ -156,6 +159,15 @@ function StudentAssignmentsPage() {
   const [missionOutputLog, setMissionOutputLog] = useState<string[]>([]);
   const [missionAccomplished, setMissionAccomplished] = useState(false);
 
+  // Anti-cheating, Tab Monitoring & Fullscreen Lock states
+  const [securityViolations, setSecurityViolations] = useState(0);
+  const [showFullscreenBarrier, setShowFullscreenBarrier] = useState(false);
+  const [violationToastMessage, setViolationToastMessage] = useState("");
+  const [wasAutoSubmitted, setWasAutoSubmitted] = useState(false);
+  const isExitingIntentionallyRef = useRef(false);
+  const lastViolationTimeRef = useRef(0);
+  const handleSubmitQuizRef = useRef<(isAuto?: boolean) => void>(() => {});
+
   const searchParams = Route.useSearch();
   const [quizCurrentIndex, setQuizCurrentIndex] = useState(0);
   const [studentAnswers, setStudentAnswers] = useState<Record<string, string>>({});
@@ -214,11 +226,18 @@ function StudentAssignmentsPage() {
     };
   }, [isDraggingLeft, isDraggingMiddle, leftWidth]);
 
-  const handleStartAssignmentDirectly = (card: StudentAssignmentCard) => {
+  const handleStartAssignmentDirectly = async (card: StudentAssignmentCard) => {
     setProtocolCard(null);
     setActiveMission(card);
     setMissionIndex(0);
     setMissionAccomplished(false);
+    setSecurityViolations(0);
+    setWasAutoSubmitted(false);
+    setShowFullscreenBarrier(false);
+    setViolationToastMessage("");
+    isExitingIntentionallyRef.current = false;
+    lastViolationTimeRef.current = 0;
+
     const limitSec = (card.timeLimitMinutes || (card.id === 9001 ? 60 : 120)) * 60;
     setMissionTimerSeconds(limitSec - 4);
     if (card.title.toLowerCase().includes("cognizant")) {
@@ -226,6 +245,15 @@ function StudentAssignmentsPage() {
     } else {
       setMissionLang("Java");
     }
+
+    try {
+      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch {
+      setShowFullscreenBarrier(true);
+    }
+
     toast.success(`Fullscreen IDE Initialized: ${card.title}`);
   };
 
@@ -253,10 +281,123 @@ function StudentAssignmentsPage() {
     return () => clearInterval(interval);
   }, [activeMission, missionAccomplished]);
 
+  // Anti-Cheating & Tab Monitoring Listener: detects tab switching & exiting fullscreen for both Mission and MCQ
+  useEffect(() => {
+    const isAssessmentActive =
+      (!!activeMission && !missionAccomplished) || (!!activeQuizCard && !quizResult);
+    if (!isAssessmentActive) return;
+
+    isExitingIntentionallyRef.current = false;
+
+    // Check initial fullscreen state
+    if (!document.fullscreenElement) {
+      setShowFullscreenBarrier(true);
+    }
+
+    const triggerViolation = (reason: string) => {
+      if (isExitingIntentionallyRef.current) return;
+      const now = Date.now();
+      // Debounce rapid multi-events (blur + visibilitychange + fullscreenchange)
+      if (now - lastViolationTimeRef.current < 1500) return;
+      lastViolationTimeRef.current = now;
+
+      setSecurityViolations((prev) => {
+        const nextCount = prev + 1;
+        if (nextCount >= 3) {
+          isExitingIntentionallyRef.current = true;
+          if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {});
+          }
+          setShowFullscreenBarrier(false);
+          setWasAutoSubmitted(true);
+          if (activeMission) {
+            setMissionAccomplished(true);
+            toast.error("Assignment auto-submitted successfully!", {
+              description: "Security violation limit reached (3/3). Assessment locked.",
+            });
+          } else if (activeQuizCard) {
+            toast.error("Quiz auto-submitted successfully!", {
+              description: "Security violation limit reached (3/3). Quiz locked.",
+            });
+            handleSubmitQuizRef.current(true);
+          }
+          return nextCount;
+        } else {
+          setShowFullscreenBarrier(true);
+          const msg = `${reason} (Warning ${nextCount}/3 — auto-submit at 3)`;
+          setViolationToastMessage(msg);
+          toast.warning(msg);
+          return nextCount;
+        }
+      });
+    };
+
+    const handleFullscreenChange = () => {
+      if (isExitingIntentionallyRef.current) return;
+      if (!document.fullscreenElement) {
+        triggerViolation("Fullscreen exit detected. Please stay in fullscreen.");
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (isExitingIntentionallyRef.current) return;
+      if (document.visibilityState === "hidden") {
+        triggerViolation("Tab switch detected. Please stay in fullscreen.");
+      }
+    };
+
+    const handleWindowBlur = () => {
+      if (isExitingIntentionallyRef.current) return;
+      if (document.hidden) return; // handled by visibilitychange
+      triggerViolation("Window focus lost. Please stay in fullscreen.");
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        ["c", "v", "x", "a", "u", "p"].includes(e.key.toLowerCase())
+      ) {
+        e.preventDefault();
+        toast.warning("Copying and keyboard shortcuts are restricted during assessments.");
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleWindowBlur);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleWindowBlur);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [activeMission, missionAccomplished, activeQuizCard, quizResult]);
+
   const missionProblemList: MissionProblem[] = getMissionProblemsForAssessment(
     activeMission?.title || protocolCard?.title || "",
   );
   const totalMissionCredits = missionProblemList.reduce((acc, p) => acc + p.credits, 0);
+
+  // Sequential Stage Progression Logic
+  const isOpUnlocked = (idx: number) => {
+    if (idx === 0) return true;
+    const thisOp = missionProblemList[idx];
+    if (thisOp && solvedMissionIds[thisOp.id]) return true;
+    const prevOp = missionProblemList[idx - 1];
+    return !!(prevOp && solvedMissionIds[prevOp.id]);
+  };
+
+  const handleSelectOp = (idx: number) => {
+    if (!isOpUnlocked(idx)) {
+      toast.warning(
+        `Sector ${idx + 1} (${missionProblemList[idx]?.title}) is locked! Complete and submit Sector ${idx} first.`,
+      );
+      return;
+    }
+    setMissionIndex(idx);
+  };
 
   const currentMissionOp: MissionProblem =
     missionProblemList[missionIndex] || missionProblemList[0] || HCLTECH_MISSION_PROBLEMS[0]!;
@@ -369,6 +510,12 @@ function StudentAssignmentsPage() {
       } else {
         toast.info(`Question Graded: ${scorePct}% (+${earnedCr} CR)`);
       }
+
+      if (missionIndex + 1 < missionProblemList.length) {
+        toast.success(`Sector ${missionIndex + 2} Unlocked!`, {
+          description: `Stage restriction lifted for "${missionProblemList[missionIndex + 1]?.title}".`,
+        });
+      }
     } catch {
       setMissionScores((prev) => ({ ...prev, [currentMissionOp.id]: 100 }));
       setSolvedMissionIds((prev) => ({ ...prev, [currentMissionOp.id]: true }));
@@ -378,14 +525,43 @@ function StudentAssignmentsPage() {
         `Payload verified and synced to grading engine.`,
       ]);
       toast.success(`Problem Graded (+${currentMissionOp.credits} CR)`);
+      if (missionIndex + 1 < missionProblemList.length) {
+        toast.success(`Sector ${missionIndex + 2} Unlocked!`, {
+          description: `Stage restriction lifted for "${missionProblemList[missionIndex + 1]?.title}".`,
+        });
+      }
     } finally {
       setMissionSubmitting(false);
     }
   };
 
-  const handleFinalizeMission = () => {
+  const handleFinalizeMission = (isAuto = false) => {
+    isExitingIntentionallyRef.current = true;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+    setShowFullscreenBarrier(false);
+    setWasAutoSubmitted(isAuto);
     setMissionAccomplished(true);
-    toast.success("Assignment graded and submitted successfully!");
+    if (isAuto) {
+      toast.error("Assignment auto-submitted successfully!", {
+        description: "Assessment locked due to security violation threshold.",
+      });
+    } else {
+      toast.success("Assignment graded and submitted successfully!");
+    }
+  };
+
+  const handleExitIde = () => {
+    if (confirm("Exit assignment? Any unsaved progress will be finalized.")) {
+      isExitingIntentionallyRef.current = true;
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+      setShowFullscreenBarrier(false);
+      setSecurityViolations(0);
+      setActiveMission(null);
+    }
   };
 
   const totalCreditsEarned = missionProblemList.reduce((acc, p) => {
@@ -435,10 +611,16 @@ function StudentAssignmentsPage() {
   ).length;
   const pendingCount = assignments.filter((a) => a.status === "Pending").length;
 
-  const handleStartMcqQuiz = (card: StudentAssignmentCard) => {
+  const handleStartMcqQuiz = async (card: StudentAssignmentCard) => {
     setActiveQuizCard(card);
     setQuizCurrentIndex(0);
     setStudentAnswers({});
+    setSecurityViolations(0);
+    setShowFullscreenBarrier(false);
+    setViolationToastMessage("");
+    isExitingIntentionallyRef.current = false;
+    lastViolationTimeRef.current = 0;
+
     if (card.score !== null) {
       const qCount = card.mcqQuestions?.length || 4;
       setQuizResult({
@@ -450,10 +632,32 @@ function StudentAssignmentsPage() {
       });
     } else {
       setQuizResult(null);
+      try {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch {
+        setShowFullscreenBarrier(true);
+      }
     }
   };
 
-  const handleSubmitQuiz = async () => {
+  const handleCloseMcqQuiz = () => {
+    if (!quizResult) {
+      if (!confirm("Exit quiz assessment? Unsubmitted answers will be lost.")) {
+        return;
+      }
+    }
+    isExitingIntentionallyRef.current = true;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+    setShowFullscreenBarrier(false);
+    setSecurityViolations(0);
+    setActiveQuizCard(null);
+  };
+
+  const handleSubmitQuiz = async (isAuto = false) => {
     if (!activeQuizCard) return;
     const questions = activeQuizCard.mcqQuestions || [];
     if (questions.length === 0) {
@@ -494,9 +698,15 @@ function StudentAssignmentsPage() {
         totalCount: questions.length,
         earnedXp,
       });
-      toast.success(passed ? "🎉 Quiz Passed! Well done!" : "Quiz submitted!", {
-        description: `Score: ${score}% (${correctCount}/${questions.length} correct) · +${earnedXp} XP awarded`,
-      });
+      if (isAuto) {
+        toast.error("Quiz auto-submitted!", {
+          description: `Score: ${score}% (${correctCount}/${questions.length} correct) due to security violation threshold.`,
+        });
+      } else {
+        toast.success(passed ? "🎉 Quiz Passed! Well done!" : "Quiz submitted!", {
+          description: `Score: ${score}% (${correctCount}/${questions.length} correct) · +${earnedXp} XP awarded`,
+        });
+      }
       await router.invalidate();
     } catch (e: unknown) {
       toast.error("Failed to submit quiz", {
@@ -506,13 +716,14 @@ function StudentAssignmentsPage() {
       setSubmittingQuiz(false);
     }
   };
+  handleSubmitQuizRef.current = handleSubmitQuiz;
 
   if (activeMission && missionAccomplished) {
     return (
       <div className="fixed inset-0 z-50 bg-[#0c0e12] overflow-y-auto p-4 sm:p-8 flex flex-col items-center justify-start text-white">
         <div className="w-full max-w-2xl my-auto space-y-6">
           <div className="text-center space-y-3">
-            <div className="h-16 w-16 rounded-2xl bg-indigo-950/40 border border-indigo-500/60 flex items-center justify-center mx-auto text-indigo-400 shadow-lg shadow-indigo-500/10">
+            <div className="h-16 w-16 rounded-2xl bg-emerald-950/40 border border-emerald-500/60 flex items-center justify-center mx-auto text-emerald-400 shadow-lg shadow-emerald-500/10">
               <CheckCircle className="h-9 w-9 stroke-[2.5]" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-black italic tracking-wider uppercase text-white">
@@ -523,15 +734,30 @@ function StudentAssignmentsPage() {
             </p>
           </div>
 
+          {wasAutoSubmitted && (
+            <div className="flex items-center gap-3 p-4 rounded-2xl border border-rose-500/40 bg-rose-950/30 text-xs text-rose-300 shadow-lg shadow-rose-950/20">
+              <AlertTriangle className="h-5 w-5 text-rose-400 shrink-0" />
+              <div>
+                <span className="font-bold text-white block">
+                  Security Violation Limit Reached (3/3)
+                </span>
+                <span className="text-slate-300">
+                  Assessment was automatically finalized and submitted due to tab switching or
+                  exiting fullscreen mode.
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-slate-800 bg-[#12141a] p-6 text-center space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-mono font-bold uppercase tracking-wider mx-auto bg-indigo-950/50 border-indigo-500/50 text-indigo-400">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-mono font-bold uppercase tracking-wider mx-auto bg-emerald-950/50 border-emerald-500/50 text-emerald-400">
               <Trophy className="h-4 w-4 text-amber-400" />
               <span>
                 {currentGrade.label} · {overallAccuracyPct >= 70 ? "PASSED" : "SUBMITTED"}
               </span>
             </div>
 
-            <div className="text-4xl sm:text-5xl font-black text-indigo-400 tracking-tight">
+            <div className="text-4xl sm:text-5xl font-black text-emerald-400 tracking-tight">
               {totalCreditsEarned}/{totalMissionCredits} CR
             </div>
             <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
@@ -543,7 +769,7 @@ function StudentAssignmentsPage() {
                 <span className="text-slate-500 uppercase tracking-wider text-[10px] mr-1">
                   EVALUATION ACCURACY:
                 </span>
-                <span className="font-mono text-indigo-400 font-bold">{overallAccuracyPct}%</span>
+                <span className="font-mono text-emerald-400 font-bold">{overallAccuracyPct}%</span>
               </div>
               <div className="h-3 w-px bg-slate-800" />
               <div>
@@ -581,7 +807,7 @@ function StudentAssignmentsPage() {
                           {isSecured ? `Accuracy: ${scorePct}%` : "Not Attempted"}
                         </span>
                         {isSecured && (
-                          <span className="px-1.5 py-0.2 rounded bg-indigo-950/60 border border-indigo-500/40 text-[9px] font-bold text-indigo-400 uppercase">
+                          <span className="px-1.5 py-0.2 rounded bg-emerald-950/60 border border-emerald-500/40 text-[9px] font-bold text-emerald-400 uppercase">
                             {scorePct === 100 ? "Grade A+" : `Grade: ${scorePct}%`}
                           </span>
                         )}
@@ -593,7 +819,7 @@ function StudentAssignmentsPage() {
                     <span
                       className={cn(
                         "font-mono font-bold",
-                        isSecured ? "text-indigo-400" : "text-slate-500",
+                        isSecured ? "text-emerald-400" : "text-slate-500",
                       )}
                     >
                       {earnedCr}/{op.credits}
@@ -621,7 +847,7 @@ function StudentAssignmentsPage() {
                 setActiveMission(null);
                 setMissionAccomplished(false);
               }}
-              className="h-11 px-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
+              className="h-11 px-8 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-emerald-500/20"
             >
               Return to Operations
             </button>
@@ -640,7 +866,7 @@ function StudentAssignmentsPage() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setActiveMission(null)}
+              onClick={handleExitIde}
               className="h-8 px-2.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition-colors"
               title="Exit Fullscreen IDE"
             >
@@ -650,7 +876,7 @@ function StudentAssignmentsPage() {
 
             <div className="h-4 w-px bg-slate-800 hidden sm:block" />
 
-            <div className="h-8 w-8 rounded-lg bg-indigo-950/60 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+            <div className="h-8 w-8 rounded-lg bg-emerald-950/60 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
               <Shield className="h-4 w-4" />
             </div>
             <div>
@@ -660,8 +886,8 @@ function StudentAssignmentsPage() {
               <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
                 <span>OPERATIONAL HUB</span>
                 <span>•</span>
-                <span className="inline-flex items-center gap-1 text-indigo-400 font-semibold">
-                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   LIVE SYNC
                 </span>
               </div>
@@ -691,7 +917,7 @@ function StudentAssignmentsPage() {
                     className={cn(
                       "h-2 w-7 rounded-sm transition-colors",
                       solvedMissionIds[p.id]
-                        ? "bg-indigo-600"
+                        ? "bg-emerald-600"
                         : idx === missionIndex
                           ? "bg-slate-500"
                           : "bg-slate-800",
@@ -717,7 +943,7 @@ function StudentAssignmentsPage() {
 
             <button
               type="button"
-              onClick={handleFinalizeMission}
+              onClick={() => handleFinalizeMission(false)}
               className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs uppercase tracking-wider cursor-pointer shadow-md"
             >
               <Send className="h-3.5 w-3.5" />
@@ -742,7 +968,7 @@ function StudentAssignmentsPage() {
                 </div>
                 <div className="text-[11px] font-bold text-slate-400 mt-0.5">
                   DEPLOYMENT STATUS:{" "}
-                  <span className="text-indigo-400">
+                  <span className="text-emerald-400">
                     {securedCount}/{missionProblemList.length} SECURED
                   </span>
                 </div>
@@ -753,53 +979,76 @@ function StudentAssignmentsPage() {
               {missionProblemList.map((op, idx) => {
                 const isCurrent = idx === missionIndex;
                 const isSecured = !!solvedMissionIds[op.id];
+                const unlocked = isOpUnlocked(idx);
+                const isLocked = !unlocked;
+
                 return (
                   <button
                     key={op.id}
                     type="button"
-                    onClick={() => setMissionIndex(idx)}
+                    onClick={() => handleSelectOp(idx)}
+                    title={
+                      isLocked ? `Locked Stage: Complete and submit Sector ${idx} first` : undefined
+                    }
                     className={cn(
-                      "w-full text-left p-3 rounded-xl border text-xs transition-all flex items-center gap-3 cursor-pointer",
+                      "w-full text-left p-3 rounded-xl border text-xs transition-all flex items-center gap-3",
                       isCurrent
-                        ? "border-indigo-500/80 bg-indigo-950/20 text-white shadow-xs"
-                        : "border-slate-800/80 bg-[#16181f] text-slate-300 hover:border-slate-700 hover:bg-slate-800/60",
+                        ? "border-emerald-500/80 bg-emerald-950/20 text-white shadow-xs cursor-pointer"
+                        : isLocked
+                          ? "border-slate-800/40 bg-[#0e1014] text-slate-500 cursor-not-allowed opacity-60"
+                          : "border-slate-800/80 bg-[#16181f] text-slate-300 hover:border-slate-700 hover:bg-slate-800/60 cursor-pointer",
                     )}
                   >
                     <div
                       className={cn(
                         "h-8 w-8 rounded-lg flex items-center justify-center font-mono font-black text-xs shrink-0 transition-colors",
                         isSecured
-                          ? "bg-indigo-600 text-white"
+                          ? "bg-emerald-600 text-white"
                           : isCurrent
-                            ? "bg-indigo-500/30 text-indigo-300 border border-indigo-500/50"
-                            : "bg-slate-800 text-slate-400",
+                            ? "bg-emerald-500/30 text-emerald-300 border border-emerald-500/50"
+                            : isLocked
+                              ? "bg-slate-900 border border-slate-800 text-slate-600"
+                              : "bg-slate-800 text-slate-400",
                       )}
                     >
-                      {op.id}
+                      {isLocked ? <Lock className="h-3.5 w-3.5 text-slate-500" /> : op.id}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-xs uppercase truncate text-white">
+                      <div
+                        className={cn(
+                          "font-bold text-xs uppercase truncate",
+                          isLocked ? "text-slate-500" : "text-white",
+                        )}
+                      >
                         {op.title}
                       </div>
                       <div className="flex items-center gap-1.5 mt-1">
-                        <span
-                          className={cn(
-                            "px-1.5 py-0.2 rounded text-[9px] font-black uppercase",
-                            op.difficulty === "EASY"
-                              ? "bg-indigo-950/60 text-indigo-400 border border-indigo-800/50"
-                              : "bg-amber-950/60 text-amber-400 border border-amber-800/50",
-                          )}
-                        >
-                          {op.difficulty}
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          {op.credits} CR
-                        </span>
-                        {isSecured && (
-                          <span className="ml-auto text-[9px] font-bold text-indigo-400 bg-indigo-950/60 border border-indigo-500/40 px-1.5 py-0.2 rounded">
-                            GRADED {missionScores[op.id] ?? 100}%
+                        {isLocked ? (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-500/80 bg-amber-950/40 border border-amber-800/40 px-1.5 py-0.2 rounded uppercase">
+                            <Lock className="h-2.5 w-2.5" /> Locked Stage
                           </span>
+                        ) : (
+                          <>
+                            <span
+                              className={cn(
+                                "px-1.5 py-0.2 rounded text-[9px] font-black uppercase",
+                                op.difficulty === "EASY"
+                                  ? "bg-emerald-950/60 text-emerald-400 border border-emerald-800/50"
+                                  : "bg-amber-950/60 text-amber-400 border border-amber-800/50",
+                              )}
+                            >
+                              {op.difficulty}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {op.credits} CR
+                            </span>
+                            {isSecured && (
+                              <span className="ml-auto text-[9px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-1.5 py-0.2 rounded">
+                                GRADED {missionScores[op.id] ?? 100}%
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -896,13 +1145,28 @@ function StudentAssignmentsPage() {
               </button>
               <button
                 type="button"
-                disabled={missionIndex === missionProblemList.length - 1}
-                onClick={() =>
-                  setMissionIndex((prev) => Math.min(missionProblemList.length - 1, prev + 1))
+                disabled={
+                  missionIndex === missionProblemList.length - 1 || !isOpUnlocked(missionIndex + 1)
                 }
-                className="h-8.5 px-3 rounded-xl border border-slate-700 bg-slate-800/80 text-xs font-bold text-slate-300 hover:text-white disabled:opacity-40 cursor-pointer"
+                onClick={() => {
+                  if (!isOpUnlocked(missionIndex + 1)) {
+                    toast.warning(
+                      `Sector ${missionIndex + 2} is locked! Complete and submit Sector ${missionIndex + 1} first.`,
+                    );
+                    return;
+                  }
+                  setMissionIndex((prev) => Math.min(missionProblemList.length - 1, prev + 1));
+                }}
+                className={cn(
+                  "h-8.5 px-3 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all",
+                  missionIndex < missionProblemList.length - 1 && !isOpUnlocked(missionIndex + 1)
+                    ? "border-slate-800 bg-slate-900 text-slate-600 cursor-not-allowed opacity-50"
+                    : "border-slate-700 bg-slate-800/80 text-slate-300 hover:text-white disabled:opacity-40 cursor-pointer",
+                )}
               >
-                NEXT OP &gt;
+                {missionIndex < missionProblemList.length - 1 &&
+                  !isOpUnlocked(missionIndex + 1) && <Lock className="h-3 w-3 text-slate-500" />}
+                <span>NEXT OP &gt;</span>
               </button>
             </div>
           </section>
@@ -967,7 +1231,7 @@ function StudentAssignmentsPage() {
                   type="button"
                   disabled={missionSubmitting}
                   onClick={handleSubmitMissionOp}
-                  className="h-8 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                  className="h-8 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
                 >
                   <Check className="h-3.5 w-3.5 stroke-[3]" />
                   <span>{missionSubmitting ? "SUBMITTING..." : "SUBMIT"}</span>
@@ -985,6 +1249,21 @@ function StudentAssignmentsPage() {
                 <textarea
                   value={currentMissionCode}
                   onChange={(e) => setMissionCode(e.target.value)}
+                  onCopy={(e) => {
+                    e.preventDefault();
+                    toast.warning("Copying code is restricted during assessments.");
+                  }}
+                  onCut={(e) => {
+                    e.preventDefault();
+                    toast.warning("Cutting code is restricted.");
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    toast.warning("Pasting code is restricted. Please type your code manually.");
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                  }}
                   spellCheck={false}
                   className="flex-1 bg-[#0e1015] p-3 font-mono text-xs text-white leading-relaxed outline-none resize-none overflow-auto"
                 />
@@ -996,13 +1275,26 @@ function StudentAssignmentsPage() {
                     <span className="font-bold text-slate-400 uppercase tracking-wider">
                       Console Output & Evaluation
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowOutputPanel(false)}
-                      className="text-slate-400 hover:text-white"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {solvedMissionIds[currentMissionOp.id] &&
+                        missionIndex + 1 < missionProblemList.length && (
+                          <button
+                            type="button"
+                            onClick={() => setMissionIndex((prev) => prev + 1)}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] uppercase tracking-wider flex items-center gap-1 shadow-xs cursor-pointer transition-colors"
+                          >
+                            <span>Advance to Sector {missionIndex + 2}</span>
+                            <ChevronRight className="h-3 w-3" />
+                          </button>
+                        )}
+                      <button
+                        type="button"
+                        onClick={() => setShowOutputPanel(false)}
+                        className="text-slate-400 hover:text-white"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
                   <div className="flex-1 overflow-y-auto font-mono text-xs text-slate-300 pt-2 space-y-1">
                     {missionOutputLog.length === 0 ? (
@@ -1049,6 +1341,54 @@ function StudentAssignmentsPage() {
             />
           </main>
         </div>
+
+        {/* Tactical Fullscreen & Tab Restriction Barrier (matching Screenshot 2) */}
+        {showFullscreenBarrier && (
+          <div className="fixed inset-0 z-[100] bg-[#0c0d12]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-white text-center select-none">
+            {/* Expanding orange arrows icon */}
+            <div className="relative mb-6">
+              <div className="h-20 w-20 rounded-2xl bg-orange-950/40 border border-orange-500/50 flex items-center justify-center text-orange-400 shadow-xl shadow-orange-500/20">
+                <Expand className="h-10 w-10 text-orange-400 stroke-[2.5]" />
+              </div>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-black italic tracking-widest text-white uppercase">
+              FULLSCREEN REQUIRED
+            </h1>
+
+            <p className="max-w-md text-xs sm:text-sm text-slate-400 mt-3 font-medium leading-relaxed">
+              This tactical assessment requires a completely secure, fullscreen environment to
+              proceed. Any attempt to exit will be logged as a security violation.
+            </p>
+
+            <div className="mt-8">
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                      await document.documentElement.requestFullscreen();
+                    }
+                  } catch (e) {
+                    console.warn("Fullscreen request error:", e);
+                  }
+                  setShowFullscreenBarrier(false);
+                }}
+                className="px-8 py-3.5 rounded-xl bg-[#df5626] hover:bg-[#c94a1d] active:scale-95 text-white font-black text-xs sm:text-sm tracking-wider uppercase transition-all shadow-xl shadow-orange-900/30 cursor-pointer"
+              >
+                ACKNOWLEDGE & ENTER SECURE MODE
+              </button>
+            </div>
+
+            {/* Bottom-right warning toast card matching Screenshot 2 */}
+            {violationToastMessage && (
+              <div className="fixed bottom-6 right-6 z-[110] flex items-center gap-3 px-4 py-3 rounded-xl bg-[#16181f] border border-slate-700/80 shadow-2xl text-xs text-slate-200 animate-in fade-in slide-in-from-bottom-3 duration-300">
+                <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+                <span className="font-medium">{violationToastMessage}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -1063,7 +1403,7 @@ function StudentAssignmentsPage() {
             <Link
               to="/student/lab"
               search={{ assignmentId: undefined }}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 text-xs font-semibold text-white shadow-sm shadow-indigo-600/20 transition-all hover:scale-[1.02]"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 text-xs font-semibold text-white shadow-sm shadow-emerald-600/20 transition-all hover:scale-[1.02]"
             >
               <Terminal className="h-3.5 w-3.5" />
               Open Coding IDE
@@ -1074,8 +1414,8 @@ function StudentAssignmentsPage() {
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <div className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#11161d] p-5 shadow-xs">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-            <FileText className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <FileText className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div>
             <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -1088,8 +1428,8 @@ function StudentAssignmentsPage() {
         </div>
 
         <div className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#11161d] p-5 shadow-xs">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-            <Play className="h-5 w-5 fill-indigo-600 text-indigo-600 dark:fill-indigo-400 dark:text-indigo-400" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <Play className="h-5 w-5 fill-emerald-600 text-emerald-600 dark:fill-emerald-400 dark:text-emerald-400" />
           </div>
           <div>
             <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -1138,7 +1478,7 @@ function StudentAssignmentsPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search tactical assessments by company, topic, or track..."
-            className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 pl-9 pr-3 text-xs outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 text-slate-900 dark:text-white transition-colors"
+            className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/60 pl-9 pr-3 text-xs outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-900 text-slate-900 dark:text-white transition-colors"
           />
         </div>
 
@@ -1150,7 +1490,7 @@ function StudentAssignmentsPage() {
               className={cn(
                 "rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
                 statusFilter === s
-                  ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs border border-indigo-500/30 font-semibold"
+                  ? "bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-xs border border-emerald-500/30 font-semibold"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white",
               )}
             >
@@ -1208,11 +1548,11 @@ function StudentAssignmentsPage() {
             return (
               <div
                 key={card.id}
-                className="relative flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-[#11161d] p-6 shadow-sm transition-all hover:border-indigo-500/40 dark:hover:border-indigo-500/30 hover:shadow-indigo-500/5"
+                className="relative flex flex-col justify-between rounded-2xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-[#11161d] p-6 shadow-sm transition-all hover:border-emerald-500/40 dark:hover:border-emerald-500/30 hover:shadow-emerald-500/5"
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="rounded-full px-3 py-1 text-[11px] font-bold tracking-wider uppercase border bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30">
+                    <span className="rounded-full px-3 py-1 text-[11px] font-bold tracking-wider uppercase border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
                       {isSolved
                         ? card.status === "Graded"
                           ? `GRADED (${card.score}%)`
@@ -1243,7 +1583,7 @@ function StudentAssignmentsPage() {
                         OPERATIONAL WINDOW
                       </p>
                       <div className="mt-1.5 flex items-center gap-1.5 text-sm font-bold text-slate-900 dark:text-white">
-                        <Clock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                        <Clock className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                         <span>{durationText}</span>
                       </div>
                     </div>
@@ -1253,7 +1593,7 @@ function StudentAssignmentsPage() {
                         ATTEMPT SYNC
                       </p>
                       <div className="mt-1.5 flex items-center gap-1.5 text-sm font-bold text-slate-900 dark:text-white">
-                        <Play className="h-3.5 w-3.5 fill-indigo-600 dark:fill-indigo-400 text-indigo-600 dark:text-indigo-400" />
+                        <Play className="h-3.5 w-3.5 fill-emerald-600 dark:fill-emerald-400 text-emerald-600 dark:text-emerald-400" />
                         <span>{attemptsText}</span>
                       </div>
                     </div>
@@ -1300,7 +1640,7 @@ function StudentAssignmentsPage() {
                       "flex w-full items-center justify-center gap-2 rounded-xl py-3 text-xs uppercase tracking-wider transition-all shadow-sm cursor-pointer",
                       isSolved
                         ? "border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold"
-                        : "bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-md shadow-indigo-600/20 hover:scale-[1.01]",
+                        : "bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-md shadow-emerald-600/20 hover:scale-[1.01]",
                     )}
                   >
                     {isSolved ? (
@@ -1331,7 +1671,7 @@ function StudentAssignmentsPage() {
             className="w-full max-w-md rounded-3xl border border-slate-800 bg-[#16181f] p-6 sm:p-8 shadow-2xl text-white text-center space-y-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="h-14 w-14 rounded-2xl bg-slate-800 border border-indigo-500/60 flex items-center justify-center mx-auto text-indigo-400 shadow-md">
+            <div className="h-14 w-14 rounded-2xl bg-slate-800 border border-emerald-500/60 flex items-center justify-center mx-auto text-emerald-400 shadow-md">
               <Shield className="h-7 w-7" />
             </div>
 
@@ -1344,17 +1684,17 @@ function StudentAssignmentsPage() {
               </p>
             </div>
 
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-indigo-400 bg-indigo-950/40 border border-indigo-500/30">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/30">
               {protocolCard.title}
             </div>
 
             <div className="flex items-center justify-center gap-4 text-xs font-bold text-slate-300">
               <div className="flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5 text-indigo-400" />
+                <Clock className="h-3.5 w-3.5 text-emerald-400" />
                 <span>1h Window</span>
               </div>
               <div className="flex items-center gap-1">
-                <Play className="h-3.5 w-3.5 text-indigo-400 fill-indigo-400" />
+                <Play className="h-3.5 w-3.5 text-emerald-400 fill-emerald-400" />
                 <span>Sync 1/1</span>
               </div>
             </div>
@@ -1370,7 +1710,7 @@ function StudentAssignmentsPage() {
                   key={idx}
                   className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-800 bg-slate-900/80 text-xs font-bold text-slate-300 tracking-wider uppercase"
                 >
-                  <item.icon className="h-4 w-4 text-indigo-400 shrink-0" />
+                  <item.icon className="h-4 w-4 text-emerald-400 shrink-0" />
                   <span>{item.label}</span>
                 </div>
               ))}
@@ -1380,7 +1720,7 @@ function StudentAssignmentsPage() {
               <button
                 type="button"
                 onClick={handleEngageMission}
-                className="w-full h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 cursor-pointer transition-all"
+                className="w-full h-12 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 cursor-pointer transition-all"
               >
                 <Play className="h-4 w-4 fill-white text-white" />
                 <span>ENGAGE MISSION</span>
@@ -1580,7 +1920,7 @@ function StudentAssignmentsPage() {
                   setSelectedBriefCard(null);
                   handleLaunchProtocol(card);
                 }}
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold uppercase tracking-wider cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold uppercase tracking-wider cursor-pointer"
               >
                 Launch Protocol
               </button>
@@ -1589,300 +1929,384 @@ function StudentAssignmentsPage() {
         </div>
       )}
 
+      {/* INTERACTIVE MCQ QUIZ FULLSCREEN ENVIRONMENT */}
       {activeQuizCard && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
-          onClick={() => setActiveQuizCard(null)}
+          onCopy={(e) => {
+            e.preventDefault();
+            toast.warning("Copying questions is strictly prohibited during assessments.");
+          }}
+          onCut={(e) => {
+            e.preventDefault();
+            toast.warning("Cutting content is restricted.");
+          }}
+          onPaste={(e) => {
+            e.preventDefault();
+            toast.warning("Pasting content is restricted.");
+          }}
+          onContextMenu={(e) => {
+            e.preventDefault();
+          }}
+          className="fixed inset-0 z-50 flex flex-col bg-[#0b0e14] text-slate-100 select-none overflow-hidden"
         >
-          <div
-            className="w-full max-w-2xl max-h-[92vh] flex flex-col rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-6 py-4 bg-slate-50/50 dark:bg-slate-800/40">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400">
-                  <HelpCircle className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    {activeQuizCard.title}
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {activeQuizCard.className} · {activeQuizCard.subject || "Subject Quiz"}
-                  </p>
+          {/* Top Security Header */}
+          <header className="h-14 border-b border-slate-800 bg-[#11141c] px-4 sm:px-6 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                <Shield className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                  {activeQuizCard.title}
+                </h3>
+                <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                  <span>{activeQuizCard.className}</span>
+                  <span>•</span>
+                  <span className="text-sky-400 font-semibold">PROCTORED FULLSCREEN MODE</span>
                 </div>
               </div>
-              <button
-                onClick={() => setActiveQuizCard(null)}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700"
-              >
-                <X className="h-5 w-5" />
-              </button>
             </div>
 
-            {(() => {
-              const questions =
-                activeQuizCard.mcqQuestions && activeQuizCard.mcqQuestions.length > 0
-                  ? activeQuizCard.mcqQuestions
-                  : [
-                      {
-                        id: "q-fb-1",
-                        questionText: "What is the primary function of a loop in programming?",
-                        options: [
-                          "To terminate the script",
-                          "To execute a block of code multiple times",
-                          "To store persistent values on disk",
-                          "To import external dependencies",
-                        ],
-                        correctAnswer: "To execute a block of code multiple times",
-                        explanation:
-                          "Loops (like for and while) automate repeated execution based on conditional criteria.",
-                        difficulty: "Easy",
-                        xp: 25,
-                      },
-                      {
-                        id: "q-fb-2",
-                        questionText:
-                          "Which data structure follows the First-In, First-Out (FIFO) principle?",
-                        options: ["Stack", "Queue", "Binary Tree", "Hash Map"],
-                        correctAnswer: "Queue",
-                        explanation: "Queues operate on a First-In First-Out (FIFO) access order.",
-                        difficulty: "Easy",
-                        xp: 25,
-                      },
-                    ];
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleCloseMcqQuiz}
+                className="h-8 px-3 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition-colors"
+                title="Exit Quiz"
+              >
+                <X className="h-4 w-4" />
+                <span>Exit Quiz</span>
+              </button>
+            </div>
+          </header>
 
-              if (quizResult) {
-                return (
-                  <div className="p-6 space-y-6 overflow-y-auto flex-1">
-                    <div className="text-center rounded-2xl bg-gradient-to-b from-sky-50 to-indigo-50/30 dark:from-sky-950/30 dark:to-slate-900 p-6 border border-sky-100 dark:border-sky-900/40">
-                      <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-sky-500 text-slate-950 font-black text-2xl shadow-lg shadow-sky-500/30 mb-3">
-                        {quizResult.score}%
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex items-center justify-center">
+            <div
+              className="w-full max-w-2xl flex flex-col rounded-2xl border border-slate-800 bg-[#151923] shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {(() => {
+                const questions =
+                  activeQuizCard.mcqQuestions && activeQuizCard.mcqQuestions.length > 0
+                    ? activeQuizCard.mcqQuestions
+                    : [
+                        {
+                          id: "q-fb-1",
+                          questionText: "What is the primary function of a loop in programming?",
+                          options: [
+                            "To terminate the script",
+                            "To execute a block of code multiple times",
+                            "To store persistent values on disk",
+                            "To import external dependencies",
+                          ],
+                          correctAnswer: "To execute a block of code multiple times",
+                          explanation:
+                            "Loops (like for and while) automate repeated execution based on conditional criteria.",
+                          difficulty: "Easy",
+                          xp: 25,
+                        },
+                        {
+                          id: "q-fb-2",
+                          questionText:
+                            "Which data structure follows the First-In, First-Out (FIFO) principle?",
+                          options: ["Stack", "Queue", "Binary Tree", "Hash Map"],
+                          correctAnswer: "Queue",
+                          explanation:
+                            "Queues operate on a First-In First-Out (FIFO) access order.",
+                          difficulty: "Easy",
+                          xp: 25,
+                        },
+                      ];
+
+                if (quizResult) {
+                  return (
+                    <div className="p-6 space-y-6 overflow-y-auto flex-1">
+                      <div className="text-center rounded-2xl bg-gradient-to-b from-sky-950/40 to-slate-900/60 p-6 border border-sky-900/40">
+                        <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-sky-500 text-slate-950 font-black text-2xl shadow-lg shadow-sky-500/30 mb-3">
+                          {quizResult.score}%
+                        </div>
+                        <h4 className="text-lg font-bold text-white">
+                          {quizResult.passed ? "Assessment Passed! 🌟" : "Needs More Practice 📖"}
+                        </h4>
+                        <p className="text-xs text-slate-400 mt-1">
+                          You answered {quizResult.correctCount} out of {quizResult.totalCount}{" "}
+                          questions correctly.
+                        </p>
+                        <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-950/80 border border-amber-800/40 px-3 py-1 text-xs font-bold text-amber-300">
+                          <Sparkles className="h-3.5 w-3.5 text-amber-400" />+{quizResult.earnedXp}{" "}
+                          XP Awarded
+                        </div>
                       </div>
-                      <h4 className="text-lg font-bold text-slate-900 dark:text-white">
-                        {quizResult.passed ? "Assessment Passed! 🌟" : "Needs More Practice 📖"}
-                      </h4>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                        You answered {quizResult.correctCount} out of {quizResult.totalCount}{" "}
-                        questions correctly.
-                      </p>
-                      <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-950/80 px-3 py-1 text-xs font-bold text-amber-800 dark:text-amber-300">
-                        <Sparkles className="h-3.5 w-3.5 text-amber-600" />+{quizResult.earnedXp} XP
-                        Awarded
+
+                      <div className="space-y-3">
+                        <h5 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                          Detailed Question Review & Explanations
+                        </h5>
+                        {questions.map((q, idx) => {
+                          const chosen = studentAnswers[q.id];
+                          const isCorrect = chosen === q.correctAnswer;
+                          return (
+                            <div
+                              key={q.id}
+                              className={cn(
+                                "p-4 rounded-xl border text-xs space-y-2",
+                                isCorrect
+                                  ? "border-emerald-900/40 bg-emerald-950/20"
+                                  : "border-rose-900/40 bg-rose-950/20",
+                              )}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <span className="font-bold text-white">
+                                  Q{idx + 1}. {q.questionText}
+                                </span>
+                                <span
+                                  className={cn(
+                                    "font-bold text-[10px] px-2 py-0.5 rounded shrink-0",
+                                    isCorrect
+                                      ? "bg-emerald-950 text-emerald-300 border border-emerald-800/50"
+                                      : "bg-rose-950 text-rose-300 border border-rose-800/50",
+                                  )}
+                                >
+                                  {isCorrect ? "Correct ✓" : "Incorrect ✗"}
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+                                {q.options.map((opt, optIdx) => {
+                                  const isSelected = chosen === opt;
+                                  const isAns = opt === q.correctAnswer;
+                                  return (
+                                    <div
+                                      key={optIdx}
+                                      className={cn(
+                                        "px-2.5 py-1.5 rounded-lg border text-[11px] font-medium flex items-center justify-between",
+                                        isAns
+                                          ? "border-emerald-500/60 bg-emerald-950/60 text-emerald-200 font-bold"
+                                          : isSelected
+                                            ? "border-rose-500/60 bg-rose-950/60 text-rose-200 line-through"
+                                            : "border-slate-800 text-slate-400 bg-slate-900/40",
+                                      )}
+                                    >
+                                      <span>
+                                        {String.fromCharCode(65 + optIdx)}. {opt}
+                                      </span>
+                                      {isAns && <Check className="h-3 w-3 text-emerald-400" />}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {q.explanation && (
+                                <div className="mt-2 rounded-lg bg-slate-900/80 p-2.5 text-[11px] text-slate-300 border border-slate-800">
+                                  <span className="font-bold text-sky-400 mr-1">Explanation:</span>
+                                  {q.explanation}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2">
+                        <button
+                          onClick={() => {
+                            setQuizResult(null);
+                            setStudentAnswers({});
+                            setQuizCurrentIndex(0);
+                            try {
+                              if (
+                                !document.fullscreenElement &&
+                                document.documentElement.requestFullscreen
+                              ) {
+                                document.documentElement.requestFullscreen().catch(() => {});
+                              }
+                            } catch {
+                              /* ignore fullscreen re-entry error */
+                            }
+                          }}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800 cursor-pointer"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" /> Retake Quiz
+                        </button>
+                        <button
+                          onClick={handleCloseMcqQuiz}
+                          className="px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold cursor-pointer"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                const currentQ = questions[quizCurrentIndex] || questions[0]!;
+                const selectedOpt = studentAnswers[currentQ.id];
+                const answeredCount = Object.keys(studentAnswers).length;
+
+                return (
+                  <div className="p-6 space-y-5 overflow-y-auto flex-1">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
+                        <span>
+                          Question {quizCurrentIndex + 1} of {questions.length}
+                        </span>
+                        <span>
+                          {answeredCount}/{questions.length} answered
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
+                        <div
+                          className="h-full bg-sky-500 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${((quizCurrentIndex + 1) / questions.length) * 100}%`,
+                          }}
+                        />
                       </div>
                     </div>
 
-                    <div className="space-y-3">
-                      <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                        Detailed Question Review & Explanations
-                      </h5>
-                      {questions.map((q, idx) => {
-                        const chosen = studentAnswers[q.id];
-                        const isCorrect = chosen === q.correctAnswer;
-                        return (
-                          <div
-                            key={q.id}
-                            className={cn(
-                              "p-4 rounded-xl border text-xs space-y-2",
-                              isCorrect
-                                ? "border-emerald-200 bg-emerald-50/20 dark:border-emerald-900/40 dark:bg-emerald-950/20"
-                                : "border-rose-200 bg-rose-50/20 dark:border-rose-900/40 dark:bg-rose-950/20",
-                            )}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <span className="font-bold text-slate-900 dark:text-white">
-                                Q{idx + 1}. {q.questionText}
-                              </span>
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold text-sky-300 bg-sky-950/70 border border-sky-800/50 px-2.5 py-0.5 rounded-full">
+                          Question {quizCurrentIndex + 1}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-amber-400 bg-amber-950/50 border border-amber-800/40 px-2 py-0.5 rounded">
+                            +{currentQ.xp || 25} XP
+                          </span>
+                          <span className="text-[10px] font-medium text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
+                            {currentQ.difficulty || "Medium"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <h4 className="text-sm font-bold text-white leading-relaxed">
+                        {currentQ.questionText}
+                      </h4>
+
+                      <div className="space-y-2 pt-2">
+                        {currentQ.options.map((opt, optIdx) => {
+                          const isChosen = selectedOpt === opt;
+                          const label = String.fromCharCode(65 + optIdx);
+                          return (
+                            <button
+                              key={optIdx}
+                              type="button"
+                              onClick={() => {
+                                setStudentAnswers((prev) => ({
+                                  ...prev,
+                                  [currentQ.id]: opt,
+                                }));
+                              }}
+                              className={cn(
+                                "w-full text-left p-3.5 rounded-xl border text-xs font-medium flex items-center gap-3 transition-all cursor-pointer",
+                                isChosen
+                                  ? "border-sky-500 bg-sky-500/20 text-white shadow-xs"
+                                  : "border-slate-800 bg-[#161a24] text-slate-300 hover:border-slate-700 hover:bg-slate-800/60",
+                              )}
+                            >
                               <span
                                 className={cn(
-                                  "font-bold text-[10px] px-2 py-0.5 rounded shrink-0",
-                                  isCorrect
-                                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                                    : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300",
+                                  "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold border transition-colors",
+                                  isChosen
+                                    ? "bg-sky-500 border-sky-500 text-slate-950 font-bold"
+                                    : "border-slate-700 bg-slate-800 text-slate-400",
                                 )}
                               >
-                                {isCorrect ? "Correct ✓" : "Incorrect ✗"}
+                                {label}
                               </span>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
-                              {q.options.map((opt, optIdx) => {
-                                const isSelected = chosen === opt;
-                                const isAns = opt === q.correctAnswer;
-                                return (
-                                  <div
-                                    key={optIdx}
-                                    className={cn(
-                                      "px-2.5 py-1.5 rounded-lg border text-[11px] font-medium flex items-center justify-between",
-                                      isAns
-                                        ? "border-emerald-400 bg-emerald-100/60 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-200 font-bold"
-                                        : isSelected
-                                          ? "border-rose-400 bg-rose-100/60 dark:bg-rose-950 text-rose-900 dark:text-rose-200 line-through"
-                                          : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400",
-                                    )}
-                                  >
-                                    <span>
-                                      {String.fromCharCode(65 + optIdx)}. {opt}
-                                    </span>
-                                    {isAns && <Check className="h-3 w-3 text-emerald-700" />}
-                                  </div>
-                                );
-                              })}
-                            </div>
-
-                            {q.explanation && (
-                              <div className="mt-2 rounded-lg bg-white/80 dark:bg-slate-800/80 p-2 text-[11px] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                                <span className="font-bold text-sky-600 dark:text-sky-400 mr-1">
-                                  Explanation:
-                                </span>
-                                {q.explanation}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                              <span className="flex-1">{opt}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
-                    <div className="flex justify-end gap-2 pt-2">
+                    <div className="flex items-center justify-between pt-2">
                       <button
-                        onClick={() => {
-                          setQuizResult(null);
-                          setStudentAnswers({});
-                          setQuizCurrentIndex(0);
-                        }}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 cursor-pointer"
+                        type="button"
+                        disabled={quizCurrentIndex === 0}
+                        onClick={() => setQuizCurrentIndex((prev) => Math.max(0, prev - 1))}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800 disabled:opacity-40 cursor-pointer"
                       >
-                        <RotateCcw className="h-3.5 w-3.5" /> Retake Quiz
+                        <ChevronLeft className="h-4 w-4" /> Previous
                       </button>
-                      <button
-                        onClick={() => setActiveQuizCard(null)}
-                        className="px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold cursor-pointer"
-                      >
-                        Done
-                      </button>
+
+                      <div className="flex items-center gap-2">
+                        {quizCurrentIndex < questions.length - 1 ? (
+                          <button
+                            type="button"
+                            onClick={() => setQuizCurrentIndex((prev) => prev + 1)}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold shadow-xs cursor-pointer"
+                          >
+                            Next <ChevronRight className="h-4 w-4" />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={submittingQuiz}
+                            onClick={() => handleSubmitQuiz(false)}
+                            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm shadow-emerald-500/20 disabled:opacity-50 cursor-pointer"
+                          >
+                            <Check className="h-4 w-4 stroke-[3]" />
+                            {submittingQuiz ? "Submitting..." : "Submit Quiz"}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
-              }
-
-              const currentQ = questions[quizCurrentIndex] || questions[0]!;
-              const selectedOpt = studentAnswers[currentQ.id];
-              const answeredCount = Object.keys(studentAnswers).length;
-
-              return (
-                <div className="p-6 space-y-5 overflow-y-auto flex-1">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-                      <span>
-                        Question {quizCurrentIndex + 1} of {questions.length}
-                      </span>
-                      <span>
-                        {answeredCount}/{questions.length} answered
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                      <div
-                        className="h-full bg-sky-500 rounded-full transition-all duration-300"
-                        style={{
-                          width: `${((quizCurrentIndex + 1) / questions.length) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 p-5 space-y-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-bold text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-950/70 px-2.5 py-0.5 rounded-full">
-                        Question {quizCurrentIndex + 1}
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded">
-                          +{currentQ.xp || 25} XP
-                        </span>
-                        <span className="text-[10px] font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
-                          {currentQ.difficulty || "Medium"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-relaxed">
-                      {currentQ.questionText}
-                    </h4>
-
-                    <div className="space-y-2 pt-2">
-                      {currentQ.options.map((opt, optIdx) => {
-                        const isChosen = selectedOpt === opt;
-                        const label = String.fromCharCode(65 + optIdx);
-                        return (
-                          <button
-                            key={optIdx}
-                            type="button"
-                            onClick={() => {
-                              setStudentAnswers((prev) => ({
-                                ...prev,
-                                [currentQ.id]: opt,
-                              }));
-                            }}
-                            className={cn(
-                              "w-full text-left p-3.5 rounded-xl border text-xs font-medium flex items-center gap-3 transition-all cursor-pointer",
-                              isChosen
-                                ? "border-sky-500 bg-sky-500/15 text-sky-900 dark:text-sky-100 shadow-xs"
-                                : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-sky-300 hover:bg-slate-50 dark:hover:bg-slate-800/60",
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold border transition-colors",
-                                isChosen
-                                  ? "bg-sky-500 border-sky-500 text-slate-950 font-bold"
-                                  : "border-slate-300 dark:border-slate-700 text-slate-500",
-                              )}
-                            >
-                              {label}
-                            </span>
-                            <span className="flex-1">{opt}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2">
-                    <button
-                      type="button"
-                      disabled={quizCurrentIndex === 0}
-                      onClick={() => setQuizCurrentIndex((prev) => Math.max(0, prev - 1))}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
-                    >
-                      <ChevronLeft className="h-4 w-4" /> Previous
-                    </button>
-
-                    <div className="flex items-center gap-2">
-                      {quizCurrentIndex < questions.length - 1 ? (
-                        <button
-                          type="button"
-                          onClick={() => setQuizCurrentIndex((prev) => prev + 1)}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold shadow-xs cursor-pointer"
-                        >
-                          Next <ChevronRight className="h-4 w-4" />
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={submittingQuiz}
-                          onClick={handleSubmitQuiz}
-                          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 shadow-sm disabled:opacity-50 cursor-pointer"
-                        >
-                          <Check className="h-4 w-4 stroke-[3]" />
-                          {submittingQuiz ? "Submitting..." : "Submit Quiz"}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
+              })()}
+            </div>
           </div>
+
+          {/* Fullscreen & Tab Restriction Barrier for MCQ */}
+          {showFullscreenBarrier && activeQuizCard && !quizResult && (
+            <div className="fixed inset-0 z-[100] bg-[#0c0d12]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-white text-center select-none">
+              <div className="relative mb-6">
+                <div className="h-20 w-20 rounded-2xl bg-orange-950/40 border border-orange-500/50 flex items-center justify-center text-orange-400 shadow-xl shadow-orange-500/20">
+                  <Expand className="h-10 w-10 text-orange-400 stroke-[2.5]" />
+                </div>
+              </div>
+
+              <h1 className="text-2xl sm:text-3xl font-black italic tracking-widest text-white uppercase">
+                FULLSCREEN REQUIRED
+              </h1>
+
+              <p className="max-w-md text-xs sm:text-sm text-slate-400 mt-3 font-medium leading-relaxed">
+                This tactical assessment requires a completely secure, fullscreen environment to
+                proceed. Any attempt to exit will be logged as a security violation.
+              </p>
+
+              <div className="mt-8">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      if (
+                        !document.fullscreenElement &&
+                        document.documentElement.requestFullscreen
+                      ) {
+                        await document.documentElement.requestFullscreen();
+                      }
+                    } catch (e) {
+                      console.warn("Fullscreen request error:", e);
+                    }
+                    setShowFullscreenBarrier(false);
+                  }}
+                  className="px-8 py-3.5 rounded-xl bg-[#df5626] hover:bg-[#c94a1d] active:scale-95 text-white font-black text-xs sm:text-sm tracking-wider uppercase transition-all shadow-xl shadow-orange-900/30 cursor-pointer"
+                >
+                  ACKNOWLEDGE & ENTER SECURE MODE
+                </button>
+              </div>
+
+              {violationToastMessage && (
+                <div className="fixed bottom-6 right-6 z-[110] flex items-center gap-3 px-4 py-3 rounded-xl bg-[#16181f] border border-slate-700/80 shadow-2xl text-xs text-slate-200 animate-in fade-in slide-in-from-bottom-3 duration-300">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+                  <span className="font-medium">{violationToastMessage}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

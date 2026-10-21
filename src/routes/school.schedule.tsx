@@ -60,7 +60,7 @@ const SCHEDULE_TYPES = [
     label: "Lab Session",
     color: "bg-emerald-50 text-emerald-700 border-emerald-200",
   },
-  { value: "workshop", label: "Workshop", color: "bg-purple-50 text-purple-700 border-purple-200" },
+  { value: "workshop", label: "Workshop", color: "bg-teal-50 text-teal-700 border-teal-200" },
   {
     value: "hackathon_prep",
     label: "Competition / Club",
@@ -275,7 +275,7 @@ function SchoolSchedulePage() {
             </button>
             <button
               onClick={handleOpenAdd}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition"
             >
               <Plus className="h-4 w-4" /> Add schedule slot
             </button>
@@ -362,7 +362,7 @@ function SchoolSchedulePage() {
               placeholder="Search title, teacher, room..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none"
+              className="h-9 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-none"
             />
           </div>
 
@@ -370,7 +370,7 @@ function SchoolSchedulePage() {
           <select
             value={selectedDay}
             onChange={(e) => setSelectedDay(e.target.value)}
-            className="h-9 rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs font-medium text-slate-700 focus:border-indigo-500 focus:bg-white focus:outline-none"
+            className="h-9 rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs font-medium text-slate-700 focus:border-emerald-500 focus:bg-white focus:outline-none"
           >
             <option value="All">All Days</option>
             {DAYS_OF_WEEK.map((d) => (
@@ -384,7 +384,7 @@ function SchoolSchedulePage() {
           <select
             value={selectedRoom}
             onChange={(e) => setSelectedRoom(e.target.value)}
-            className="h-9 rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs font-medium text-slate-700 focus:border-indigo-500 focus:bg-white focus:outline-none"
+            className="h-9 rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs font-medium text-slate-700 focus:border-emerald-500 focus:bg-white focus:outline-none"
           >
             <option value="All">All Rooms / Labs</option>
             {rooms.map((r) => (
@@ -398,7 +398,7 @@ function SchoolSchedulePage() {
           <select
             value={selectedClass}
             onChange={(e) => setSelectedClass(e.target.value)}
-            className="h-9 rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs font-medium text-slate-700 focus:border-indigo-500 focus:bg-white focus:outline-none"
+            className="h-9 rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs font-medium text-slate-700 focus:border-emerald-500 focus:bg-white focus:outline-none"
           >
             <option value="All">All Classes</option>
             <option value="none">Open Lab / Multi-Class</option>
@@ -416,7 +416,7 @@ function SchoolSchedulePage() {
             onClick={() => setViewMode("grid")}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
               viewMode === "grid"
-                ? "bg-white text-indigo-600 shadow-xs"
+                ? "bg-white text-emerald-600 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
@@ -426,7 +426,7 @@ function SchoolSchedulePage() {
             onClick={() => setViewMode("list")}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
               viewMode === "list"
-                ? "bg-white text-indigo-600 shadow-xs"
+                ? "bg-white text-emerald-600 shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
@@ -449,7 +449,7 @@ function SchoolSchedulePage() {
                 key={day}
                 className={`flex flex-col rounded-2xl border transition ${
                   isToday
-                    ? "border-indigo-300 bg-indigo-50/20 shadow-xs ring-1 ring-indigo-200"
+                    ? "border-emerald-300 bg-emerald-50/20 shadow-xs ring-1 ring-emerald-200"
                     : "border-slate-200 bg-slate-50/30"
                 }`}
               >
@@ -457,7 +457,7 @@ function SchoolSchedulePage() {
                 <div
                   className={`flex items-center justify-between border-b px-3.5 py-3 ${
                     isToday
-                      ? "border-indigo-100 bg-indigo-50/60"
+                      ? "border-emerald-100 bg-emerald-50/60"
                       : "border-slate-200 bg-slate-100/50"
                   }`}
                 >
@@ -466,7 +466,7 @@ function SchoolSchedulePage() {
                       {day}
                     </span>
                     {isToday && (
-                      <span className="rounded-full bg-indigo-600 px-1.5 py-0.2 text-[9px] font-bold uppercase text-white">
+                      <span className="rounded-full bg-emerald-600 px-1.5 py-0.2 text-[9px] font-bold uppercase text-white">
                         Today
                       </span>
                     )}
@@ -495,13 +495,13 @@ function SchoolSchedulePage() {
                           className={`group relative flex flex-col justify-between rounded-xl border p-3.5 shadow-2xs transition hover:shadow-xs ${
                             isCancelled
                               ? "border-slate-200 bg-slate-100/60 opacity-60"
-                              : "border-slate-200/80 bg-white hover:border-indigo-200"
+                              : "border-slate-200/80 bg-white hover:border-emerald-200"
                           }`}
                         >
                           <div>
                             {/* Time & Type Tag */}
                             <div className="flex items-center justify-between gap-1 text-[11px]">
-                              <span className="flex items-center gap-1 font-semibold text-indigo-700">
+                              <span className="flex items-center gap-1 font-semibold text-emerald-700">
                                 <Clock className="h-3 w-3" />
                                 {slot.startTime} - {slot.endTime}
                               </span>
@@ -557,7 +557,7 @@ function SchoolSchedulePage() {
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => handleOpenEdit(slot)}
-                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-indigo-600 transition"
+                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-emerald-600 transition"
                                 title="Edit Slot"
                               >
                                 <Edit2 className="h-3 w-3" />
@@ -615,7 +615,7 @@ function SchoolSchedulePage() {
                       <tr key={slot.id} className="hover:bg-slate-50/60 transition">
                         <td className="px-4 py-3 font-medium">
                           <span className="font-bold text-slate-900">{slot.dayOfWeek}</span>
-                          <span className="block text-[11px] text-indigo-600">
+                          <span className="block text-[11px] text-emerald-600">
                             {slot.startTime} - {slot.endTime}
                           </span>
                         </td>
@@ -659,7 +659,7 @@ function SchoolSchedulePage() {
                             </button>
                             <button
                               onClick={() => handleOpenEdit(slot)}
-                              className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+                              className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-emerald-600"
                               title="Edit"
                             >
                               <Edit2 className="h-3.5 w-3.5" />
@@ -703,7 +703,7 @@ function SchoolSchedulePage() {
                 placeholder="e.g. Python Explorers: Loops & Functions"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none"
+                className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
                 required
               />
             </div>
@@ -714,7 +714,7 @@ function SchoolSchedulePage() {
                 <select
                   value={form.subject}
                   onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                 >
                   <option value="Computer Science">Computer Science Principles</option>
                   <option value="Python Programming">Python Programming</option>
@@ -730,7 +730,7 @@ function SchoolSchedulePage() {
                 <select
                   value={form.scheduleType}
                   onChange={(e) => setForm({ ...form, scheduleType: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                 >
                   {SCHEDULE_TYPES.map((t) => (
                     <option key={t.value} value={t.value}>
@@ -747,7 +747,7 @@ function SchoolSchedulePage() {
                 <select
                   value={form.classId}
                   onChange={(e) => setForm({ ...form, classId: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                 >
                   <option value="none">Open Lab / Multi-Class</option>
                   {classes.map((c) => (
@@ -765,7 +765,7 @@ function SchoolSchedulePage() {
                 <select
                   value={form.teacherId}
                   onChange={(e) => setForm({ ...form, teacherId: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                   required
                 >
                   {teachers.map((t) => (
@@ -783,7 +783,7 @@ function SchoolSchedulePage() {
                 <select
                   value={form.dayOfWeek}
                   onChange={(e) => setForm({ ...form, dayOfWeek: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                 >
                   {DAYS_OF_WEEK.map((d) => (
                     <option key={d} value={d}>
@@ -799,7 +799,7 @@ function SchoolSchedulePage() {
                   type="time"
                   value={form.startTime}
                   onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-2 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                   required
                 />
               </div>
@@ -810,7 +810,7 @@ function SchoolSchedulePage() {
                   type="time"
                   value={form.endTime}
                   onChange={(e) => setForm({ ...form, endTime: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-2 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                   required
                 />
               </div>
@@ -826,7 +826,7 @@ function SchoolSchedulePage() {
                   placeholder="e.g. Computer Lab 1"
                   value={form.room}
                   onChange={(e) => setForm({ ...form, room: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
                   required
                 />
               </div>
@@ -836,7 +836,7 @@ function SchoolSchedulePage() {
                 <select
                   value={form.recurrence}
                   onChange={(e) => setForm({ ...form, recurrence: e.target.value })}
-                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                 >
                   <option value="weekly">Weekly Recurring</option>
                   <option value="biweekly">Bi-Weekly</option>
@@ -855,7 +855,7 @@ function SchoolSchedulePage() {
                 placeholder="Bring charged Chromebooks, review lesson 4..."
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none"
+                className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
               />
             </div>
 
@@ -870,7 +870,7 @@ function SchoolSchedulePage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 transition"
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition"
               >
                 {isSubmitting ? "Saving..." : editingSlot ? "Save Changes" : "Create Schedule Slot"}
               </button>

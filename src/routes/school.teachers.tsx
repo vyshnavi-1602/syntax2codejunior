@@ -187,7 +187,7 @@ function SchoolTeachers() {
         actions={
           <button
             onClick={() => setInvite(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
           >
             <UserPlus className="h-4 w-4" /> Invite teacher
           </button>
@@ -265,9 +265,9 @@ function SchoolTeachers() {
                         {t.trainings.map((tr) => (
                           <span
                             key={tr.id}
-                            className="inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50/70 px-2 py-0.5 text-[10px] font-medium text-indigo-700"
+                            className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50/70 px-2 py-0.5 text-[10px] font-medium text-emerald-700"
                           >
-                            <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                             {tr.trackName} ({tr.progressPercent}%)
                           </span>
                         ))}
@@ -283,7 +283,7 @@ function SchoolTeachers() {
                       <Bar
                         value={t.readiness}
                         tone={
-                          t.readiness >= 85 ? "emerald" : t.readiness >= 70 ? "indigo" : "amber"
+                          t.readiness >= 85 ? "emerald" : t.readiness >= 70 ? "emerald" : "amber"
                         }
                       />
                     </div>
@@ -358,7 +358,7 @@ function SchoolTeachers() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Dr. Alistair Miller"
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
                 />
               </div>
               <div>
@@ -369,7 +369,7 @@ function SchoolTeachers() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="e.g. miller@school.edu"
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
                 />
               </div>
               <div>
@@ -380,7 +380,7 @@ function SchoolTeachers() {
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   placeholder="e.g. Computer Science & AI"
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
                 />
               </div>
               <div className="mt-6 flex justify-end gap-2.5">
@@ -394,7 +394,7 @@ function SchoolTeachers() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
                 >
                   <Plus className="h-4 w-4" /> Send Invite
                 </button>
@@ -423,7 +423,7 @@ function SchoolTeachers() {
                   required
                   value={editingTeacher.name}
                   onChange={(e) => setEditingTeacher({ ...editingTeacher, name: e.target.value })}
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
                 />
               </div>
               <div>
@@ -433,7 +433,7 @@ function SchoolTeachers() {
                   type="email"
                   value={editingTeacher.email}
                   onChange={(e) => setEditingTeacher({ ...editingTeacher, email: e.target.value })}
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
                 />
               </div>
               <div className="mt-6 flex justify-end gap-2.5">
@@ -447,7 +447,7 @@ function SchoolTeachers() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
                 >
                   Save Changes
                 </button>
@@ -477,15 +477,15 @@ function SchoolTeachers() {
                 <div
                   key={track.id}
                   onClick={() => handleAssignTraining(track.id, track.name)}
-                  className="group flex cursor-pointer items-start justify-between rounded-xl border border-slate-200 p-3 hover:border-indigo-400 hover:bg-indigo-50/50 transition"
+                  className="group flex cursor-pointer items-start justify-between rounded-xl border border-slate-200 p-3 hover:border-emerald-400 hover:bg-emerald-50/50 transition"
                 >
                   <div>
-                    <p className="text-xs font-semibold text-slate-900 group-hover:text-indigo-700">
+                    <p className="text-xs font-semibold text-slate-900 group-hover:text-emerald-700">
                       {track.name}
                     </p>
                     <p className="mt-0.5 text-[11px] text-slate-500 leading-snug">{track.desc}</p>
                   </div>
-                  <BookOpen className="h-4 w-4 text-slate-400 group-hover:text-indigo-600 shrink-0 ml-2 mt-0.5" />
+                  <BookOpen className="h-4 w-4 text-slate-400 group-hover:text-emerald-600 shrink-0 ml-2 mt-0.5" />
                 </div>
               ))}
             </div>

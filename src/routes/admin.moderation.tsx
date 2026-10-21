@@ -77,7 +77,7 @@ function AdminModeration() {
                 description: "Version 4.2 · effective immediately.",
               })
             }
-            className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+            className="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
           >
             Publish policy update
           </button>
@@ -158,7 +158,7 @@ function AdminModeration() {
                     </button>
                     <button
                       onClick={() => act(m, "Escalated to school admin")}
-                      className="h-9 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700"
+                      className="h-9 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700"
                     >
                       Escalate
                     </button>
@@ -196,7 +196,7 @@ function AdminModeration() {
                         description: "Published with first name only.",
                       });
                     }}
-                    className="h-9 flex-1 rounded-lg bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700"
+                    className="h-9 flex-1 rounded-lg bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700"
                   >
                     Approve
                   </button>

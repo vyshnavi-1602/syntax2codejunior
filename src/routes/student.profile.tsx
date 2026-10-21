@@ -76,7 +76,7 @@ function ProfilePage() {
               value={goal}
               onChange={(e) => setGoal(Number(e.target.value))}
               onMouseUp={() => toast.success(`Weekly goal set to ${goal} sessions`)}
-              className="mt-3 w-full accent-indigo-600"
+              className="mt-3 w-full accent-emerald-600"
             />
             <div className="mt-3">
               <Bar value={(4 / goal) * 100} tone="emerald" />
@@ -108,7 +108,7 @@ function ProfilePage() {
                   <span
                     className={cn(
                       "h-5 w-9 rounded-full p-0.5 transition-colors",
-                      prefs[key] ? "bg-indigo-600" : "bg-slate-200",
+                      prefs[key] ? "bg-emerald-600" : "bg-slate-200",
                     )}
                   >
                     <span

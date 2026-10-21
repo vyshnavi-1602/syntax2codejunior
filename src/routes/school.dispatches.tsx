@@ -128,7 +128,7 @@ function SchoolDispatchesPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Panel className="p-4 bg-white border border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-indigo-50 text-indigo-600">
+            <div className="p-2.5 rounded-lg bg-emerald-50 text-emerald-600">
               <Mail className="h-5 w-5" />
             </div>
             <div>
@@ -154,7 +154,7 @@ function SchoolDispatchesPage() {
         </Panel>
         <Panel className="p-4 bg-white border border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-purple-50 text-purple-600">
+            <div className="p-2.5 rounded-lg bg-teal-50 text-teal-600">
               <Clock className="h-5 w-5" />
             </div>
             <div>

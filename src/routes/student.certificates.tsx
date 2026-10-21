@@ -68,7 +68,7 @@ function CertificatesPage() {
         actions={
           <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
             <DialogTrigger asChild>
-              <button className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700">
+              <button className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 shadow-sm">
                 <UploadCloud className="h-4 w-4" /> Add Certificate
               </button>
             </DialogTrigger>
@@ -84,7 +84,7 @@ function CertificatesPage() {
                     value={uploadTitle}
                     onChange={(e) => setUploadTitle(e.target.value)}
                     placeholder="e.g. Python for Beginners"
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                   />
                 </div>
                 <div>
@@ -96,7 +96,7 @@ function CertificatesPage() {
                     value={uploadIssuer}
                     onChange={(e) => setUploadIssuer(e.target.value)}
                     placeholder="e.g. Coursera"
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                   />
                 </div>
                 <div>
@@ -129,7 +129,7 @@ function CertificatesPage() {
                       toast.error("Failed to upload certificate");
                     }
                   }}
-                  className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                  className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 shadow-sm"
                 >
                   Upload
                 </button>
@@ -144,7 +144,7 @@ function CertificatesPage() {
           <button
             key={c.id}
             onClick={() => setOpen(c)}
-            className="rounded-2xl border border-slate-200 bg-white p-5 text-left transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
+            className="rounded-2xl border border-slate-200 bg-white p-5 text-left transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
           >
             <div className="flex items-center justify-between">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 overflow-hidden">
@@ -176,7 +176,7 @@ function CertificatesPage() {
             value={verifyId}
             onChange={(e) => setVerifyId(e.target.value)}
             placeholder="e.g. S2C-PY2-8A-10421"
-            className="h-10 flex-1 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+            className="h-10 flex-1 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
           />
           <button
             onClick={() => {
@@ -190,7 +190,7 @@ function CertificatesPage() {
               else
                 toast("No match found", { description: "Check the credential ID and try again." });
             }}
-            className="h-10 rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white hover:bg-indigo-700"
+            className="h-10 rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white hover:bg-emerald-700 shadow-sm"
           >
             Verify
           </button>
@@ -235,8 +235,8 @@ function CertificatesPage() {
                 )}
               </div>
             ) : (
-              <div className="relative flex-1 border-b border-slate-100 bg-gradient-to-br from-indigo-50 via-white to-teal-50 px-10 py-12 text-center">
-                <p className="text-xs font-semibold tracking-[0.3em] text-indigo-600 uppercase">
+              <div className="relative flex-1 border-b border-slate-100 bg-gradient-to-br from-emerald-50 via-white to-teal-50 px-10 py-12 text-center">
+                <p className="text-xs font-semibold tracking-[0.3em] text-emerald-600 uppercase">
                   Certificate of Achievement
                 </p>
                 <h3 className="mt-4 font-display text-2xl font-semibold tracking-tight text-slate-900">
@@ -331,7 +331,7 @@ function CertificatesPage() {
                     printIsolatedHtml(html);
                     toast.success("Opening printable certificate…");
                   }}
-                  className="inline-flex h-9 items-center gap-2 rounded-lg bg-indigo-600 px-3.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                  className="inline-flex h-9 items-center gap-2 rounded-lg bg-emerald-600 px-3.5 text-xs font-semibold text-white hover:bg-emerald-700 transition-colors shadow-sm"
                 >
                   <Download className="h-3.5 w-3.5" /> Download (PDF)
                 </button>

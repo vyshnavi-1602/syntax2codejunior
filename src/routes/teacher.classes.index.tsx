@@ -87,7 +87,7 @@ function ClassesPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setOpen(true)}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors"
             >
               <Plus className="h-4 w-4" /> Create Class
             </button>
@@ -140,7 +140,7 @@ function ClassesPage() {
             key={c.id}
             to="/teacher/classes/$classId"
             params={{ classId: c.id.toString() }}
-            className="rounded-2xl border border-slate-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
+            className="rounded-2xl border border-slate-200 bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
           >
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold tracking-tight text-slate-900">{c.name}</h3>
@@ -152,7 +152,7 @@ function ClassesPage() {
               {c.teacher} · {c.room}
             </p>
             <div className="mt-4">
-              <Bar value={c.completion} tone={c.completion >= 80 ? "emerald" : "indigo"} />
+              <Bar value={c.completion} tone={c.completion >= 80 ? "emerald" : "emerald"} />
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2 text-center">
               {[
@@ -192,7 +192,7 @@ function ClassesPage() {
                   placeholder="e.g. Intro to Python - Section A"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm focus:border-emerald-500 focus:outline-none"
                 />
               </div>
 
@@ -202,7 +202,7 @@ function ClassesPage() {
                   <select
                     value={form.grade}
                     onChange={(e) => setForm({ ...form, grade: e.target.value })}
-                    className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm focus:border-indigo-500 focus:outline-none bg-white"
+                    className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm focus:border-emerald-500 focus:outline-none bg-white"
                   >
                     {["5", "6", "7", "8", "9", "10", "11", "12"].map((g) => (
                       <option key={g} value={g}>
@@ -216,7 +216,7 @@ function ClassesPage() {
                   <select
                     value={form.section}
                     onChange={(e) => setForm({ ...form, section: e.target.value })}
-                    className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm focus:border-indigo-500 focus:outline-none bg-white"
+                    className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm focus:border-emerald-500 focus:outline-none bg-white"
                   >
                     {["A", "B", "C", "D"].map((s) => (
                       <option key={s} value={s}>
@@ -234,7 +234,7 @@ function ClassesPage() {
                   placeholder="e.g. Lab 1"
                   value={form.room}
                   onChange={(e) => setForm({ ...form, room: e.target.value })}
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm focus:border-indigo-500 focus:outline-none"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm focus:border-emerald-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -249,7 +249,7 @@ function ClassesPage() {
               <button
                 disabled={isSubmitting}
                 onClick={handleCreateClass}
-                className="h-10 rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                className="h-10 rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
               >
                 {isSubmitting ? "Creating..." : "Create Class"}
               </button>

@@ -101,7 +101,7 @@ function AdminUsers() {
                 description: `${users.length} accounts exported to CSV.`,
               });
             }}
-            className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+            className="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
           >
             Export directory
           </button>
@@ -143,13 +143,13 @@ function AdminUsers() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search by name…"
-              className="h-10 w-full rounded-xl border border-slate-200 pr-3 pl-9 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+              className="h-10 w-full rounded-xl border border-slate-200 pr-3 pl-9 text-sm outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
             />
           </div>
           <select
             value={school}
             onChange={(e) => setSchool(e.target.value)}
-            className="h-10 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-300"
+            className="h-10 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-300"
           >
             <option>All schools</option>
             {schoolsGlobal.map((s) => (

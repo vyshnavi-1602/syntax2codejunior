@@ -87,7 +87,7 @@ function LeaderboardPage() {
               />
               <p className="mt-2 text-sm font-semibold text-slate-900">{r.name}</p>
               <p className="text-xs text-slate-500">{r.detail}</p>
-              <p className="mt-1 text-sm font-semibold text-indigo-600">
+              <p className="mt-1 text-sm font-semibold text-emerald-600">
                 {Math.round(r.xp * factor).toLocaleString()} XP
               </p>
             </div>
@@ -108,7 +108,7 @@ function LeaderboardPage() {
               {rows.map((r) => (
                 <tr
                   key={r.rank}
-                  className={cn("border-t border-slate-100", r.isCurrentUser && "bg-indigo-50/50")}
+                  className={cn("border-t border-slate-100", r.isCurrentUser && "bg-emerald-50/50 font-semibold")}
                 >
                   <td className="px-4 py-3 font-semibold text-slate-500">#{r.rank}</td>
                   <td className="px-4 py-3 font-medium text-slate-900">{r.name}</td>

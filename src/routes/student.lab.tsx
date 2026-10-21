@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { cn } from "@/client/lib/utils";
 import { PageHeader, Panel, Pill } from "@/client/components/app/primitives";
 import { CodeEditor } from "@/client/components/app/CodeEditor";
+import { SpaceInvadersRewardModal } from "@/client/components/app/SpaceInvadersRewardModal";
 import {
   runCodeTestsFn,
   runCustomCodeFn,
@@ -430,6 +431,13 @@ function LabPage() {
   const [snapshotsOpen, setSnapshotsOpen] = useState(false);
   const [editorExpanded, setEditorExpanded] = useState(false);
   const [problemSidebarCollapsed, setProblemSidebarCollapsed] = useState(false);
+  const [arcadeRewardOpen, setArcadeRewardOpen] = useState(false);
+
+  const goToNextLabQuestion = () => {
+    if (selectedQIdx < questionList.length - 1) {
+      setSelectedQIdx((prev) => prev + 1);
+    }
+  };
 
   const runCustomStdin = async () => {
     if (customRunning) return;
@@ -565,6 +573,10 @@ function LabPage() {
           toast.success(`Problem Solved! +${currentQ.xp} XP Earned`, {
             description: `All ${data.total} test cases passed. Excellent work!`,
           });
+          // Unlock bonus arcade game ONLY during practice, NEVER during graded assignments
+          if (!search.assignmentId && !currentQ.assignmentId) {
+            setArcadeRewardOpen(true);
+          }
         } else if (data.verdict === "COMPILATION_ERROR") {
           toast.error("Compilation Error", {
             description: "Code has syntax or variable errors. Check compiler console.",
@@ -656,7 +668,7 @@ function LabPage() {
               onClick={() => setSnapshotsOpen(true)}
               className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-xs"
             >
-              <Clock className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+              <Clock className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
               Snapshots ({savedSnapshots.length})
             </button>
             <button
@@ -683,7 +695,7 @@ function LabPage() {
                 className={cn(
                   "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
                   activeCategory === "teacher"
-                    ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
+                    ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs"
                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900",
                 )}
               >
@@ -700,7 +712,7 @@ function LabPage() {
                 className={cn(
                   "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
                   activeCategory === "practice"
-                    ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
+                    ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs"
                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900",
                 )}
               >
@@ -727,7 +739,7 @@ function LabPage() {
                 className={cn(
                   "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-all shadow-xs",
                   isSelected
-                    ? "bg-indigo-600 text-white font-semibold shadow-indigo-600/20"
+                    ? "bg-emerald-600 text-white font-semibold shadow-emerald-600/20"
                     : isSolved
                       ? "border border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300"
                       : "border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800",
@@ -756,7 +768,7 @@ function LabPage() {
           </span>
           <span>
             Total XP:{" "}
-            <strong className="text-indigo-600 dark:text-indigo-400">+{totalXp} XP</strong>
+            <strong className="text-emerald-600 dark:text-emerald-400">+{totalXp} XP</strong>
           </span>
         </div>
       </div>
@@ -776,7 +788,7 @@ function LabPage() {
                 <Pill tone={currentQ.difficulty === "Easy" ? "emerald" : "amber"}>
                   {currentQ.difficulty}
                 </Pill>
-                <span className="rounded-lg bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:text-indigo-300">
+                <span className="rounded-lg bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
                   +{currentQ.xp} XP
                 </span>
                 <button
@@ -798,9 +810,9 @@ function LabPage() {
               </div>
 
               {currentQ.isTeacherAssigned && (
-                <div className="flex flex-wrap items-center gap-2 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 px-3 py-2 text-xs">
-                  <span className="font-semibold text-indigo-900 dark:text-indigo-200">Class:</span>
-                  <span className="text-indigo-700 dark:text-indigo-300 font-medium">
+                <div className="flex flex-wrap items-center gap-2 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/60 px-3 py-2 text-xs">
+                  <span className="font-semibold text-emerald-900 dark:text-emerald-200">Class:</span>
+                  <span className="text-emerald-700 dark:text-emerald-300 font-medium">
                     {currentQ.className || "Classroom"}
                   </span>
                   {currentQ.dueDate && (
@@ -960,7 +972,7 @@ function LabPage() {
                     type="button"
                     onClick={runCustomStdin}
                     disabled={customRunning || isRunning}
-                    className="inline-flex h-7 items-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 px-2.5 text-[11px] font-semibold text-white disabled:opacity-50 transition-colors shadow-2xs"
+                    className="inline-flex h-7 items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2.5 text-[11px] font-semibold text-white disabled:opacity-50 transition-colors shadow-2xs"
                   >
                     <Play className="h-3 w-3 fill-white" />
                     <span>{customRunning ? "Running..." : "Run Custom Input"}</span>
@@ -971,7 +983,7 @@ function LabPage() {
                   value={customInput}
                   onChange={(e) => setCustomInput(e.target.value)}
                   placeholder="e.g. 5 10 or test inputs"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-xs font-mono outline-none focus:border-indigo-400"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-xs font-mono outline-none focus:border-emerald-500"
                 />
                 {customResult && (
                   <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-2.5 text-xs font-mono space-y-1">
@@ -1023,7 +1035,7 @@ function LabPage() {
                       setEditorExpanded(false);
                     }}
                     title="Show Question & Test Cases Sidebar"
-                    className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition-colors"
+                    className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition-colors"
                   >
                     <PanelLeftOpen className="h-3.5 w-3.5" />
                     <span className="hidden sm:inline">Problem & Tests</span>
@@ -1038,9 +1050,9 @@ function LabPage() {
                       setResults(null);
                     }}
                   >
-                    <SelectTrigger className="h-8 w-[130px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-xs focus:ring-1 focus:ring-indigo-500">
+                    <SelectTrigger className="h-8 w-[130px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-xs focus:ring-1 focus:ring-emerald-500">
                       <div className="flex items-center gap-1.5">
-                        <FileCode className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                        <FileCode className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                         <SelectValue placeholder="Language" />
                       </div>
                     </SelectTrigger>
@@ -1075,13 +1087,13 @@ function LabPage() {
                   className={cn(
                     "inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold shadow-xs transition-all",
                     editorExpanded
-                      ? "border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100"
+                      ? "border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100"
                       : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700",
                   )}
                 >
                   {editorExpanded ? (
                     <>
-                      <Minimize2 className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                      <Minimize2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                       <span className="hidden sm:inline">Collapse</span>
                     </>
                   ) : (
@@ -1127,7 +1139,7 @@ function LabPage() {
           <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950 px-4 py-2.5">
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                <Terminal className="h-4 w-4 text-indigo-500" />
+                <Terminal className="h-4 w-4 text-emerald-500" />
                 <span>Terminal Stdout & Compiler Logs</span>
               </div>
 
@@ -1187,7 +1199,7 @@ function LabPage() {
                       setSnapshotsOpen(false);
                       toast.success(`Restored snapshot from ${s.time}`);
                     }}
-                    className="rounded-lg bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100"
+                    className="rounded-lg bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100"
                   >
                     Restore
                   </button>
@@ -1199,6 +1211,15 @@ function LabPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <SpaceInvadersRewardModal
+        open={arcadeRewardOpen}
+        onOpenChange={setArcadeRewardOpen}
+        xpEarned={currentQ.xp}
+        challengeTitle={currentQ.title}
+        onNextQuestion={goToNextLabQuestion}
+        nextQuestionLabel="Next Problem"
+      />
     </div>
   );
 }

@@ -29,22 +29,25 @@ const roleHome: Record<string, string> = {
 };
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (search: Record<string, unknown>): { role: string | undefined } => {
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { role?: string | undefined; mode?: string | undefined } => {
     return {
       role: search.role as string | undefined,
+      mode: search.mode as string | undefined,
     };
   },
   head: () => ({
     meta: [
-      { title: "Sign in · Syntax2Code for Schools" },
-      { name: "description", content: "Sign in to Syntax2Code" },
+      { title: "Sign in · Syntax2Code Junior" },
+      { name: "description", content: "Sign in to Syntax2Code Junior" },
     ],
   }),
   component: LoginPage,
 });
 
 function LoginPage() {
-  const { role: searchRole } = Route.useSearch();
+  const { role: searchRole, mode: searchMode } = Route.useSearch();
   const { signIn: fakeSignIn } = useSession();
   const { data: session, isPending } = useRealSession();
 
@@ -56,6 +59,24 @@ function LoginPage() {
       ? (searchRole as "student" | "teacher" | "school" | "admin")
       : "student",
   );
+
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    return searchMode === "signup" || searchMode === "register" ? "register" : "login";
+  });
+
+  useEffect(() => {
+    if (searchMode === "signup" || searchMode === "register") {
+      setActiveTab("register");
+    } else if (searchMode === "signin" || searchMode === "login") {
+      setActiveTab("login");
+    }
+  }, [searchMode]);
+
+  useEffect(() => {
+    if (searchRole && ["student", "teacher", "school", "admin"].includes(searchRole)) {
+      setSelectedRole(searchRole as "student" | "teacher" | "school" | "admin");
+    }
+  }, [searchRole]);
   const [signInEmail, setSignInEmail] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
   const [showSignInPassword, setShowSignInPassword] = useState(false);
@@ -341,57 +362,118 @@ function LoginPage() {
   };
 
   return (
-    <div className="grid min-h-screen bg-slate-50 lg:grid-cols-2">
-      <div className="relative hidden flex-col justify-between overflow-hidden border-r border-slate-200 bg-white p-12 lg:flex">
-        <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-indigo-100/70 blur-3xl" />
-        <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-teal-100/60 blur-3xl" />
+    <div className="grid min-h-screen bg-slate-50 dark:bg-slate-950 lg:grid-cols-2">
+      {/* LEFT BRAND PANEL (Clean Mint & Emerald theme) */}
+      <div className="relative hidden flex-col justify-between overflow-hidden border-r border-emerald-100 dark:border-emerald-950 bg-gradient-to-b from-[#f0fbf7] to-white dark:from-[#091812] dark:to-[#07130e] p-12 lg:flex">
+        <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-emerald-100/70 dark:bg-emerald-900/20 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-teal-100/60 dark:bg-teal-900/20 blur-3xl pointer-events-none" />
+        
         <div className="relative">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-teal-500 font-bold text-white">
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 font-extrabold text-white shadow-md shadow-emerald-600/20">
               S2
             </span>
-            <div>
-              <p className="font-display text-lg font-semibold tracking-tight text-slate-900">
+            <div className="flex items-center gap-1.5">
+              <p className="font-display text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                 Syntax2Code
               </p>
-              <p className="text-xs text-slate-500">AI & Coding platform for schools</p>
+              <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                Junior
+              </span>
             </div>
           </div>
-          <h1 className="font-display mt-16 max-w-md text-4xl leading-tight font-semibold tracking-tight text-slate-900">
-            The complete AI & coding curriculum your school can actually measure.
+
+          <h1 className="font-display mt-14 max-w-md text-4xl leading-tight font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Little Steps.
+            <br />
+            <span className="text-emerald-600 dark:text-emerald-400">Big Ideas.</span>
+            <br />
+            <span className="text-teal-700 dark:text-teal-400">Real Skills.</span>
           </h1>
+          <p className="mt-4 text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md font-medium">
+            Syntax2Code Junior helps school students learn coding, build cool projects, and explore
+            the world of AI through fun, hands-on learning.
+          </p>
+
+          <div className="mt-8 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-bold">
+                ✓
+              </span>
+              <span>Beginner friendly cloud labs</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300 text-xs font-bold">
+                ✓
+              </span>
+              <span>Project based game building</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-bold">
+                ✓
+              </span>
+              <span>Safe & positive for school education</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative text-xs text-slate-400 dark:text-slate-500">
+          © {new Date().getFullYear()} Syntax2Code Junior. All rights reserved.
         </div>
       </div>
 
+      {/* RIGHT AUTH CARD */}
       <div className="flex items-center justify-center p-6 lg:p-12 relative">
         <div className="absolute top-6 right-6 flex items-center gap-3">
           <ThemeToggle />
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 transition-colors"
           >
             Back to Home <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 
         <div className="w-full max-w-md">
-          <h2 className="font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
-            Welcome Back
+          <h2 className="font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Welcome to Syntax2Code Junior
           </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Sign in to access your dashboard.
-          </p>
 
-          <Tabs defaultValue="login" className="mt-8">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Sign In</TabsTrigger>
-              <TabsTrigger value="register">Sign Up</TabsTrigger>
+          <div className="mt-4 flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Portal:
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 capitalize">
+              {selectedRole === "school"
+                ? "School Admin"
+                : selectedRole === "admin"
+                  ? "Platform Admin"
+                  : selectedRole}
+            </span>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
+            <TabsList className="grid w-full grid-cols-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+              <TabsTrigger
+                value="login"
+                className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-emerald-700 dark:data-[state=active]:text-emerald-300 font-semibold rounded-lg shadow-sm transition-all"
+              >
+                Sign In
+              </TabsTrigger>
+              <TabsTrigger
+                value="register"
+                className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-emerald-700 dark:data-[state=active]:text-emerald-300 font-semibold rounded-lg shadow-sm transition-all"
+              >
+                Sign Up
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="login" className="mt-6">
               <form onSubmit={handleEmailSignIn} noValidate className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="signin-email">Email Address</Label>
+                  <Label htmlFor="signin-email" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Email Address
+                  </Label>
                   <Input
                     id="signin-email"
                     type="email"
@@ -400,8 +482,9 @@ function LoginPage() {
                       setSignInEmail(e.target.value);
                       if (signInEmailError) setSignInEmailError("");
                     }}
-                    placeholder="name@school.edu"
+                    placeholder="name@gmail.com or school email"
                     className={cn(
+                      "rounded-xl border-slate-200 dark:border-slate-800 focus-visible:ring-emerald-500",
                       signInEmailError &&
                         "border-rose-400 bg-rose-50/30 focus-visible:ring-rose-200",
                     )}
@@ -412,7 +495,9 @@ function LoginPage() {
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="signin-password">Password</Label>
+                    <Label htmlFor="signin-password" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Password
+                    </Label>
                     <button
                       type="button"
                       onClick={() => {
@@ -421,7 +506,7 @@ function LoginPage() {
                         setForgotEmailError("");
                         setForgotOpen(true);
                       }}
-                      className="text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+                      className="text-xs font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 hover:underline"
                     >
                       Forgot password?
                     </button>
@@ -437,7 +522,7 @@ function LoginPage() {
                       }}
                       placeholder="••••••••"
                       className={cn(
-                        "pr-10",
+                        "pr-10 rounded-xl border-slate-200 dark:border-slate-800 focus-visible:ring-emerald-500",
                         signInPasswordError &&
                           "border-rose-400 bg-rose-50/30 focus-visible:ring-rose-200",
                       )}
@@ -460,8 +545,18 @@ function LoginPage() {
                     <p className="text-xs font-medium text-rose-600 mt-1">{signInPasswordError}</p>
                   )}
                 </div>
-                <Button type="submit" className="w-full">
-                  Sign in
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl shadow-md shadow-emerald-600/20 transition-colors"
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Signing in...
+                    </span>
+                  ) : (
+                    "Sign in"
+                  )}
                 </Button>
               </form>
             </TabsContent>
@@ -469,7 +564,9 @@ function LoginPage() {
             <TabsContent value="register" className="mt-6">
               <form onSubmit={handleEmailSignUp} noValidate className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="signup-name">Full Name</Label>
+                  <Label htmlFor="signup-name" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Full Name
+                  </Label>
                   <Input
                     id="signup-name"
                     type="text"
@@ -480,6 +577,7 @@ function LoginPage() {
                     }}
                     placeholder="Aarav Sharma"
                     className={cn(
+                      "rounded-xl border-slate-200 dark:border-slate-800 focus-visible:ring-emerald-500",
                       signUpNameError &&
                         "border-rose-400 bg-rose-50/30 focus-visible:ring-rose-200",
                     )}
@@ -489,7 +587,9 @@ function LoginPage() {
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="signup-email">Email Address</Label>
+                  <Label htmlFor="signup-email" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Email Address
+                  </Label>
                   <Input
                     id="signup-email"
                     type="email"
@@ -498,8 +598,9 @@ function LoginPage() {
                       setSignUpEmail(e.target.value);
                       if (signUpEmailError) setSignUpEmailError("");
                     }}
-                    placeholder="aarav@school.edu"
+                    placeholder="name@gmail.com or school email"
                     className={cn(
+                      "rounded-xl border-slate-200 dark:border-slate-800 focus-visible:ring-emerald-500",
                       signUpEmailError &&
                         "border-rose-400 bg-rose-50/30 focus-visible:ring-rose-200",
                     )}
@@ -509,7 +610,9 @@ function LoginPage() {
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Password
+                  </Label>
                   <div className="relative">
                     <Input
                       id="signup-password"
@@ -521,7 +624,7 @@ function LoginPage() {
                       }}
                       placeholder="Choose a secure password (min 6 chars)"
                       className={cn(
-                        "pr-10",
+                        "pr-10 rounded-xl border-slate-200 dark:border-slate-800 focus-visible:ring-emerald-500",
                         signUpPasswordError &&
                           "border-rose-400 bg-rose-50/30 focus-visible:ring-rose-200",
                       )}
@@ -544,8 +647,18 @@ function LoginPage() {
                     <p className="text-xs font-medium text-rose-600 mt-1">{signUpPasswordError}</p>
                   )}
                 </div>
-                <Button type="submit" className="w-full">
-                  Create Account
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl shadow-md shadow-emerald-600/20 transition-colors"
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Creating Account...
+                    </span>
+                  ) : (
+                    "Create Account"
+                  )}
                 </Button>
               </form>
             </TabsContent>
@@ -585,16 +698,18 @@ function LoginPage() {
                     <Button type="button" variant="outline" onClick={() => setForgotOpen(false)}>
                       Cancel
                     </Button>
-                    <Button type="submit">Send Reset Instructions</Button>
+                    <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                      Send Reset Instructions
+                    </Button>
                   </div>
                 </form>
               ) : (
                 <div className="space-y-4 py-2 text-center">
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800 text-sm">
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 p-4 text-emerald-800 dark:text-emerald-300 text-sm">
                     A password recovery link has been dispatched to <strong>{forgotEmail}</strong>.
                     Please check your inbox or school email portal.
                   </div>
-                  <Button className="w-full" onClick={() => setForgotOpen(false)}>
+                  <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setForgotOpen(false)}>
                     Back to Sign In
                   </Button>
                 </div>
@@ -604,17 +719,20 @@ function LoginPage() {
 
           <div className="relative mt-8">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-slate-200" />
+              <span className="w-full border-t border-slate-200 dark:border-slate-800" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-slate-50 px-2 text-slate-500">Or continue with</span>
+              <span className="bg-slate-50 dark:bg-slate-950 px-2 text-slate-500 font-medium">
+                Or continue with
+              </span>
             </div>
           </div>
 
           <button
             onClick={handleGoogleLogin}
+            disabled={loading}
             type="button"
-            className="mt-8 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path

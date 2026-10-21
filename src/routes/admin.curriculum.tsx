@@ -112,7 +112,7 @@ function AdminCurriculum() {
           <>
             <button
               onClick={() => setModal("path")}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
             >
               <Plus className="h-4 w-4" /> New learning path
             </button>
@@ -167,7 +167,7 @@ function AdminCurriculum() {
                   className={cn(
                     "flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition-colors",
                     pathId === p.id
-                      ? "border-indigo-200 bg-indigo-50 text-indigo-800"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                       : "border-slate-200 text-slate-700 hover:bg-slate-50",
                   )}
                 >
@@ -282,7 +282,7 @@ function AdminCurriculum() {
                         ))}
                       <button
                         onClick={() => setModal("lesson")}
-                        className="mt-1 inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:underline"
+                        className="mt-1 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:underline"
                       >
                         <Plus className="h-3.5 w-3.5" /> Add lesson
                       </button>
@@ -313,7 +313,7 @@ function AdminCurriculum() {
           action={
             <button
               onClick={() => toast.success("New practice activity created as draft")}
-              className="h-9 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700"
+              className="h-9 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700"
             >
               New activity
             </button>
@@ -355,7 +355,7 @@ function AdminCurriculum() {
                       <div className="flex gap-2">
                         <button
                           onClick={() => toast.success(`Editing "${p.title}"`)}
-                          className="text-xs font-semibold text-indigo-600 hover:underline"
+                          className="text-xs font-semibold text-emerald-600 hover:underline"
                         >
                           Edit
                         </button>
@@ -394,7 +394,7 @@ function AdminCurriculum() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Title"
-              className="mt-4 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-300"
+              className="mt-4 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-300"
             />
             <div className="mt-4 flex justify-end gap-2">
               <button
@@ -405,7 +405,7 @@ function AdminCurriculum() {
               </button>
               <button
                 onClick={create}
-                className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+                className="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
               >
                 Create
               </button>

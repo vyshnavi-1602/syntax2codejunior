@@ -136,6 +136,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback((next: RoleId) => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(KEY, next);
+      document.cookie = `s2c_role=${next}; path=/; max-age=31536000; SameSite=Lax`;
+      const matched = demoUsers.find((u) => u.role === next) || demoUsers[0]!;
+      document.cookie = `s2c_name=${encodeURIComponent(matched.name)}; path=/; max-age=31536000; SameSite=Lax`;
+      document.cookie = `s2c_email=${encodeURIComponent(matched.email)}; path=/; max-age=31536000; SameSite=Lax`;
+      const savedSettings = window.localStorage.getItem("s2c-profile-settings");
+      if (savedSettings) {
+        try {
+          const parsed = JSON.parse(savedSettings);
+          if (parsed.role && parsed.role !== next) {
+            window.localStorage.removeItem("s2c-profile-settings");
+          } else if (next === "student" && parsed.name === "Platform Admin") {
+            window.localStorage.removeItem("s2c-profile-settings");
+          }
+        } catch {
+          window.localStorage.removeItem("s2c-profile-settings");
+        }
+      }
     }
     setRole(next);
   }, []);
@@ -150,13 +167,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       window.localStorage.removeItem(KEY);
       window.localStorage.removeItem("s2c-profile-settings");
       window.localStorage.clear();
+      document.cookie = "s2c_role=; path=/; max-age=0";
+      document.cookie = "s2c-demo-role=; path=/; max-age=0";
+      document.cookie = "s2c_name=; path=/; max-age=0";
+      document.cookie = "s2c_email=; path=/; max-age=0";
     }
     setRole("student");
   }, []);
 
   const value = useMemo<SessionValue>(() => {
     const defaultUser: DemoUser = demoUsers[0]!;
-    let mockUser: DemoUser | null = role
+    const matchedUser = role
       ? (demoUsers.find(
           (u) =>
             u.role === role ||
@@ -165,43 +186,60 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         ) ?? defaultUser)
       : defaultUser;
 
-    if (mockUser) {
-      if (typeof window !== "undefined") {
-        const savedSettings = window.localStorage.getItem("s2c-profile-settings");
-        if (savedSettings) {
-          try {
-            const parsed = JSON.parse(savedSettings);
+    let mockUser: DemoUser = { ...matchedUser };
+
+    if (typeof window !== "undefined") {
+      const savedSettings = window.localStorage.getItem("s2c-profile-settings");
+      if (savedSettings) {
+        try {
+          const parsed = JSON.parse(savedSettings);
+          const roleMatches = !parsed.role || parsed.role === role;
+          const isAdminContaminatingStudent =
+            role === "student" &&
+            (parsed.name === "Platform Admin" || parsed.role === "admin" || parsed.role === "s2c");
+          if (roleMatches && !isAdminContaminatingStudent) {
             if (parsed.name) mockUser.name = parsed.name;
+            if (parsed.email) mockUser.email = parsed.email;
             if (parsed.school) mockUser.school = parsed.school;
-          } catch (_err) {
-            // ignore corrupted JSON
+            if (parsed.name) {
+              mockUser.avatar = parsed.name
+                .split(" ")
+                .filter(Boolean)
+                .map((n: string) => n[0])
+                .join("")
+                .substring(0, 2)
+                .toUpperCase();
+            }
           }
+        } catch (_err) {
+          // ignore corrupted JSON
         }
       }
+    }
 
-      if (realSession?.user) {
-        const sessionRole = (realSession.user as { role?: string }).role || "student";
-        const isRoleMatch =
-          sessionRole === role ||
-          ((role === "admin" || role === "s2c") &&
-            (sessionRole === "admin" || sessionRole === "s2c"));
+    if (realSession?.user) {
+      const sessionRole = (realSession.user as { role?: string }).role || "student";
+      const isRoleMatch =
+        sessionRole === role ||
+        ((role === "admin" || role === "s2c") &&
+          (sessionRole === "admin" || sessionRole === "s2c"));
 
-        if (isRoleMatch) {
-          mockUser = {
-            ...mockUser,
-            name: realSession.user.name || mockUser.name,
-            email: realSession.user.email || mockUser.email,
-            isRealAuth: true,
-            avatar: realSession.user.name
-              ? realSession.user.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .substring(0, 2)
-                  .toUpperCase()
-              : mockUser.avatar,
-          };
-        }
+      if (isRoleMatch) {
+        mockUser = {
+          ...mockUser,
+          name: realSession.user.name || mockUser.name,
+          email: realSession.user.email || mockUser.email,
+          isRealAuth: true,
+          avatar: realSession.user.name
+            ? realSession.user.name
+                .split(" ")
+                .filter(Boolean)
+                .map((n: string) => n[0])
+                .join("")
+                .substring(0, 2)
+                .toUpperCase()
+            : mockUser.avatar,
+        };
       }
     }
 

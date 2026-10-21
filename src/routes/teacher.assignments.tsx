@@ -861,7 +861,7 @@ function AssignmentsPage() {
               resetFormState();
               setCreating(true);
             }}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 shadow-xs transition-colors"
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 shadow-xs transition-colors"
           >
             <Plus className="h-4 w-4" /> New assignment
           </button>
@@ -896,7 +896,7 @@ function AssignmentsPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by title, class, or type..."
-                className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs outline-none focus:border-indigo-400"
+                className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs outline-none focus:border-emerald-400"
               />
             </div>
 
@@ -904,7 +904,7 @@ function AssignmentsPage() {
               <select
                 value={classFilter}
                 onChange={(e) => setClassFilter(e.target.value)}
-                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 outline-none focus:border-indigo-400"
+                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 outline-none focus:border-emerald-400"
               >
                 <option value="ALL">All Classes</option>
                 {availableClasses.map((c) => (
@@ -917,7 +917,7 @@ function AssignmentsPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 outline-none focus:border-indigo-400"
+                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 outline-none focus:border-emerald-400"
               >
                 <option value="ALL">All Statuses</option>
                 <option value="Active">Active</option>
@@ -965,7 +965,7 @@ function AssignmentsPage() {
                           {a.status}
                         </Pill>
                         {codingData && (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                             <Code2 className="h-3 w-3" /> Coding Round ·{" "}
                             {questionCount > 1
                               ? `${questionCount} Questions`
@@ -999,7 +999,7 @@ function AssignmentsPage() {
                             });
                             setViewingQIndex(0);
                           }}
-                          className="inline-flex h-8.5 items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50/50 px-2.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100/60 transition-colors"
+                          className="inline-flex h-8.5 items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50/50 px-2.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100/60 transition-colors"
                           title="View configured questions & test cases"
                         >
                           <Eye className="h-3.5 w-3.5" /> View{" "}
@@ -1012,7 +1012,7 @@ function AssignmentsPage() {
                         className="inline-flex h-8.5 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50/50 px-2.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition-colors"
                         title="Review and grade student submissions"
                       >
-                        <Award className="h-3.5 w-3.5 text-indigo-600" /> Grade ({a.submitted}/
+                        <Award className="h-3.5 w-3.5 text-emerald-600" /> Grade ({a.submitted}/
                         {a.total})
                       </button>
 
@@ -1055,7 +1055,7 @@ function AssignmentsPage() {
                     <div className="flex-1">
                       <Bar
                         value={(a.submitted / (a.total || 1)) * 100}
-                        tone={a.submitted === a.total ? "emerald" : "indigo"}
+                        tone={a.submitted === a.total ? "emerald" : "emerald"}
                       />
                     </div>
                     <span className="text-xs text-slate-500 font-medium">
@@ -1138,7 +1138,7 @@ function AssignmentsPage() {
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-slate-50/50">
               <div>
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <FileCode className="h-5 w-5 text-indigo-600" />
+                  <FileCode className="h-5 w-5 text-emerald-600" />
                   {editingId ? "Edit Assignment" : "Create New Assignment"}
                 </h3>
                 <p className="text-xs text-slate-500">
@@ -1174,7 +1174,7 @@ function AssignmentsPage() {
                     "h-10 w-full rounded-xl border px-3 text-sm outline-none transition-colors",
                     titleError
                       ? "border-rose-400 bg-rose-50/30 focus:border-rose-500"
-                      : "border-slate-200 focus:border-indigo-400",
+                      : "border-slate-200 focus:border-emerald-400",
                   )}
                 />
                 {titleError && (
@@ -1190,7 +1190,7 @@ function AssignmentsPage() {
                   <select
                     value={form.className}
                     onChange={(e) => setForm({ ...form, className: e.target.value })}
-                    className="h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-400"
+                    className="h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-400"
                   >
                     {availableClasses.map((c) => (
                       <option key={c.id} value={c.name}>
@@ -1207,7 +1207,7 @@ function AssignmentsPage() {
                     type="date"
                     value={form.due}
                     onChange={(e) => setForm({ ...form, due: e.target.value })}
-                    className="h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-400"
+                    className="h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-400"
                   />
                 </div>
                 <div>
@@ -1217,7 +1217,7 @@ function AssignmentsPage() {
                   <select
                     value={form.status}
                     onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    className="h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-400"
+                    className="h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-400"
                   >
                     <option value="Active">Active (Visible)</option>
                     <option value="Draft">Draft (Hidden)</option>
@@ -1484,10 +1484,10 @@ function AssignmentsPage() {
               </div>
 
               {/* ASSESSMENT FORMAT SELECTOR */}
-              <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 space-y-2.5">
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3.5 space-y-2.5">
                 <div>
                   <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+                    <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
                     Assessment Evaluation Format
                   </label>
                   <p className="text-[11px] text-slate-500">
@@ -1506,7 +1506,7 @@ function AssignmentsPage() {
                     className={cn(
                       "flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-xs font-bold transition-all border",
                       assessmentFormat === "coding"
-                        ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
                         : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50",
                     )}
                   >
@@ -1529,7 +1529,7 @@ function AssignmentsPage() {
                     className={cn(
                       "flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-xs font-bold transition-all border",
                       assessmentFormat === "mcq"
-                        ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
                         : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50",
                     )}
                   >
@@ -1540,13 +1540,13 @@ function AssignmentsPage() {
               </div>
 
               {assessmentFormat === "mcq" ? (
-                <div className="space-y-4 rounded-xl border border-indigo-100 bg-indigo-50/20 p-4">
+                <div className="space-y-4 rounded-xl border border-emerald-100 bg-emerald-50/20 p-4">
                   {/* Subject Selection */}
                   <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div>
                         <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                          <BookOpen className="h-4 w-4 text-indigo-600" />
+                          <BookOpen className="h-4 w-4 text-emerald-600" />
                           Select Subject from Question Bank
                         </label>
                         <p className="text-[11px] text-slate-500">
@@ -1557,7 +1557,7 @@ function AssignmentsPage() {
                       <Link
                         to="/teacher/questions"
                         target="_blank"
-                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 hover:underline"
+                        className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 hover:underline"
                       >
                         Manage Questions / Upload Docs
                         <ChevronRight className="h-3 w-3" />
@@ -1574,7 +1574,7 @@ function AssignmentsPage() {
                           setSelectedMcqIds(subj.questions.map((q) => q.id));
                         }
                       }}
-                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-indigo-400 font-medium"
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-emerald-400 font-medium"
                     >
                       {questionBankSubjects.map((s) => (
                         <option key={s.id} value={s.id}>
@@ -1595,7 +1595,7 @@ function AssignmentsPage() {
                           max={100}
                           value={passingScore}
                           onChange={(e) => setPassingScore(Number(e.target.value) || 70)}
-                          className="h-9 w-full rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-indigo-400"
+                          className="h-9 w-full rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-emerald-400"
                         />
                       </div>
                       <div>
@@ -1608,7 +1608,7 @@ function AssignmentsPage() {
                           max={180}
                           value={timeLimitMinutes}
                           onChange={(e) => setTimeLimitMinutes(Number(e.target.value) || 20)}
-                          className="h-9 w-full rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-indigo-400"
+                          className="h-9 w-full rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-emerald-400"
                         />
                       </div>
                     </div>
@@ -1641,7 +1641,7 @@ function AssignmentsPage() {
                             <button
                               type="button"
                               onClick={() => setSelectedMcqIds(activeQuestions.map((q) => q.id))}
-                              className="text-xs font-medium text-indigo-600 hover:text-indigo-700 px-2 py-1 rounded bg-indigo-50"
+                              className="text-xs font-medium text-emerald-600 hover:text-emerald-700 px-2 py-1 rounded bg-emerald-50"
                             >
                               Select All
                             </button>
@@ -1664,7 +1664,7 @@ function AssignmentsPage() {
                             <Link
                               to="/teacher/questions"
                               target="_blank"
-                              className="inline-flex items-center gap-1 text-xs text-indigo-600 font-bold mt-2"
+                              className="inline-flex items-center gap-1 text-xs text-emerald-600 font-bold mt-2"
                             >
                               Upload Document or Add MCQs in Question Bank
                             </Link>
@@ -1686,7 +1686,7 @@ function AssignmentsPage() {
                                   className={cn(
                                     "p-3 rounded-xl border text-xs cursor-pointer transition-all",
                                     isChecked
-                                      ? "border-indigo-300 bg-indigo-50/30"
+                                      ? "border-emerald-300 bg-emerald-50/30"
                                       : "border-slate-200 hover:border-slate-300 bg-white opacity-70",
                                   )}
                                 >
@@ -1695,7 +1695,7 @@ function AssignmentsPage() {
                                       type="checkbox"
                                       checked={isChecked}
                                       onChange={() => {}}
-                                      className="mt-0.5 h-4 w-4 rounded accent-indigo-600 cursor-pointer"
+                                      className="mt-0.5 h-4 w-4 rounded accent-emerald-600 cursor-pointer"
                                     />
                                     <div className="flex-1 space-y-1">
                                       <div className="flex items-center justify-between gap-2">
@@ -1731,7 +1731,7 @@ function AssignmentsPage() {
                                         })}
                                       </div>
                                       {q.sourceDoc && (
-                                        <p className="text-[10px] text-indigo-600 font-medium pt-0.5">
+                                        <p className="text-[10px] text-emerald-600 font-medium pt-0.5">
                                           📄 Extracted from: {q.sourceDoc}
                                         </p>
                                       )}
@@ -1761,7 +1761,7 @@ function AssignmentsPage() {
                           setIsCodingRound(true);
                         }
                       }}
-                      className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                      className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
                     >
                       <option value="Coding task">Coding task (IDE & Test cases)</option>
                       <option value="Assessment">Assessment (Coding evaluation round)</option>
@@ -1771,10 +1771,10 @@ function AssignmentsPage() {
                   </div>
 
                   {/* CODING ROUND & TEST CASES TOGGLE */}
-                  <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5">
+                  <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <Code2 className="h-4 w-4 text-indigo-600" />
+                        <Code2 className="h-4 w-4 text-emerald-600" />
                         <div>
                           <p className="text-xs font-bold text-slate-900">
                             Include Automated Test Cases (Interactive Coding Round)
@@ -1789,7 +1789,7 @@ function AssignmentsPage() {
                         type="checkbox"
                         checked={isCodingRound}
                         onChange={(e) => setIsCodingRound(e.target.checked)}
-                        className="h-4 w-4 rounded accent-indigo-600 cursor-pointer"
+                        className="h-4 w-4 rounded accent-emerald-600 cursor-pointer"
                       />
                     </div>
                   </div>
@@ -1799,16 +1799,16 @@ function AssignmentsPage() {
               {isCodingRound ? (
                 <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
                   {/* MULTI-QUESTION SELECTOR BAR */}
-                  <div className="rounded-xl border border-indigo-200/70 bg-white p-3 shadow-2xs space-y-2.5">
+                  <div className="rounded-xl border border-emerald-200/70 bg-white p-3 shadow-2xs space-y-2.5">
                     <div className="flex items-center justify-between flex-wrap gap-2">
-                      <span className="text-xs font-bold uppercase tracking-wider text-indigo-800 flex items-center gap-1.5">
-                        <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
                         Questions In This Assignment ({questions.length})
                       </span>
                       <button
                         type="button"
                         onClick={() => addQuestion()}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-indigo-700 transition-colors shadow-2xs"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-emerald-700 transition-colors shadow-2xs"
                       >
                         <Plus className="h-3.5 w-3.5" /> Add Another Question
                       </button>
@@ -1824,7 +1824,7 @@ function AssignmentsPage() {
                             className={cn(
                               "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all border",
                               activeQIndex === idx
-                                ? "bg-indigo-600 text-white border-indigo-600 shadow-2xs"
+                                ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs"
                                 : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200",
                             )}
                           >
@@ -1833,7 +1833,7 @@ function AssignmentsPage() {
                               className={cn(
                                 "rounded px-1 text-[10px]",
                                 activeQIndex === idx
-                                  ? "bg-indigo-700 text-white"
+                                  ? "bg-emerald-700 text-white"
                                   : "bg-slate-200 text-slate-600",
                               )}
                             >
@@ -1869,7 +1869,7 @@ function AssignmentsPage() {
                           value={currentQ.title}
                           onChange={(e) => updateCurrentQuestion("title", e.target.value)}
                           placeholder="e.g. Problem 1: Even/Odd Numbers"
-                          className="h-8.5 w-full rounded-lg border border-slate-200 px-2.5 text-xs font-bold text-slate-900 outline-none focus:border-indigo-400"
+                          className="h-8.5 w-full rounded-lg border border-slate-200 px-2.5 text-xs font-bold text-slate-900 outline-none focus:border-emerald-400"
                         />
                       </div>
 
@@ -1886,7 +1886,7 @@ function AssignmentsPage() {
                                 e.target.value as "Easy" | "Medium" | "Hard",
                               )
                             }
-                            className="h-8.5 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-800 outline-none focus:border-indigo-400"
+                            className="h-8.5 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-800 outline-none focus:border-emerald-400"
                           >
                             <option value="Easy">Easy</option>
                             <option value="Medium">Medium</option>
@@ -1907,7 +1907,7 @@ function AssignmentsPage() {
                             onChange={(e) =>
                               updateCurrentQuestion("xp", Number(e.target.value) || 50)
                             }
-                            className="h-8.5 w-20 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:border-indigo-400"
+                            className="h-8.5 w-20 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:border-emerald-400"
                           />
                         </div>
                       </div>
@@ -1964,7 +1964,7 @@ function AssignmentsPage() {
                         onChange={(e) => updateCurrentQuestion("prompt", e.target.value)}
                         rows={3}
                         placeholder="Describe the coding challenge in detail for the students..."
-                        className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none focus:border-indigo-400 leading-relaxed"
+                        className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none focus:border-emerald-400 leading-relaxed"
                       />
                     </div>
 
@@ -1977,7 +1977,7 @@ function AssignmentsPage() {
                           value={currentQ.inputFormat}
                           onChange={(e) => updateCurrentQuestion("inputFormat", e.target.value)}
                           placeholder="e.g. Two space-separated integers"
-                          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none focus:border-indigo-400"
+                          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none focus:border-emerald-400"
                         />
                       </div>
                       <div>
@@ -1988,7 +1988,7 @@ function AssignmentsPage() {
                           value={currentQ.outputFormat}
                           onChange={(e) => updateCurrentQuestion("outputFormat", e.target.value)}
                           placeholder="e.g. Single integer output"
-                          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none focus:border-indigo-400"
+                          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none focus:border-emerald-400"
                         />
                       </div>
                     </div>
@@ -2001,7 +2001,7 @@ function AssignmentsPage() {
                         value={currentQ.constraints}
                         onChange={(e) => updateCurrentQuestion("constraints", e.target.value)}
                         placeholder="e.g. 1 <= N <= 1000, Time limit 5.0s"
-                        className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none focus:border-indigo-400"
+                        className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none focus:border-emerald-400"
                       />
                     </div>
 
@@ -2009,13 +2009,13 @@ function AssignmentsPage() {
                     <div className="space-y-2 pt-2 border-t border-slate-100">
                       <div className="flex items-center justify-between">
                         <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                          <Terminal className="h-3.5 w-3.5 text-indigo-600" />
+                          <Terminal className="h-3.5 w-3.5 text-emerald-600" />
                           Test Cases Suite for {currentQ.title} ({currentQ.testCases.length})
                         </label>
                         <button
                           type="button"
                           onClick={addTestCase}
-                          className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-indigo-700"
+                          className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-700"
                         >
                           <Plus className="h-3 w-3" /> Add Test Case
                         </button>
@@ -2084,7 +2084,7 @@ function AssignmentsPage() {
                                   value={tc.input}
                                   onChange={(e) => updateTestCase(tc.id, "input", e.target.value)}
                                   placeholder="e.g. 10 20"
-                                  className="h-8 w-full rounded-md border border-slate-200 bg-white font-mono text-xs px-2.5 outline-none focus:border-indigo-400"
+                                  className="h-8 w-full rounded-md border border-slate-200 bg-white font-mono text-xs px-2.5 outline-none focus:border-emerald-400"
                                 />
                               </div>
                               <div>
@@ -2097,7 +2097,7 @@ function AssignmentsPage() {
                                     updateTestCase(tc.id, "expectedOutput", e.target.value)
                                   }
                                   placeholder="e.g. 30"
-                                  className="h-8 w-full rounded-md border border-slate-200 bg-white font-mono text-xs px-2.5 outline-none focus:border-indigo-400"
+                                  className="h-8 w-full rounded-md border border-slate-200 bg-white font-mono text-xs px-2.5 outline-none focus:border-emerald-400"
                                 />
                               </div>
                             </div>
@@ -2112,7 +2112,7 @@ function AssignmentsPage() {
                     <button
                       type="button"
                       onClick={() => setShowStartersEditor(!showStartersEditor)}
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 hover:text-indigo-800"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
                     >
                       <Code2 className="h-3.5 w-3.5" />
                       {showStartersEditor
@@ -2132,7 +2132,7 @@ function AssignmentsPage() {
                                 className={cn(
                                   "px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors",
                                   starterTab === lang
-                                    ? "bg-indigo-600 text-white"
+                                    ? "bg-emerald-600 text-white"
                                     : "text-slate-600 hover:bg-slate-100",
                                 )}
                               >
@@ -2147,7 +2147,7 @@ function AssignmentsPage() {
                             setStarters({ ...starters, [starterTab]: e.target.value })
                           }
                           rows={6}
-                          className="w-full rounded-lg border border-slate-200 bg-slate-900 text-emerald-400 p-2.5 font-mono text-xs outline-none focus:border-indigo-400"
+                          className="w-full rounded-lg border border-slate-200 bg-slate-900 text-emerald-400 p-2.5 font-mono text-xs outline-none focus:border-emerald-400"
                         />
                       </div>
                     )}
@@ -2163,7 +2163,7 @@ function AssignmentsPage() {
                     onChange={(e) => setForm({ ...form, instructions: e.target.value })}
                     rows={4}
                     placeholder="Provide detailed instructions or reading materials for students…"
-                    className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-400"
+                    className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-emerald-400"
                   />
                 </div>
               )}
@@ -2350,7 +2350,7 @@ function AssignmentsPage() {
                     setIsSubmittingForm(false);
                   }
                 }}
-                className="h-10 rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white hover:bg-indigo-700 shadow-xs transition-colors disabled:opacity-50"
+                className="h-10 rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white hover:bg-emerald-700 shadow-xs transition-colors disabled:opacity-50"
               >
                 {isSubmittingForm
                   ? "Saving..."
@@ -2376,7 +2376,7 @@ function AssignmentsPage() {
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
               <div>
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Code2 className="h-5 w-5 text-indigo-600" />
+                  <Code2 className="h-5 w-5 text-emerald-600" />
                   {viewingCodingRound.title}
                 </h3>
                 <p className="text-xs text-slate-500">
@@ -2406,7 +2406,7 @@ function AssignmentsPage() {
                       className={cn(
                         "rounded-lg px-2.5 py-1 text-xs font-bold transition-all shrink-0",
                         viewingQIndex === idx
-                          ? "bg-indigo-600 text-white shadow-xs"
+                          ? "bg-emerald-600 text-white shadow-xs"
                           : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100",
                       )}
                     >
@@ -2549,7 +2549,7 @@ function AssignmentsPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                 <Copy className="h-5 w-5" />
               </span>
               <div>
@@ -2576,7 +2576,7 @@ function AssignmentsPage() {
                 <select
                   value={targetCloneClass}
                   onChange={(e) => setTargetCloneClass(e.target.value)}
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-indigo-400"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-emerald-400"
                 >
                   {availableClasses.map((c) => (
                     <option key={c.id} value={c.name}>
@@ -2599,7 +2599,7 @@ function AssignmentsPage() {
                 type="button"
                 disabled={isCloning}
                 onClick={handleExecuteClone}
-                className="h-9 rounded-xl bg-indigo-600 px-4 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                className="h-9 rounded-xl bg-emerald-600 px-4 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
               >
                 {isCloning ? "Cloning..." : "Create Copy"}
               </button>
@@ -2624,7 +2624,7 @@ function AssignmentsPage() {
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-slate-50/50">
               <div>
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Award className="h-5 w-5 text-indigo-600" />
+                  <Award className="h-5 w-5 text-emerald-600" />
                   {gradingAssignment.title} · Submissions & Grading
                 </h3>
                 <p className="text-xs text-slate-500">
@@ -2646,7 +2646,7 @@ function AssignmentsPage() {
 
             {loadingSubmissions ? (
               <div className="py-20 text-center">
-                <RefreshCw className="mx-auto h-7 w-7 text-indigo-600 animate-spin mb-3" />
+                <RefreshCw className="mx-auto h-7 w-7 text-emerald-600 animate-spin mb-3" />
                 <p className="text-sm font-medium text-slate-600">Loading student submissions...</p>
               </div>
             ) : submissionData ? (
@@ -2669,7 +2669,7 @@ function AssignmentsPage() {
                         className={cn(
                           "cursor-pointer rounded-xl p-3 border transition-all text-left",
                           isSelected
-                            ? "border-indigo-400 bg-indigo-50/60 shadow-xs"
+                            ? "border-emerald-400 bg-emerald-50/60 shadow-xs"
                             : "border-slate-200 bg-white hover:border-slate-300",
                         )}
                       >
@@ -2726,7 +2726,7 @@ function AssignmentsPage() {
                           <div>
                             <div className="flex items-center justify-between mb-1.5">
                               <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                                <Terminal className="h-3.5 w-3.5 text-indigo-600" />
+                                <Terminal className="h-3.5 w-3.5 text-emerald-600" />
                                 Submitted Solution Code
                               </span>
                               {selectedStudent.code && (
@@ -2736,7 +2736,7 @@ function AssignmentsPage() {
                                     await navigator.clipboard.writeText(selectedStudent.code || "");
                                     toast.success("Code copied to clipboard!");
                                   }}
-                                  className="inline-flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-700"
+                                  className="inline-flex items-center gap-1 text-[11px] text-emerald-600 hover:text-emerald-700"
                                 >
                                   <Copy className="h-3 w-3" /> Copy
                                 </button>
@@ -2752,8 +2752,8 @@ function AssignmentsPage() {
                             )}
                           </div>
 
-                          <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 space-y-3">
-                            <h5 className="text-xs font-bold text-indigo-900 uppercase tracking-wider">
+                          <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4 space-y-3">
+                            <h5 className="text-xs font-bold text-emerald-900 uppercase tracking-wider">
                               Grade & Feedback Override
                             </h5>
 
@@ -2768,7 +2768,7 @@ function AssignmentsPage() {
                                   max="100"
                                   value={gradeScore}
                                   onChange={(e) => setGradeScore(Number(e.target.value))}
-                                  className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 outline-none focus:border-indigo-400"
+                                  className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 outline-none focus:border-emerald-400"
                                 />
                               </div>
                               <div>
@@ -2790,7 +2790,7 @@ function AssignmentsPage() {
                                 onChange={(e) => setGradeFeedback(e.target.value)}
                                 rows={2}
                                 placeholder="Write encouraging feedback or optimization advice..."
-                                className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-800 outline-none focus:border-indigo-400"
+                                className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-800 outline-none focus:border-emerald-400"
                               />
                             </div>
 
@@ -2798,7 +2798,7 @@ function AssignmentsPage() {
                               type="button"
                               disabled={isSavingGrade}
                               onClick={handleSaveGrade}
-                              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50"
                             >
                               <Check className="h-3.5 w-3.5" />
                               {isSavingGrade ? "Saving Grade..." : "Save Grade & Feedback"}

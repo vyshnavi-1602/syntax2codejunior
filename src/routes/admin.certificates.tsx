@@ -52,7 +52,7 @@ export const Route = createFileRoute("/admin/certificates")({
 });
 
 const tabs = ["Templates", "Issued registry", "Verification"] as const;
-const accents = ["indigo", "teal", "amber", "violet"] as const;
+const accents = ["emerald", "teal", "amber", "violet"] as const;
 
 function AdminCertificates() {
   const { templates: initialTemplates, issuedCredentials: initialIssued } = Route.useLoaderData();
@@ -61,7 +61,7 @@ function AdminCertificates() {
   const [issued, setIssued] = useState<IssuedCredential[]>(initialIssued);
   const [design, setDesign] = useState({
     name: "AI Literacy 2027 Refresh",
-    accent: "indigo" as (typeof accents)[number],
+    accent: "emerald" as (typeof accents)[number],
     seal: true,
     signature: "Founder & CEO, Syntax2Code",
   });
@@ -74,7 +74,7 @@ function AdminCertificates() {
   const [newTemplate, setNewTemplate] = useState({
     name: "",
     category: "Curriculum Track",
-    accent: "indigo" as (typeof accents)[number],
+    accent: "emerald" as (typeof accents)[number],
     signature: "Academic Director, Syntax2Code Global",
   });
 
@@ -133,7 +133,7 @@ function AdminCertificates() {
     setNewTemplate({
       name: "",
       category: "Curriculum Track",
-      accent: "indigo",
+      accent: "emerald",
       signature: "Academic Director, Syntax2Code Global",
     });
     toast.success(`Template "${created.name}" created & published!`, {
@@ -146,7 +146,7 @@ function AdminCertificates() {
   );
 
   const accentClass = {
-    indigo: "from-indigo-500 to-indigo-700",
+    emerald: "from-emerald-500 to-emerald-700",
     teal: "from-teal-500 to-teal-700",
     amber: "from-amber-400 to-amber-600",
     violet: "from-violet-500 to-violet-700",
@@ -160,7 +160,7 @@ function AdminCertificates() {
         actions={
           <button
             onClick={() => setNewTemplateModal(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700"
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-xs hover:bg-emerald-700"
           >
             <Plus className="h-4 w-4" /> New template
           </button>
@@ -218,7 +218,7 @@ function AdminCertificates() {
                         setDesign({
                           ...design,
                           name: t.name,
-                          accent: (t.accent as (typeof accents)[number]) || "indigo",
+                          accent: (t.accent as (typeof accents)[number]) || "emerald",
                         })
                       }
                       className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-xs"
@@ -245,7 +245,7 @@ function AdminCertificates() {
                           t.status === "Live" ? `${t.name} unpublished` : `${t.name} is now live`,
                         );
                       }}
-                      className="h-9 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700"
+                      className="h-9 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700"
                     >
                       {t.status === "Live" ? "Unpublish" : "Publish"}
                     </button>
@@ -292,7 +292,7 @@ function AdminCertificates() {
                 <input
                   value={design.name}
                   onChange={(e) => setDesign({ ...design, name: e.target.value })}
-                  className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-indigo-400"
+                  className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-emerald-400"
                 />
               </div>
               <div>
@@ -308,7 +308,7 @@ function AdminCertificates() {
                 <input
                   value={design.signature}
                   onChange={(e) => setDesign({ ...design, signature: e.target.value })}
-                  className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-indigo-400"
+                  className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-emerald-400"
                 />
               </div>
               <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-700 shadow-xs">
@@ -317,7 +317,7 @@ function AdminCertificates() {
                   type="checkbox"
                   checked={design.seal}
                   onChange={(e) => setDesign({ ...design, seal: e.target.checked })}
-                  className="h-4 w-4 accent-indigo-600"
+                  className="h-4 w-4 accent-emerald-600"
                 />
               </label>
             </div>
@@ -368,7 +368,7 @@ function AdminCertificates() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search by holder, school or credential ID…"
-              className="h-10 w-full rounded-xl border border-slate-200 pr-3 pl-9 text-sm outline-none focus:border-indigo-300 shadow-xs"
+              className="h-10 w-full rounded-xl border border-slate-200 pr-3 pl-9 text-sm outline-none focus:border-emerald-300 shadow-xs"
             />
           </div>
           <div className="mt-4 overflow-x-auto">
@@ -420,7 +420,7 @@ function AdminCertificates() {
                               description: `s2cjunior.com/verify/${c.id}`,
                             })
                           }
-                          className="text-xs font-semibold text-indigo-600 hover:underline"
+                          className="text-xs font-semibold text-emerald-600 hover:underline"
                         >
                           Copy link
                         </button>
@@ -445,7 +445,7 @@ function AdminCertificates() {
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="e.g. S2C-2026-AX41K9"
-                className="h-11 flex-1 rounded-xl border border-slate-200 px-3 font-mono text-sm outline-none focus:border-indigo-300 shadow-xs"
+                className="h-11 flex-1 rounded-xl border border-slate-200 px-3 font-mono text-sm outline-none focus:border-emerald-300 shadow-xs"
               />
               <button
                 onClick={async () => {
@@ -481,7 +481,7 @@ function AdminCertificates() {
                     });
                   }
                 }}
-                className="h-11 rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700"
+                className="h-11 rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-xs hover:bg-emerald-700"
               >
                 Verify
               </button>
@@ -523,7 +523,7 @@ function AdminCertificates() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                 <Sparkles className="h-5 w-5" />
               </span>
               <div>
@@ -544,7 +544,7 @@ function AdminCertificates() {
                   value={newTemplate.name}
                   onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
                   placeholder="e.g. Master of Algorithmic Python"
-                  className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-indigo-400"
+                  className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-emerald-400"
                 />
               </div>
 
@@ -553,7 +553,7 @@ function AdminCertificates() {
                 <select
                   value={newTemplate.category}
                   onChange={(e) => setNewTemplate({ ...newTemplate, category: e.target.value })}
-                  className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs outline-none focus:border-indigo-400"
+                  className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs outline-none focus:border-emerald-400"
                 >
                   <option value="Curriculum Track">Curriculum Track</option>
                   <option value="Championship & Tournaments">Championship & Tournaments</option>
@@ -581,7 +581,7 @@ function AdminCertificates() {
                   value={newTemplate.signature}
                   onChange={(e) => setNewTemplate({ ...newTemplate, signature: e.target.value })}
                   placeholder="Academic Director, Syntax2Code Global"
-                  className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-indigo-400"
+                  className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-emerald-400"
                 />
               </div>
 
@@ -595,7 +595,7 @@ function AdminCertificates() {
                 </button>
                 <button
                   type="submit"
-                  className="h-9.5 rounded-xl bg-indigo-600 px-4 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700"
+                  className="h-9.5 rounded-xl bg-emerald-600 px-4 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700"
                 >
                   Save & Publish Template
                 </button>

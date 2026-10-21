@@ -97,7 +97,7 @@ function AdminCompetitions() {
         actions={
           <button
             onClick={() => setOpen(true)}
-            className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
           >
             <Plus className="h-4 w-4" /> New competition
           </button>
@@ -137,7 +137,7 @@ function AdminCompetitions() {
                 className={cn(
                   "w-full rounded-xl border px-3 py-2.5 text-left transition-colors",
                   sel === c.id
-                    ? "border-indigo-200 bg-indigo-50"
+                    ? "border-emerald-200 bg-emerald-50"
                     : "border-slate-200 hover:bg-slate-50",
                 )}
               >
@@ -169,7 +169,7 @@ function AdminCompetitions() {
                       description: "Certificates queued for all finalists.",
                     })
                   }
-                  className="h-9 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700"
+                  className="h-9 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700"
                 >
                   Publish results
                 </button>
@@ -237,7 +237,7 @@ function AdminCompetitions() {
                       description: `${comp.name} · configure dates and problem set.`,
                     })
                   }
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:underline"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:underline"
                 >
                   <Plus className="h-3.5 w-3.5" /> Add round
                 </button>
@@ -300,7 +300,7 @@ function AdminCompetitions() {
                                 description: "Competition Finalist — Gold",
                               })
                             }
-                            className="text-xs font-semibold text-indigo-600 hover:underline"
+                            className="text-xs font-semibold text-emerald-600 hover:underline"
                           >
                             Issue certificate
                           </button>
@@ -398,7 +398,7 @@ function AdminCompetitions() {
                     setIsSubmitting(false);
                   }
                 }}
-                className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                className="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
               >
                 {isSubmitting ? "Creating…" : "Create competition"}
               </button>

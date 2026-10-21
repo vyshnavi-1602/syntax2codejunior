@@ -104,7 +104,7 @@ function ClassDetail() {
             </Link>
             <button
               onClick={() => setMessageOpen(true)}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
             >
               <MessageSquare className="h-4 w-4" /> Message class
             </button>
@@ -194,7 +194,7 @@ function ClassDetail() {
                 </div>
                 <Bar
                   value={item.score}
-                  tone={item.score >= 80 ? "emerald" : item.score >= 60 ? "indigo" : "amber"}
+                  tone={item.score >= 80 ? "emerald" : item.score >= 60 ? "emerald" : "amber"}
                 />
               </div>
             ))}
@@ -245,7 +245,7 @@ function ClassDetail() {
                     <Link
                       to="/teacher/students/$studentId"
                       params={{ studentId: s.id }}
-                      className="text-xs font-semibold text-indigo-600 hover:underline"
+                      className="text-xs font-semibold text-emerald-600 hover:underline"
                     >
                       Open
                     </Link>

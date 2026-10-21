@@ -320,7 +320,7 @@ function SchoolStudents() {
           <>
             <button
               onClick={() => setAddModal(true)}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
             >
               <UserPlus className="h-4 w-4" /> Add student
             </button>
@@ -370,13 +370,13 @@ function SchoolStudents() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search by student name or email…"
-              className="h-10 w-full rounded-xl border border-slate-200 pr-3 pl-9 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+              className="h-10 w-full rounded-xl border border-slate-200 pr-3 pl-9 text-sm outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
             />
           </div>
           <select
             value={cls}
             onChange={(e) => setCls(e.target.value)}
-            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-300"
+            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-300"
           >
             <option>All classes</option>
             {classes.map((c) => (
@@ -421,7 +421,7 @@ function SchoolStudents() {
                     <td className="px-4 py-3">
                       <button
                         onClick={() => setSelectedStudent(s)}
-                        className="text-left font-medium text-slate-900 hover:text-indigo-600 transition"
+                        className="text-left font-medium text-slate-900 hover:text-emerald-600 transition"
                       >
                         {s.name}
                       </button>
@@ -431,7 +431,7 @@ function SchoolStudents() {
                       <select
                         value={s.classId ? String(s.classId) : ""}
                         onChange={(e) => handleAssignClass(s.id, e.target.value)}
-                        className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-medium text-slate-700 outline-none hover:border-slate-300 focus:border-indigo-400"
+                        className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-medium text-slate-700 outline-none hover:border-slate-300 focus:border-emerald-400"
                       >
                         <option value="">Unassigned</option>
                         {classes.map((c) => (
@@ -484,7 +484,7 @@ function SchoolStudents() {
                         <button
                           onClick={() => setSelectedStudent(s)}
                           title="View student profile"
-                          className="rounded-lg p-1.5 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
+                          className="rounded-lg p-1.5 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
@@ -541,7 +541,7 @@ function SchoolStudents() {
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="e.g. Rachel Adams"
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
                 />
               </div>
               <div>
@@ -554,7 +554,7 @@ function SchoolStudents() {
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   placeholder="e.g. rachel@school.edu"
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
                 />
               </div>
               <div>
@@ -562,7 +562,7 @@ function SchoolStudents() {
                 <select
                   value={newClassId}
                   onChange={(e) => setNewClassId(e.target.value)}
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-400"
                 >
                   <option value="">Unassigned</option>
                   {classes.map((c) => (
@@ -584,7 +584,7 @@ function SchoolStudents() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
                 >
                   <Plus className="h-4 w-4" /> Enroll Student
                 </button>
@@ -621,7 +621,7 @@ function SchoolStudents() {
                 className={cn(
                   "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition",
                   bulkMode === "file"
-                    ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                     : "text-slate-600 hover:bg-slate-50",
                 )}
               >
@@ -633,7 +633,7 @@ function SchoolStudents() {
                 className={cn(
                   "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition",
                   bulkMode === "paste"
-                    ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                     : "text-slate-600 hover:bg-slate-50",
                 )}
               >
@@ -650,7 +650,7 @@ function SchoolStudents() {
                     const file = e.dataTransfer.files[0];
                     if (file) processCsvFile(file);
                   }}
-                  className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 p-6 text-center hover:border-indigo-400 hover:bg-indigo-50/30 transition cursor-pointer"
+                  className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 p-6 text-center hover:border-emerald-400 hover:bg-emerald-50/30 transition cursor-pointer"
                 >
                   <input
                     type="file"
@@ -658,7 +658,7 @@ function SchoolStudents() {
                     onChange={handleFileChange}
                     className="hidden"
                   />
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                     <Upload className="h-6 w-6" />
                   </div>
                   <p className="mt-3 text-xs font-semibold text-slate-800">
@@ -733,7 +733,7 @@ function SchoolStudents() {
                   value={bulkInput}
                   onChange={(e) => setBulkInput(e.target.value)}
                   placeholder="Lucas Gray, lucas.g@school.edu, Grade 6A - Python Explorers&#10;Sophia Lin, sophia.l@school.edu, Grade 7B - Web Foundations"
-                  className="w-full rounded-xl border border-slate-200 p-3 font-mono text-xs outline-none focus:border-indigo-400"
+                  className="w-full rounded-xl border border-slate-200 p-3 font-mono text-xs outline-none focus:border-emerald-400"
                 />
                 <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
                   <span>One student per line</span>
@@ -744,7 +744,7 @@ function SchoolStudents() {
                         "Lucas Gray, lucas.g@school.edu, Grade 6A - Python Explorers\nSophia Lin, sophia.l@school.edu, Grade 7B - Web Foundations\nDavid Kim, david.k@school.edu, Grade 8A - Algorithms & Logic",
                       )
                     }
-                    className="font-medium text-indigo-600 hover:underline"
+                    className="font-medium text-emerald-600 hover:underline"
                   >
                     Insert sample roster
                   </button>
@@ -768,7 +768,7 @@ function SchoolStudents() {
                 type="button"
                 disabled={isSubmitting || !bulkInput.trim()}
                 onClick={handleBulkImport}
-                className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
               >
                 <Upload className="h-4 w-4" /> Import{" "}
                 {parsedPreview.length > 0 ? `${parsedPreview.length} Students` : "Roster"}
@@ -815,7 +815,7 @@ function SchoolStudents() {
               </div>
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
                 <p className="text-[11px] font-medium text-slate-500 uppercase">Level</p>
-                <p className="mt-1 text-lg font-bold text-indigo-600">
+                <p className="mt-1 text-lg font-bold text-emerald-600">
                   Level {selectedStudent.level}
                 </p>
               </div>
@@ -908,7 +908,7 @@ function SchoolStudents() {
                   required
                   value={editingStudent.name}
                   onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
                 />
               </div>
               <div>
@@ -918,7 +918,7 @@ function SchoolStudents() {
                   type="email"
                   value={editingStudent.email}
                   onChange={(e) => setEditingStudent({ ...editingStudent, email: e.target.value })}
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
                 />
               </div>
               <div>
@@ -928,7 +928,7 @@ function SchoolStudents() {
                   onChange={(e) =>
                     setEditingStudent({ ...editingStudent, classId: e.target.value })
                   }
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-400"
                 >
                   <option value="">Unassigned</option>
                   {classes.map((c) => (
@@ -950,7 +950,7 @@ function SchoolStudents() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
                 >
                   Save Changes
                 </button>

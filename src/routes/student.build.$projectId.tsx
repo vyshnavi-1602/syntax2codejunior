@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, CheckCircle2, Circle, UploadCloud } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Circle, Clock, Plus, Trash2, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 import { Bar, PageHeader, Panel, Pill, type Tone } from "@/client/components/app/primitives";
 
@@ -50,28 +50,90 @@ function ProjectDetail() {
   const defaultProject = {
     id: projectId || "1",
     title: "Custom Project",
-    brief: "Design and implement your application following the project specifications.",
-    skills: ["JavaScript", "HTML", "Logic"],
-    track: "Web",
+    brief: "Custom project brief and requirements defined by student.",
+    skills: ["Software Engineering", "Logic", "Sprint Planning"],
+    track: "Software Development",
     difficulty: "Beginner",
-    xp: 100,
+    xp: 150,
     lessonId: 1,
     milestones: [
-      { title: "Understand requirements", done: true },
-      { title: "Draft logic", done: false },
-      { title: "Write code", done: false },
+      { title: "Sprint 1: Scope, requirements & architecture", done: false },
+      { title: "Sprint 2: UI wireframing & initial setup", done: false },
+      { title: "Sprint 3: Core functionality & logic implementation", done: false },
+      { title: "Sprint 4: Testing & demo walkthrough", done: false },
     ],
     status: "In Progress" as ProjectStatus,
+    submittedUrl: "",
+    mentorFeedback: null as string | null,
+    mentorName: null as string | null,
   };
   const project = projects.find((p) => p.id === projectId) ?? projects[0] ?? defaultProject;
-  const [milestones, setMilestones] = useState(project.milestones);
+  const [milestones, setMilestones] = useState(project.milestones || []);
+  const [newMilestoneText, setNewMilestoneText] = useState("");
   const [status, setStatus] = useState<ProjectStatus>(
     (project.status as ProjectStatus) || "In Progress",
   );
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState((project as { submittedUrl?: string }).submittedUrl || "");
 
   const done = milestones.filter((m) => m.done).length;
-  const pct = Math.round((done / milestones.length) * 100);
+  const pct = milestones.length > 0 ? Math.round((done / milestones.length) * 100) : 0;
+
+  const toggleMilestone = async (idx: number) => {
+    const updated = milestones.map((x, i) => (i === idx ? { ...x, done: !x.done } : x));
+    setMilestones(updated);
+    try {
+      await submitProject({
+        data: {
+          projectId: project.id,
+          title: project.title,
+          milestones: updated,
+        },
+      });
+      toast.success(
+        updated[idx]?.done
+          ? `Milestone completed: ${updated[idx]?.title}`
+          : `Milestone marked incomplete`,
+      );
+    } catch {
+      // fallback
+    }
+  };
+
+  const addMilestone = async () => {
+    if (!newMilestoneText.trim()) return;
+    const updated = [...milestones, { title: newMilestoneText.trim(), done: false }];
+    setMilestones(updated);
+    setNewMilestoneText("");
+    try {
+      await submitProject({
+        data: {
+          projectId: project.id,
+          title: project.title,
+          milestones: updated,
+        },
+      });
+      toast.success("Added new sprint milestone!");
+    } catch {
+      toast.error("Failed to save milestone");
+    }
+  };
+
+  const removeMilestone = async (idx: number) => {
+    const updated = milestones.filter((_, i) => i !== idx);
+    setMilestones(updated);
+    try {
+      await submitProject({
+        data: {
+          projectId: project.id,
+          title: project.title,
+          milestones: updated,
+        },
+      });
+      toast.info("Sprint milestone removed");
+    } catch {
+      // fallback
+    }
+  };
 
   return (
     <>
@@ -81,7 +143,7 @@ function ProjectDetail() {
         actions={
           <Link
             to="/student/build"
-            className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 cursor-pointer shadow-2xs"
           >
             <ArrowLeft className="h-4 w-4" /> Back to gallery
           </Link>
@@ -91,7 +153,7 @@ function ProjectDetail() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <Panel
-            title="Project brief"
+            title="Project brief & goals"
             action={<Pill tone={statusTone[status] as Tone}>{status}</Pill>}
           >
             <p className="text-sm leading-relaxed text-slate-700">{project.brief}</p>
@@ -99,7 +161,7 @@ function ProjectDetail() {
               {project.skills.map((s) => (
                 <span
                   key={s}
-                  className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600"
+                  className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600"
                 >
                   {s}
                 </span>
@@ -107,46 +169,80 @@ function ProjectDetail() {
             </div>
           </Panel>
 
-          <Panel title="Milestones" description={`${done} of ${milestones.length} complete`}>
-            <Bar value={pct} tone={pct === 100 ? "emerald" : "indigo"} />
+          <Panel
+            title="Sprint Plan & Milestones"
+            description={`${done} of ${milestones.length} milestones complete`}
+          >
+            <Bar value={pct} tone="emerald" />
             <div className="mt-4 space-y-2">
               {milestones.map((m, i) => (
-                <button
-                  key={m.title}
-                  onClick={() => {
-                    setMilestones((ms) =>
-                      ms.map((x, xi) => (xi === i ? { ...x, done: !x.done } : x)),
-                    );
-                    if (!m.done) toast.success(`Milestone complete: ${m.title}`);
-                  }}
+                <div
+                  key={i}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors",
+                    "flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm transition-colors",
                     m.done
                       ? "border-emerald-200 bg-emerald-50/50 text-slate-700"
                       : "border-slate-200 hover:bg-slate-50",
                   )}
                 >
-                  {m.done ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  ) : (
-                    <Circle className="h-4 w-4 text-slate-300" />
-                  )}
-                  {m.title}
-                </button>
+                  <button
+                    onClick={() => toggleMilestone(i)}
+                    className="flex flex-1 items-center gap-3 text-left cursor-pointer"
+                  >
+                    {m.done ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                    ) : (
+                      <Circle className="h-4 w-4 text-slate-300 shrink-0" />
+                    )}
+                    <span className={cn(m.done && "line-through text-slate-500")}>{m.title}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeMilestone(i)}
+                    className="text-slate-400 hover:text-rose-500 text-xs px-1 cursor-pointer"
+                    title="Delete milestone"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               ))}
+            </div>
+
+            {/* ADD SPRINT GOAL */}
+            <div className="mt-3 flex gap-2">
+              <input
+                type="text"
+                value={newMilestoneText}
+                onChange={(e) => setNewMilestoneText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addMilestone();
+                  }
+                }}
+                placeholder="+ Add another sprint milestone or deliverable..."
+                className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs outline-none focus:border-emerald-500"
+              />
+              <button
+                type="button"
+                onClick={addMilestone}
+                className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 cursor-pointer shrink-0"
+              >
+                <Plus className="h-3.5 w-3.5" /> Add Task
+              </button>
             </div>
           </Panel>
 
           <Panel
-            title="Submit your work"
-            description="Attach a repo link, file or screenshot walkthrough"
+            title="Submit sprint work to mentor"
+            description="Attach a repo link, deployment URL, or sprint demo notes"
           >
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={4}
-              placeholder="Describe what you built, what you learned and anything you need help with (or paste a link)..."
-              className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+              placeholder="Describe what you completed in this sprint, link your GitHub repository or deployment link, and list any questions for your mentor..."
+              className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
             />
             <div className="mt-3 flex flex-wrap gap-2">
               <button
@@ -155,38 +251,43 @@ function ProjectDetail() {
                     await submitProject({
                       data: {
                         projectId: project.id,
-                        lessonId: (project as { lessonId?: number }).lessonId || 1,
+                        title: project.title,
+                        submittedUrl: note,
+                        status: "submitted",
+                      },
+                    });
+                    setStatus("Submitted");
+                    toast.success("Sprint submitted to mentor for review!", {
+                      description: "Your teacher/mentor can now review your code and milestones.",
+                    });
+                  } catch (err) {
+                    toast.error("Failed to submit sprint to mentor.");
+                  }
+                }}
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 cursor-pointer shadow-sm"
+              >
+                <UploadCloud className="h-4 w-4" /> Submit to Mentor
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await submitProject({
+                      data: {
+                        projectId: project.id,
                         title: project.title,
                         submittedUrl: note,
                       },
                     });
-                    setStatus("Submitted");
-                    toast.success("Project submitted for review", {
-                      description: "Your teacher will review it soon.",
+                    toast.success("Draft saved", {
+                      description: "Your sprint notes have been saved.",
                     });
-                  } catch (err) {
-                    toast.error("Failed to submit project.");
+                  } catch {
+                    toast.error("Failed to save draft");
                   }
                 }}
-                className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
-              >
-                <UploadCloud className="h-4 w-4" /> Submit for review
-              </button>
-              <button
-                onClick={() =>
-                  toast("Draft saved", { description: "You can continue editing any time." })
-                }
-                className="inline-flex h-10 items-center rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="inline-flex h-10 items-center rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
                 Save draft
-              </button>
-              <button
-                onClick={() =>
-                  toast("Files attached", { description: "attendance_bot.py, demo_screens.pdf" })
-                }
-                className="inline-flex h-10 items-center rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                Attach files
               </button>
             </div>
           </Panel>
@@ -204,7 +305,7 @@ function ProjectDetail() {
                       className={cn(
                         "inline-flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold",
                         current
-                          ? "border-indigo-300 bg-indigo-50 text-indigo-700"
+                          ? "border-emerald-300 bg-emerald-50 text-emerald-700 font-bold"
                           : passed
                             ? "border-emerald-200 bg-emerald-50 text-emerald-600"
                             : "border-slate-200 text-slate-400",
@@ -226,21 +327,50 @@ function ProjectDetail() {
             </ol>
           </Panel>
 
-          <Panel title="Teacher feedback" description="Latest review notes">
-            <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-3 text-xs leading-relaxed text-slate-700">
-              "Strong data model. Add error handling when the class list file is missing, and
-              include a short demo video with your final submission." — Ms. Priya Raman
-            </div>
+          <Panel title="Mentor feedback" description="Review & sprint evaluation">
+            {(project as { mentorFeedback?: string | null }).mentorFeedback ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-xs text-emerald-950">
+                <p className="font-semibold flex items-center gap-1.5 text-emerald-900">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Mentor Review Feedback
+                </p>
+                <p className="mt-2 text-slate-800 leading-relaxed font-medium">
+                  "{(project as { mentorFeedback?: string }).mentorFeedback}"
+                </p>
+                {(project as { mentorName?: string | null }).mentorName && (
+                  <p className="mt-2 text-[11px] font-semibold text-slate-500">
+                    — {(project as { mentorName?: string }).mentorName}
+                  </p>
+                )}
+              </div>
+            ) : status === "Submitted" ? (
+              <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3.5 text-xs text-sky-950">
+                <p className="font-semibold flex items-center gap-1.5 text-sky-900">
+                  <Clock className="h-4 w-4 text-sky-600" /> Awaiting Mentor Review
+                </p>
+                <p className="mt-1.5 leading-relaxed text-slate-600">
+                  Your sprint submission is in your mentor's review queue. Their feedback and
+                  assessment will appear here once reviewed.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 text-xs text-slate-600">
+                <p className="font-semibold text-slate-800">Sprint in Progress</p>
+                <p className="mt-1.5 leading-relaxed text-slate-500">
+                  Complete your sprint milestones and submit your project below when you are ready
+                  for your mentor to inspect your work.
+                </p>
+              </div>
+            )}
             <button
               onClick={() =>
-                toast("AI feedback preview", {
+                toast("AI sprint mentor suggestion", {
                   description:
-                    "Your report logic can be simplified with a dictionary lookup instead of nested ifs.",
+                    "Break your next milestone into smaller testable deliverables to maintain steady sprint velocity.",
                 })
               }
-              className="mt-3 inline-flex h-9 w-full items-center justify-center rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="mt-3 inline-flex h-9 w-full items-center justify-center rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
             >
-              Get AI improvement hints
+              Get AI Sprint Hints
             </button>
           </Panel>
         </div>

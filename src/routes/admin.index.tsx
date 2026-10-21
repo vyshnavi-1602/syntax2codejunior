@@ -132,7 +132,7 @@ function AdminHome() {
           <>
             <button
               onClick={handleExportSnapshot}
-              className="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+              className="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
             >
               Export snapshot
             </button>
@@ -235,7 +235,7 @@ function AdminHome() {
           action={
             <Link
               to="/admin/moderation"
-              className="text-xs font-semibold text-indigo-600 hover:underline"
+              className="text-xs font-semibold text-emerald-600 hover:underline"
             >
               Moderation
             </Link>
@@ -276,7 +276,7 @@ function AdminHome() {
                 <div className="flex-1">
                   <Bar
                     value={s.engagement}
-                    tone={s.engagement >= 80 ? "emerald" : s.engagement >= 60 ? "indigo" : "amber"}
+                    tone={s.engagement >= 80 ? "emerald" : s.engagement >= 60 ? "emerald" : "amber"}
                   />
                 </div>
                 <span className="w-9 text-right text-xs text-slate-500">{s.engagement}%</span>

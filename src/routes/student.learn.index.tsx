@@ -121,11 +121,11 @@ function LearnPage() {
                 key={p.id}
                 to="/student/learn/$pathId"
                 params={{ pathId: p.id.toString() }}
-                className="group rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all hover:-translate-y-0.5 hover:border-indigo-200 dark:hover:border-indigo-700 hover:shadow-lg flex flex-col justify-between"
+                className="group rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all hover:-translate-y-0.5 hover:border-emerald-200 dark:hover:border-emerald-700 hover:shadow-lg flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-start justify-between">
-                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-50 to-teal-50 dark:from-slate-800 dark:to-indigo-950/40 text-indigo-600 dark:text-indigo-400">
+                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-slate-800 dark:to-emerald-950/40 text-emerald-600 dark:text-emerald-400">
                       <I className="h-5 w-5" />
                     </span>
                     <Pill tone={p.progress > 60 ? "emerald" : p.progress > 0 ? "sky" : "slate"}>
@@ -137,14 +137,14 @@ function LearnPage() {
                   </h3>
                   <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{p.tagline}</p>
                   <div className="mt-4">
-                    <Bar value={p.progress} tone={p.progress > 60 ? "emerald" : "indigo"} />
+                    <Bar value={p.progress} tone="emerald" />
                   </div>
                 </div>
                 <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                   <span>
                     {done}/{lessons} lessons · {p.modules.length} modules
                   </span>
-                  <span className="font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">
+                  <span className="font-medium text-emerald-600 dark:text-emerald-400 group-hover:underline">
                     {p.level}
                   </span>
                 </div>
@@ -159,7 +159,7 @@ function LearnPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                <BookOpen className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 Featured Courses & Training Programs
               </h2>
               <p className="text-xs text-slate-500">
@@ -174,7 +174,7 @@ function LearnPage() {
               className="h-8 w-8 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer shadow-2xs"
             >
               <RotateCw
-                className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin text-indigo-600")}
+                className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin text-emerald-600")}
               />
             </button>
           </div>
@@ -186,11 +186,11 @@ function LearnPage() {
                 <div
                   key={course.id}
                   onClick={() => setSelectedCourse(course)}
-                  className="group cursor-pointer rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all hover:-translate-y-0.5 hover:border-indigo-400/60 dark:hover:border-indigo-600/40 hover:shadow-lg flex flex-col justify-between"
+                  className="group cursor-pointer rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all hover:-translate-y-0.5 hover:border-emerald-400/60 dark:hover:border-emerald-600/40 hover:shadow-lg flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-start justify-between">
-                      <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-slate-800 dark:to-indigo-950/40 text-indigo-600 dark:text-indigo-400">
+                      <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-50 to-teal-100/50 dark:from-slate-800 dark:to-emerald-950/40 text-emerald-600 dark:text-emerald-400">
                         {course.visualType === "lock" ? (
                           <Terminal className="h-5 w-5" />
                         ) : course.visualType === "globe" ? (
@@ -199,7 +199,7 @@ function LearnPage() {
                           <BookOpen className="h-5 w-5" />
                         )}
                       </span>
-                      <Pill tone={isEnrolled ? "indigo" : "slate"}>
+                      <Pill tone={isEnrolled ? "emerald" : "slate"}>
                         {isEnrolled ? "Enrolled" : "Not started"}
                       </Pill>
                     </div>
@@ -211,7 +211,7 @@ function LearnPage() {
                         "Master core programming principles with guided lessons."}
                     </p>
                     <div className="mt-4">
-                      <Bar value={isEnrolled ? 45 : 0} tone="indigo" />
+                      <Bar value={isEnrolled ? 45 : 0} tone="emerald" />
                     </div>
                   </div>
                   <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
@@ -219,7 +219,7 @@ function LearnPage() {
                       {isEnrolled ? "1" : "0"}/{course.modules.length} lessons ·{" "}
                       {course.modules.length} modules
                     </span>
-                    <span className="font-medium text-indigo-600 dark:text-indigo-400 group-hover:underline">
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400 group-hover:underline">
                       {course.level}
                     </span>
                   </div>
@@ -256,7 +256,7 @@ function LearnPage() {
               key={r.t}
               to="/student/learn/$pathId"
               params={{ pathId: String(i + 1) }}
-              className="block rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
+              className="block rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
             >
               <Pill tone={r.tone}>Recommended</Pill>
               <p className="mt-2 text-sm font-medium text-slate-900 dark:text-white">{r.t}</p>
@@ -372,7 +372,7 @@ function LearnPage() {
                     "h-9 px-4 rounded-xl text-xs font-semibold transition-all cursor-pointer",
                     selectedCourse.enrolled
                       ? "border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-300 hover:bg-rose-100"
-                      : "border border-indigo-300 dark:border-indigo-500/50 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100",
+                      : "border border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100",
                   )}
                 >
                   {selectedCourse.enrolled ? "Leave Program" : "Enroll Now"}
@@ -399,7 +399,7 @@ function LearnPage() {
                   <Link
                     to="/student/lab"
                     search={{ assignmentId: undefined }}
-                    className="inline-flex items-center gap-2 h-9 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs cursor-pointer shadow-xs transition-colors"
+                    className="inline-flex items-center gap-2 h-9 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs cursor-pointer shadow-xs transition-colors"
                   >
                     <Terminal className="h-3.5 w-3.5" />
                     <span>Open Coding IDE</span>

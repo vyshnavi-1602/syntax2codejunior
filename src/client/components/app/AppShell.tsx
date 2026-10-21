@@ -143,6 +143,20 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
     }
     return user?.school || "Global Tech High";
   });
+  const [profileEmail, setProfileEmail] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = window.localStorage.getItem("s2c-profile-settings");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.email) return parsed.email;
+        } catch (_err) {
+          // ignore corrupted JSON
+        }
+      }
+    }
+    return user?.email || "student@school.edu";
+  });
   const [emailNotifs, setEmailNotifs] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = window.localStorage.getItem("s2c-profile-settings");
@@ -196,25 +210,31 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
   useEffect(() => {
     if (!ready) return;
 
-    // In demo mode without real auth, seamlessly synchronize active demo role to visited portal
-    if (!user?.isRealAuth) {
-      if (role !== allow && !(allow === "s2c" && (role === "admin" || role === "s2c"))) {
-        signIn(allow as import("@/client/lib/session").RoleId);
-        return;
-      }
+    // Seamlessly synchronize active role to visited portal
+    if (role !== allow && !(allow === "s2c" && (role === "admin" || role === "s2c"))) {
+      signIn(allow as import("@/client/lib/session").RoleId);
+      return;
     }
 
-    const effectiveRole = role || "student";
+    const currentEffectiveRole = role || allow || "student";
     const isAllowed =
-      effectiveRole === allow || effectiveRole === "admin" || effectiveRole === "s2c";
+      currentEffectiveRole === allow ||
+      currentEffectiveRole === "admin" ||
+      currentEffectiveRole === "s2c";
 
     if (!isAllowed) {
       toast.error("Access Restricted", {
-        description: `Your account (${roleLabels[effectiveRole] || effectiveRole}) cannot access ${roleLabels[allow] || allow} portals.`,
+        description: `Your account (${roleLabels[currentEffectiveRole] || currentEffectiveRole}) cannot access ${roleLabels[allow] || allow} portals.`,
       });
-      navigate({ to: roleHome[effectiveRole] || "/login" });
+      navigate({ to: roleHome[currentEffectiveRole] || "/login" });
     }
-  }, [ready, role, allow, navigate, user?.isRealAuth, signIn]);
+  }, [ready, role, allow, navigate, signIn]);
+
+  const effectiveRole = allow || role || "student";
+  const displayUser =
+    user && (user.role === effectiveRole || (effectiveRole === "s2c" && user.role === "admin"))
+      ? user
+      : demoUsers.find((u) => u.role === effectiveRole) || demoUsers[0]!;
 
   const isLoading = !ready;
 
@@ -270,16 +290,21 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
       >
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 dark:border-slate-800 px-3">
           <div className="flex items-center gap-2.5 overflow-hidden">
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-teal-500 text-sm font-bold text-white shadow-sm">
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-sm font-black text-white shadow-md shadow-emerald-500/20">
               S2
             </span>
             {!sidebarCollapsed && (
               <div className="min-w-0">
-                <p className="font-display text-sm font-semibold tracking-tight text-slate-900 dark:text-white truncate">
-                  Syntax2Code
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="font-display text-sm font-bold tracking-tight text-slate-900 dark:text-white truncate">
+                    Syntax2Code
+                  </p>
+                  <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                    Junior
+                  </span>
+                </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                  Schools Platform
+                  AI & Coding for Schools
                 </p>
               </div>
             )}
@@ -330,12 +355,8 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                           ? "justify-center h-10 w-10 mx-auto px-0"
                           : "gap-2.5 px-3 py-2",
                         active
-                          ? item.activeColor === "purple"
-                            ? "bg-[#7e3af2] font-semibold text-white shadow-xs"
-                            : item.activeColor === "indigo"
-                              ? "bg-indigo-600 font-semibold text-white shadow-xs"
-                              : "bg-indigo-50 dark:bg-indigo-950/40 font-semibold text-indigo-700 dark:text-indigo-300"
-                          : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100",
+                          ? "bg-emerald-50 dark:bg-emerald-950/60 font-bold text-emerald-800 dark:text-emerald-300 shadow-xs border-r-2 border-emerald-600"
+                          : "text-slate-600 dark:text-slate-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 hover:text-emerald-700 dark:hover:text-emerald-300",
                       )}
                     >
                       <Icon name={item.icon} className="h-4 w-4 shrink-0" />
@@ -389,7 +410,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                     setSearchFocused(true);
                   }}
                   placeholder="Search lessons, students, projects…"
-                  className="h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pr-3 pl-9 text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-300 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-indigo-100"
+                  className="h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pr-3 pl-9 text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-300 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-emerald-100"
                 />
               </form>
 
@@ -408,7 +429,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                             setSearch("");
                             setSearchFocused(false);
                           }}
-                          className="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-slate-800 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+                          className="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-slate-800 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
                         >
                           <span className="font-medium">{item.title}</span>
                           <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 uppercase">
@@ -450,7 +471,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                 {themeMode === "dark" ? (
                   <Icons.Sun className="h-4 w-4 text-amber-400" />
                 ) : (
-                  <Icons.Moon className="h-4 w-4 text-indigo-600" />
+                  <Icons.Moon className="h-4 w-4 text-emerald-600" />
                 )}
               </button>
 
@@ -474,7 +495,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                       <p className="text-xs font-semibold text-slate-900">Notifications</p>
                       {notes.length > 0 && (
                         <button
-                          className="text-[11px] font-medium text-indigo-600 hover:underline"
+                          className="text-[11px] font-medium text-emerald-600 hover:underline"
                           onClick={() => {
                             setNotifOpen(false);
                             setNotes([]);
@@ -505,7 +526,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                 )}
               </div>
 
-              {user ? (
+              {displayUser ? (
                 <div className="relative z-40">
                   <button
                     onClick={() => {
@@ -513,27 +534,34 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                       setNotifOpen(false);
                       setRoleOpen(false);
                     }}
-                    className="flex items-center gap-2 rounded-xl border border-slate-200 py-1.5 pr-2.5 pl-1.5 transition-colors hover:bg-slate-50"
+                    className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 py-1.5 pr-2.5 pl-1.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
                   >
-                    <Avatar initials={user.avatar} size="sm" />
+                    <Avatar initials={displayUser.avatar} size="sm" />
                     <span className="hidden text-left sm:block">
-                      <span className="block text-xs font-semibold text-slate-900">
-                        {user.name}
+                      <span className="block text-xs font-semibold text-slate-900 dark:text-slate-100">
+                        {displayUser.name}
                       </span>
-                      <span className="block text-[11px] text-slate-500">
-                        {roleLabels[role || allow]}
+                      <span className="block text-[11px] text-slate-500 dark:text-slate-400">
+                        {roleLabels[effectiveRole]}
                       </span>
                     </span>
                     <Icons.ChevronDown className="h-3.5 w-3.5 text-slate-400" />
                   </button>
                   {menuOpen && (
-                    <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-                      <div className="border-b border-slate-100 px-4 py-3">
-                        <p className="text-sm font-semibold text-slate-900">{user.name}</p>
-                        <p className="truncate text-xs text-slate-500">{user.email}</p>
+                    <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl">
+                      <div className="border-b border-slate-100 dark:border-slate-800 px-4 py-3">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                          {displayUser.name}
+                        </p>
+                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                          {displayUser.email}
+                        </p>
+                        <span className="mt-1.5 inline-block rounded-md bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:text-emerald-300">
+                          {roleLabels[effectiveRole]}
+                        </span>
                       </div>
                       <button
-                        className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
                         onClick={() => {
                           setMenuOpen(false);
                           setSettingsOpen(true);
@@ -542,7 +570,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                         <Icons.Settings className="h-4 w-4" /> Account settings
                       </button>
                       <button
-                        className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
                         onClick={() => {
                           setMenuOpen(false);
                           setHelpOpen(true);
@@ -551,7 +579,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                         <Icons.LifeBuoy className="h-4 w-4" /> Help & support
                       </button>
                       <button
-                        className="flex w-full items-center gap-2 border-t border-slate-100 dark:border-slate-800 px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50/60 dark:hover:bg-rose-950/30"
+                        className="flex w-full items-center gap-2 border-t border-slate-100 dark:border-slate-800 px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50/60 dark:hover:bg-rose-950/30 cursor-pointer"
                         onClick={async () => {
                           try {
                             await authClient.signOut();
@@ -576,7 +604,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
           </div>
 
           <div className="flex items-center gap-1.5 border-t border-slate-100 px-4 py-2 text-xs text-slate-500 lg:px-8">
-            <Link to={roleHome[allow] || "/dashboard"} className="hover:text-indigo-600">
+            <Link to={roleHome[allow] || "/dashboard"} className="hover:text-emerald-600">
               {user?.school || "Global Tech High"}
             </Link>
             {crumbs.map((c, i) => {
@@ -590,7 +618,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                   {isLast ? (
                     <span className="font-medium text-slate-700">{content}</span>
                   ) : (
-                    <Link to={path} className="hover:text-indigo-600 transition-colors">
+                    <Link to={path} className="hover:text-emerald-600 transition-colors">
                       {content}
                     </Link>
                   )}
@@ -606,7 +634,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
         >
           {isLoading ? (
             <div className="flex min-h-[400px] flex-col items-center justify-center gap-3 text-sm text-slate-500">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
               <p className="font-medium">Loading workspace…</p>
             </div>
           ) : (
@@ -631,7 +659,16 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                 value={profileName}
                 onChange={(e) => setProfileName(e.target.value)}
                 placeholder="Full name"
-                className="h-9 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                className="h-9 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">Account Email</label>
+              <input
+                value={profileEmail}
+                onChange={(e) => setProfileEmail(e.target.value)}
+                placeholder="you@gmail.com"
+                className="h-9 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
               />
             </div>
             <div className="space-y-1.5">
@@ -640,7 +677,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                 value={profileSchool}
                 onChange={(e) => setProfileSchool(e.target.value)}
                 placeholder="School name"
-                className="h-9 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                className="h-9 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
               />
             </div>
             <div className="space-y-1.5 border-t border-slate-100 pt-3">
@@ -654,7 +691,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                     className={cn(
                       "flex items-center justify-center gap-1.5 rounded-xl border py-2 text-xs font-semibold capitalize transition-all",
                       themeMode === t
-                        ? "border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm"
+                        ? "border-emerald-600 bg-emerald-50 text-emerald-700 shadow-sm"
                         : "border-slate-200 text-slate-600 hover:bg-slate-50",
                     )}
                   >
@@ -677,7 +714,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                 type="checkbox"
                 checked={emailNotifs}
                 onChange={(e) => setEmailNotifs(e.target.checked)}
-                className="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500"
+                className="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500"
               />
             </div>
           </div>
@@ -691,8 +728,15 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                   window.localStorage.setItem("s2c-theme", themeMode);
                   window.localStorage.setItem(
                     "s2c-profile-settings",
-                    JSON.stringify({ name: profileName, school: profileSchool, emailNotifs }),
+                    JSON.stringify({
+                      name: profileName,
+                      email: profileEmail,
+                      school: profileSchool,
+                      emailNotifs,
+                    }),
                   );
+                  document.cookie = `s2c_email=${encodeURIComponent(profileEmail)}; path=/; max-age=31536000; SameSite=Lax`;
+                  document.cookie = `s2c_name=${encodeURIComponent(profileName)}; path=/; max-age=31536000; SameSite=Lax`;
                   const isDark =
                     themeMode === "dark" ||
                     (themeMode === "system" &&
@@ -724,7 +768,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
               <>
                 <div className="grid gap-2.5 sm:grid-cols-2">
                   <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3 hover:bg-slate-50 transition-colors">
-                    <div className="flex items-center gap-2 text-indigo-600">
+                    <div className="flex items-center gap-2 text-emerald-600">
                       <Icons.BookOpen className="h-4 w-4" />
                       <p className="text-xs font-semibold text-slate-900">Student Coding</p>
                     </div>
@@ -733,7 +777,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                     </p>
                   </div>
                   <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3 hover:bg-slate-50 transition-colors">
-                    <div className="flex items-center gap-2 text-indigo-600">
+                    <div className="flex items-center gap-2 text-emerald-600">
                       <Icons.GraduationCap className="h-4 w-4" />
                       <p className="text-xs font-semibold text-slate-900">Teacher & Grading</p>
                     </div>
@@ -754,7 +798,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                       <select
                         value={supportCategory}
                         onChange={(e) => setSupportCategory(e.target.value)}
-                        className="mt-0.5 h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 outline-none focus:border-indigo-400"
+                        className="mt-0.5 h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 outline-none focus:border-emerald-400"
                       >
                         <option>Technical Issue / Bug</option>
                         <option>Curriculum / Coding Question</option>
@@ -771,7 +815,7 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
                         onChange={(e) => setSupportMessage(e.target.value)}
                         rows={3}
                         placeholder="Explain what happened or what assistance you need…"
-                        className="mt-0.5 w-full rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400"
+                        className="mt-0.5 w-full rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-emerald-400"
                       />
                     </div>
                   </div>

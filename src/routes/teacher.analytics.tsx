@@ -428,7 +428,7 @@ function AnalyticsPage() {
           <>
             <button
               onClick={() => setExecutiveReportOpen(true)}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
             >
               <FileText className="h-4 w-4" /> Generate PDF
             </button>
@@ -592,11 +592,11 @@ function AnalyticsPage() {
             </button>
           </div>
 
-          <div className="rounded-2xl border border-indigo-200 p-4 bg-indigo-50/20 flex flex-col justify-between">
+          <div className="rounded-2xl border border-emerald-200 p-4 bg-emerald-50/20 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between">
                 <Pill tone="emerald">PDF + CSV</Pill>
-                <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-100/70 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">
                   Parent Data
                 </span>
               </div>
@@ -607,7 +607,7 @@ function AnalyticsPage() {
             </div>
             <button
               onClick={() => setParentPackOpen(true)}
-              className="mt-4 h-9 w-full rounded-lg bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors shadow-sm"
+              className="mt-4 h-9 w-full rounded-lg bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700 transition-colors shadow-sm"
             >
               Preview & download
             </button>
@@ -676,7 +676,7 @@ function AnalyticsPage() {
         <DialogContent className="sm:max-w-4xl max-h-[88vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-indigo-600" />
+              <Users className="h-5 w-5 text-emerald-600" />
               Parent Summary Pack & Guardian Information
             </DialogTitle>
             <DialogDescription>
@@ -759,7 +759,7 @@ function AnalyticsPage() {
                           {st.attendance}%
                         </span>
                       </td>
-                      <td className="py-2 px-3 text-center font-bold text-indigo-600">
+                      <td className="py-2 px-3 text-center font-bold text-emerald-600">
                         {st.score}
                       </td>
                     </tr>
@@ -811,7 +811,7 @@ function AnalyticsPage() {
                     description: "Opening isolated print dialog without site navigation.",
                   });
                 }}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 text-xs h-9 shadow-sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 text-xs h-9 shadow-sm"
               >
                 <Printer className="h-4 w-4" /> Print / Save PDF
               </Button>
@@ -824,7 +824,7 @@ function AnalyticsPage() {
         <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-indigo-600" />
+              <FileText className="h-5 w-5 text-emerald-600" />
               Class Performance Report & Student Roster
             </DialogTitle>
             <DialogDescription>
@@ -849,7 +849,7 @@ function AnalyticsPage() {
                   <tr key={st.id} className="hover:bg-slate-50/80">
                     <td className="py-2 px-3 font-semibold text-slate-900">{st.name}</td>
                     <td className="py-2 px-3 text-slate-600">{st.className}</td>
-                    <td className="py-2 px-3 text-center font-bold text-indigo-600">{st.score}</td>
+                    <td className="py-2 px-3 text-center font-bold text-emerald-600">{st.score}</td>
                     <td className="py-2 px-3 text-center">{st.completion}%</td>
                     <td className="py-2 px-3 text-center font-medium text-emerald-600">
                       {st.attendance}%
@@ -891,7 +891,7 @@ function AnalyticsPage() {
                     description: "Isolated PDF preview without website dashboard.",
                   });
                 }}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 text-xs h-9 shadow-sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 text-xs h-9 shadow-sm"
               >
                 <Printer className="h-4 w-4" /> Print / Save PDF
               </Button>
@@ -904,7 +904,7 @@ function AnalyticsPage() {
         <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-indigo-600" />
+              <FileText className="h-5 w-5 text-emerald-600" />
               Executive Academic Analytics & Term Report
             </DialogTitle>
             <DialogDescription>
@@ -914,7 +914,7 @@ function AnalyticsPage() {
 
           <div className="grid grid-cols-4 gap-3 my-2 text-center">
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-              <p className="text-xl font-bold text-indigo-600">72%</p>
+              <p className="text-xl font-bold text-emerald-600">72%</p>
               <p className="text-[10px] text-slate-500 uppercase mt-0.5">Avg Completion</p>
             </div>
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
@@ -922,7 +922,7 @@ function AnalyticsPage() {
               <p className="text-[10px] text-slate-500 uppercase mt-0.5">Engagement</p>
             </div>
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-              <p className="text-xl font-bold text-violet-600">79%</p>
+              <p className="text-xl font-bold text-emerald-600">79%</p>
               <p className="text-[10px] text-slate-500 uppercase mt-0.5">Assessment Avg</p>
             </div>
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
@@ -961,7 +961,7 @@ function AnalyticsPage() {
                       <td className="py-2 px-3 text-center font-medium text-emerald-600">
                         {c.completion || 0}%
                       </td>
-                      <td className="py-2 px-3 text-center font-bold text-indigo-600">
+                      <td className="py-2 px-3 text-center font-bold text-emerald-600">
                         {c.avgScore || 0}
                       </td>
                       <td className="py-2 px-3 text-center font-medium text-sky-600">
@@ -1002,7 +1002,7 @@ function AnalyticsPage() {
                     description: "Isolated PDF preview without website dashboard.",
                   });
                 }}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 text-xs h-9 shadow-sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 text-xs h-9 shadow-sm"
               >
                 <Printer className="h-4 w-4" /> Print / Save PDF
               </Button>

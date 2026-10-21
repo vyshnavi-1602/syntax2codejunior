@@ -178,7 +178,7 @@ function PortfolioPage() {
             </button>
             <button
               onClick={handleSharePortfolio}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 shadow-xs"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 shadow-xs"
             >
               <Share2 className="h-4 w-4" /> Share portfolio
             </button>
@@ -240,7 +240,7 @@ function PortfolioPage() {
           <Panel
             title={
               <div className="flex items-center gap-2">
-                <Settings2 className="h-4 w-4 text-indigo-600" />
+                <Settings2 className="h-4 w-4 text-emerald-600" />
                 <span>Privacy & Sharing Controls</span>
               </div>
             }
@@ -263,7 +263,7 @@ function PortfolioPage() {
                       e.target.checked ? "Portfolio set to Public" : "Portfolio set to School Only",
                     );
                   }}
-                  className="h-4 w-4 rounded accent-indigo-600"
+                  className="h-4 w-4 rounded accent-emerald-600"
                 />
               </div>
 
@@ -276,7 +276,7 @@ function PortfolioPage() {
                   type="checkbox"
                   checked={showScore}
                   onChange={(e) => setShowScore(e.target.checked)}
-                  className="h-4 w-4 rounded accent-indigo-600"
+                  className="h-4 w-4 rounded accent-emerald-600"
                 />
               </div>
 
@@ -289,7 +289,7 @@ function PortfolioPage() {
                   type="checkbox"
                   checked={showCertificates}
                   onChange={(e) => setShowCertificates(e.target.checked)}
-                  className="h-4 w-4 rounded accent-indigo-600"
+                  className="h-4 w-4 rounded accent-emerald-600"
                 />
               </div>
             </div>
@@ -326,7 +326,7 @@ function PortfolioPage() {
                 </div>
                 <button
                   onClick={() => setSelectedProject(p)}
-                  className="mt-4 text-xs font-semibold text-indigo-600 hover:underline text-left inline-flex items-center gap-1"
+                  className="mt-4 text-xs font-semibold text-emerald-600 hover:underline text-left inline-flex items-center gap-1"
                 >
                   View case study <ExternalLink className="h-3 w-3" />
                 </button>
@@ -412,9 +412,9 @@ function PortfolioPage() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3">
-                <div className="font-semibold text-indigo-900 flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-indigo-600" /> Teacher Review Feedback:
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3">
+                <div className="font-semibold text-emerald-900 flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-emerald-600" /> Teacher Review Feedback:
                 </div>
                 <p className="mt-1 text-slate-700 leading-relaxed italic">
                   &ldquo;Outstanding attention to edge cases and clear algorithmic decomposition.
@@ -428,7 +428,7 @@ function PortfolioPage() {
                     toast.success("Source code repository preview opened");
                     setSelectedProject(null);
                   }}
-                  className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
+                  className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
                 >
                   Close Case Study
                 </button>

@@ -272,7 +272,7 @@ function ReportsPage() {
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                       <FileText className="h-5 w-5" />
                     </div>
                     <Pill tone={r.f === "PDF" ? "violet" : "emerald"}>{r.f}</Pill>
@@ -286,7 +286,7 @@ function ReportsPage() {
                     <>
                       <button
                         onClick={() => handlePrintPdf(r)}
-                        className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700"
+                        className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700"
                       >
                         <Printer className="h-3.5 w-3.5" /> Print / PDF
                       </button>
@@ -370,7 +370,7 @@ function ReportsPage() {
                 <select
                   value={audience}
                   onChange={(e) => setAudience(e.target.value)}
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-400"
                 >
                   <option value="All">All (Teachers & Students)</option>
                   <option value="Teachers">Faculty / Teachers Only</option>
@@ -387,7 +387,7 @@ function ReportsPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Regional Hackathon Registration Open"
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
                 />
               </div>
 
@@ -399,14 +399,14 @@ function ReportsPage() {
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   placeholder="Write message details for the campus community…"
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-emerald-400"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
               >
                 <Send className="h-4 w-4" /> Post Broadcast
               </button>
@@ -417,10 +417,10 @@ function ReportsPage() {
 
       {tab === "Parent Dispatches" && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/80 via-white to-blue-50/50 p-6 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50/80 via-white to-blue-50/50 p-6 shadow-xs">
             <div>
               <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-xs">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs">
                   <Mail className="h-4 w-4" />
                 </span>
                 <h3 className="text-base font-semibold text-slate-900">
@@ -434,7 +434,7 @@ function ReportsPage() {
             </div>
             <button
               onClick={() => setDispatchOpen(true)}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition shrink-0"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition shrink-0"
             >
               <Send className="h-4 w-4" /> Dispatch Report Cards
             </button>
@@ -471,7 +471,7 @@ function ReportsPage() {
                       <p className="mt-0.5 text-xs text-slate-500">{log.subject}</p>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-slate-500 shrink-0">
-                      <span className="font-medium text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                      <span className="font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
                         {log.recipientCount} Recipients
                       </span>
                       <span>
@@ -497,7 +497,7 @@ function ReportsPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                 <Mail className="h-5 w-5" />
               </div>
               <div>
@@ -516,7 +516,7 @@ function ReportsPage() {
                 <select
                   value={dispatchType}
                   onChange={(e) => setDispatchType(e.target.value)}
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-400"
                 >
                   <option value="Monthly Progress Summary">Monthly Progress Summary</option>
                   <option value="Term 1 Midterm Coding Card">Term 1 Midterm Coding Card</option>
@@ -531,7 +531,7 @@ function ReportsPage() {
                   required
                   value={dispatchSubject}
                   onChange={(e) => setDispatchSubject(e.target.value)}
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-emerald-400"
                 />
               </div>
 
@@ -544,11 +544,11 @@ function ReportsPage() {
                   rows={4}
                   value={dispatchNote}
                   onChange={(e) => setDispatchNote(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-400"
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-emerald-400"
                 />
               </div>
 
-              <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-[11px] text-indigo-900">
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 text-[11px] text-emerald-900">
                 Reports will be rendered dynamically with student-specific XP, completed modules,
                 and teacher evaluation rubrics.
               </div>
@@ -564,7 +564,7 @@ function ReportsPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
                 >
                   <Send className="h-4 w-4" /> Send to All Parents
                 </button>

@@ -109,7 +109,7 @@ function ReviewsPage() {
                 onClick={() => setActiveId(p.project.id)}
                 className={cn(
                   "w-full rounded-xl px-3 py-3 text-left transition-colors",
-                  activeId === p.project.id ? "bg-indigo-50" : "hover:bg-slate-50",
+                  activeId === p.project.id ? "bg-emerald-50" : "hover:bg-slate-50",
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
@@ -158,7 +158,7 @@ function ReviewsPage() {
                   href={activeProject.submittedUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-indigo-600 hover:underline"
+                  className="text-emerald-600 hover:underline"
                 >
                   View Submitted Work
                 </a>
@@ -167,8 +167,8 @@ function ReviewsPage() {
               )}
             </p>
 
-            <div className="mt-5 rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4">
-              <p className="flex items-center gap-1.5 text-xs font-semibold text-indigo-700">
+            <div className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
                 <Sparkles className="h-3.5 w-3.5" /> AI feedback preview
               </p>
               <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
@@ -181,7 +181,7 @@ function ReviewsPage() {
                   );
                   toast.success("AI feedback inserted into your note");
                 }}
-                className="mt-2 text-xs font-semibold text-indigo-600 hover:underline"
+                className="mt-2 text-xs font-semibold text-emerald-600 hover:underline"
               >
                 Use this as my feedback
               </button>
@@ -192,7 +192,7 @@ function ReviewsPage() {
               onChange={(e) => setFeedback(e.target.value)}
               rows={4}
               placeholder="Write feedback for the student…"
-              className="mt-4 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+              className="mt-4 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
             />
 
             <div className="mt-4 flex flex-wrap gap-2">
@@ -266,7 +266,7 @@ function ReviewsPage() {
               </button>
               <button
                 onClick={() => handleGrade(emptyFeedbackWarning, true)}
-                className="h-9 rounded-xl bg-indigo-600 px-4 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+                className="h-9 rounded-xl bg-emerald-600 px-4 text-xs font-semibold text-white hover:bg-emerald-700 transition-colors"
               >
                 Submit Anyway
               </button>
