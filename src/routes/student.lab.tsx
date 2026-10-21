@@ -811,7 +811,9 @@ function LabPage() {
 
               {currentQ.isTeacherAssigned && (
                 <div className="flex flex-wrap items-center gap-2 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/60 px-3 py-2 text-xs">
-                  <span className="font-semibold text-emerald-900 dark:text-emerald-200">Class:</span>
+                  <span className="font-semibold text-emerald-900 dark:text-emerald-200">
+                    Class:
+                  </span>
                   <span className="text-emerald-700 dark:text-emerald-300 font-medium">
                     {currentQ.className || "Classroom"}
                   </span>

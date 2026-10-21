@@ -84,14 +84,17 @@ function runSandboxedJS(
     /constructor/i,
     /prototype/i,
     /Reflect/i,
+    /Proxy/i,
     /mainModule/i,
+    /\\x[0-9a-fA-F]{2}/,
+    /\\u[0-9a-fA-F]{4}/,
   ];
 
   for (const pattern of blockedPatterns) {
     if (pattern.test(code)) {
       return {
         stdout: "",
-        stderr: "Security restriction: forbidden identifier or prototype access detected.",
+        stderr: "Security restriction: forbidden identifier, escape sequence, or prototype access detected.",
         status: "COMPILATION_ERROR",
       };
     }
@@ -119,7 +122,8 @@ function runSandboxedJS(
   const readline = () => lines[lineIdx++] || "";
 
   try {
-    const sandbox = {
+    const sandbox = Object.create(null);
+    Object.assign(sandbox, {
       console: Object.freeze(fakeConsole),
       readline,
       input,
@@ -132,14 +136,13 @@ function runSandboxedJS(
       Number,
       Boolean,
       Array,
-      Object,
       JSON,
       process: undefined,
       require: undefined,
       global: undefined,
       globalThis: undefined,
       Buffer: undefined,
-    };
+    });
 
     const script = new vm.Script(`"use strict";\n${code}`, {
       filename: "student-code.js",

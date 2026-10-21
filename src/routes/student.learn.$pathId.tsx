@@ -137,7 +137,9 @@ function PathPage() {
                   onClick={() => select(i)}
                   className={cn(
                     "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
-                    active ? "bg-emerald-50 text-emerald-700 font-semibold" : "text-slate-600 hover:bg-slate-50",
+                    active
+                      ? "bg-emerald-50 text-emerald-700 font-semibold"
+                      : "text-slate-600 hover:bg-slate-50",
                   )}
                 >
                   {l.status === "completed" ? (
@@ -160,9 +162,7 @@ function PathPage() {
             title={lesson.title}
             description={`Lesson ${index + 1} of ${allLessons.length}`}
             action={
-              <Pill tone={lesson.status === "completed" ? "emerald" : "teal"}>
-                {lesson.status}
-              </Pill>
+              <Pill tone={lesson.status === "completed" ? "emerald" : "teal"}>{lesson.status}</Pill>
             }
           >
             <div className="prose prose-slate max-w-none text-sm leading-relaxed text-slate-700">

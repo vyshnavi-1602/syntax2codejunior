@@ -367,7 +367,7 @@ function LoginPage() {
       <div className="relative hidden flex-col justify-between overflow-hidden border-r border-emerald-100 dark:border-emerald-950 bg-gradient-to-b from-[#f0fbf7] to-white dark:from-[#091812] dark:to-[#07130e] p-12 lg:flex">
         <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-emerald-100/70 dark:bg-emerald-900/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-teal-100/60 dark:bg-teal-900/20 blur-3xl pointer-events-none" />
-        
+
         <div className="relative">
           <div className="flex items-center gap-3">
             <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 font-extrabold text-white shadow-md shadow-emerald-600/20">
@@ -471,7 +471,10 @@ function LoginPage() {
             <TabsContent value="login" className="mt-6">
               <form onSubmit={handleEmailSignIn} noValidate className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="signin-email" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <Label
+                    htmlFor="signin-email"
+                    className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
                     Email Address
                   </Label>
                   <Input
@@ -495,7 +498,10 @@ function LoginPage() {
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="signin-password" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <Label
+                      htmlFor="signin-password"
+                      className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+                    >
                       Password
                     </Label>
                     <button
@@ -564,7 +570,10 @@ function LoginPage() {
             <TabsContent value="register" className="mt-6">
               <form onSubmit={handleEmailSignUp} noValidate className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="signup-name" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <Label
+                    htmlFor="signup-name"
+                    className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
                     Full Name
                   </Label>
                   <Input
@@ -587,7 +596,10 @@ function LoginPage() {
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="signup-email" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <Label
+                    htmlFor="signup-email"
+                    className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
                     Email Address
                   </Label>
                   <Input
@@ -610,7 +622,10 @@ function LoginPage() {
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="signup-password" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <Label
+                    htmlFor="signup-password"
+                    className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
                     Password
                   </Label>
                   <div className="relative">
@@ -698,7 +713,10 @@ function LoginPage() {
                     <Button type="button" variant="outline" onClick={() => setForgotOpen(false)}>
                       Cancel
                     </Button>
-                    <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                    <Button
+                      type="submit"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
                       Send Reset Instructions
                     </Button>
                   </div>
@@ -709,7 +727,10 @@ function LoginPage() {
                     A password recovery link has been dispatched to <strong>{forgotEmail}</strong>.
                     Please check your inbox or school email portal.
                   </div>
-                  <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setForgotOpen(false)}>
+                  <Button
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={() => setForgotOpen(false)}
+                  >
                     Back to Sign In
                   </Button>
                 </div>

@@ -19,15 +19,18 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Copy built assets and dependencies
-COPY --from=builder /app/.output ./.output
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
+# Copy built assets and dependencies with non-root ownership
+COPY --chown=node:node --from=builder /app/.output ./.output
+COPY --chown=node:node --from=builder /app/package*.json ./
+COPY --chown=node:node --from=builder /app/node_modules ./node_modules
 
 # Set environment variables
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
+
+# Run container as unprivileged node user
+USER node
 
 # Expose port
 EXPOSE 3000

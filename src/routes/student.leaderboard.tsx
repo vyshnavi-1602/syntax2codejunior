@@ -108,7 +108,10 @@ function LeaderboardPage() {
               {rows.map((r) => (
                 <tr
                   key={r.rank}
-                  className={cn("border-t border-slate-100", r.isCurrentUser && "bg-emerald-50/50 font-semibold")}
+                  className={cn(
+                    "border-t border-slate-100",
+                    r.isCurrentUser && "bg-emerald-50/50 font-semibold",
+                  )}
                 >
                   <td className="px-4 py-3 font-semibold text-slate-500">#{r.rank}</td>
                   <td className="px-4 py-3 font-medium text-slate-900">{r.name}</td>

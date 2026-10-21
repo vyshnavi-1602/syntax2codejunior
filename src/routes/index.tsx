@@ -787,8 +787,8 @@ function LandingPage() {
                 </div>
               </Link>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-sm">
-                Empowering school students with computational thinking, modern programming languages,
-                game design, and safe AI skills.
+                Empowering school students with computational thinking, modern programming
+                languages, game design, and safe AI skills.
               </p>
               <div className="flex items-center gap-2 pt-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -942,7 +942,8 @@ function LandingPage() {
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
             <p>© {new Date().getFullYear()} Syntax2Code Junior. All rights reserved.</p>
             <p className="flex items-center gap-1.5 font-medium">
-              Made with <span className="text-emerald-600">♥</span> for the next generation of builders.
+              Made with <span className="text-emerald-600">♥</span> for the next generation of
+              builders.
             </p>
           </div>
         </div>

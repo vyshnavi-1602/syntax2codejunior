@@ -15,7 +15,7 @@ const baseURL =
   (process.env.RENDER_EXTERNAL_URL ? process.env.RENDER_EXTERNAL_URL : "http://localhost:8080");
 
 const trustedOrigins = (request?: Request) => {
-  const origins = new Set<string>([
+  const allowed = new Set<string>([
     baseURL,
     "http://localhost:8080",
     "http://localhost:8081",
@@ -28,18 +28,22 @@ const trustedOrigins = (request?: Request) => {
   if (request) {
     try {
       const origin = request.headers.get("origin");
-      if (origin) origins.add(origin);
-      const host = request.headers.get("host");
-      if (host) {
-        origins.add(`https://${host}`);
-        origins.add(`http://${host}`);
+      if (origin) {
+        const url = new URL(origin);
+        const isLocal = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+        const isRender = url.hostname.endsWith(".onrender.com");
+        const isVercel = url.hostname.endsWith(".vercel.app");
+        const isBaseUrl = baseURL.includes(url.hostname);
+        if (isLocal || isRender || isVercel || isBaseUrl) {
+          allowed.add(origin);
+        }
       }
     } catch {
-      // ignore
+      // ignore invalid URL
     }
   }
 
-  return Array.from(origins);
+  return Array.from(allowed);
 };
 
 const hasGoogleAuth = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);

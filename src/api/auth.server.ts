@@ -119,7 +119,12 @@ async function getCachedSession(request: Request | undefined): Promise<CachedSes
     const nameMatch = cookie.match(/s2c_name=([^;]+)/);
     const roleMatch = cookie.match(/s2c_role=([^;]+)/);
     if (emailMatch || nameMatch || roleMatch) {
-      const parsedRole = roleMatch?.[1] ? decodeURIComponent(roleMatch[1].trim()) : "student";
+      let parsedRole = roleMatch?.[1] ? decodeURIComponent(roleMatch[1].trim()) : "student";
+      // SECURITY: Disallow privilege escalation via unsigned client cookies.
+      // Privileged roles (admin, s2c, school) require an authenticated Better-Auth database session.
+      if (["admin", "s2c", "school"].includes(parsedRole)) {
+        parsedRole = "student";
+      }
       const baseUser = demoUsersByRole[parsedRole] || fallbackUser;
       user = {
         ...baseUser,
