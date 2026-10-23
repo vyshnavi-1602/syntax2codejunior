@@ -94,7 +94,8 @@ function runSandboxedJS(
     if (pattern.test(code)) {
       return {
         stdout: "",
-        stderr: "Security restriction: forbidden identifier, escape sequence, or prototype access detected.",
+        stderr:
+          "Security restriction: forbidden identifier, escape sequence, or prototype access detected.",
         status: "COMPILATION_ERROR",
       };
     }

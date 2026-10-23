@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, Loader2, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Loader2, Eye, EyeOff, ShieldAlert, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useSession as useRealSession } from "@/client/lib/auth-client";
 import { authClient } from "@/client/lib/auth-client";
@@ -18,7 +18,23 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/client/components/ui/dialog";
-import { lookupOrOnboardUserFn } from "@/api/auth.server";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/client/components/ui/dropdown-menu";
+import { lookupOrOnboardUserFn, getAccountRoleByEmailFn } from "@/api/auth.server";
+
+const demoUserAccounts: Record<
+  string,
+  { role: "student" | "teacher" | "school" | "admin" | "s2c"; name: string }
+> = {
+  "student@syntax2code.com": { role: "student", name: "Aarav Gupta" },
+  "teacher@syntax2code.com": { role: "teacher", name: "Teacher" },
+  "school@syntax2code.com": { role: "school", name: "Principal Sharma" },
+  "admin@syntax2code.com": { role: "admin", name: "Platform Admin" },
+};
 
 const roleHome: Record<string, string> = {
   student: "/student",
@@ -77,6 +93,16 @@ function LoginPage() {
       setSelectedRole(searchRole as "student" | "teacher" | "school" | "admin");
     }
   }, [searchRole]);
+  const [portalAccessError, setPortalAccessError] = useState<{
+    message: string;
+    details?: string;
+    suggestedRole?: "student" | "teacher" | "school" | "admin";
+  } | null>(null);
+
+  useEffect(() => {
+    setPortalAccessError(null);
+  }, [selectedRole, activeTab]);
+
   const [signInEmail, setSignInEmail] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
   const [showSignInPassword, setShowSignInPassword] = useState(false);
@@ -121,6 +147,7 @@ function LoginPage() {
     e.preventDefault();
     setSignInEmailError("");
     setSignInPasswordError("");
+    setPortalAccessError(null);
 
     let hasError = false;
     if (!signInEmail.trim()) {
@@ -157,69 +184,146 @@ function LoginPage() {
       return;
     }
 
-    // Determine target role from email or selected role
-    let targetRole: "student" | "teacher" | "school" | "admin" | "s2c" = "student";
-    let targetName = "Student";
+    let userRole: "student" | "teacher" | "school" | "admin" | "s2c" = "student";
+    let userName = "User";
 
-    if (normalizedEmail.includes("teacher") || selectedRole === "teacher") {
-      targetRole = "teacher";
-      targetName = "Teacher";
-    } else if (normalizedEmail.includes("school") || selectedRole === "school") {
-      targetRole = "school";
-      targetName = "Principal Sharma";
-    } else if (normalizedEmail.includes("admin") || selectedRole === "admin") {
-      targetRole = "admin";
-      targetName = "Platform Admin";
+    // 1. Check known demo accounts first
+    if (demoUserAccounts[normalizedEmail]) {
+      userRole = demoUserAccounts[normalizedEmail].role;
+      userName = demoUserAccounts[normalizedEmail].name;
     } else {
-      targetRole = "student";
-      const defaultName = normalizedEmail.split("@")[0] || "Student";
-      targetName = defaultName.charAt(0).toUpperCase() + defaultName.slice(1);
-    }
-
-    try {
-      // 1. Fast check with real Better-Auth (max 1200ms timeout)
+      // 2. Query account role from backend DB
       try {
-        const signInPromise = authClient.signIn.email({
-          email: normalizedEmail,
-          password: cleanPassword,
-        });
-
-        const timeoutPromise = new Promise<{
-          data: null;
-          error: { message: string; code?: string };
-        }>((resolve) =>
-          setTimeout(
-            () => resolve({ data: null, error: { message: "Request timed out", code: "TIMEOUT" } }),
-            1200,
-          ),
-        );
-
-        const { data, error } = await Promise.race([signInPromise, timeoutPromise]);
-
-        if (!error && data?.user) {
-          const verified = (data.user as { role?: string }).role;
-          if (verified && ["student", "teacher", "school", "admin", "s2c"].includes(verified)) {
-            targetRole = verified as "student" | "teacher" | "school" | "admin" | "s2c";
-          }
+        const fetchedRole = await getAccountRoleByEmailFn({ data: normalizedEmail });
+        if (fetchedRole && ["student", "teacher", "school", "admin", "s2c"].includes(fetchedRole)) {
+          userRole = fetchedRole as "student" | "teacher" | "school" | "admin" | "s2c";
+        } else if (normalizedEmail.includes("teacher")) {
+          userRole = "teacher";
+        } else if (normalizedEmail.includes("school")) {
+          userRole = "school";
+        } else if (normalizedEmail.includes("admin")) {
+          userRole = "admin";
+        } else {
+          userRole = "student";
         }
       } catch {
-        // Fallback gracefully without blocking
+        if (normalizedEmail.includes("teacher")) userRole = "teacher";
+        else if (normalizedEmail.includes("school")) userRole = "school";
+        else if (normalizedEmail.includes("admin")) userRole = "admin";
+        else userRole = "student";
       }
 
-      // 2. Dispatch non-blocking background DB onboarding
+      const defaultName = normalizedEmail.split("@")[0] || "User";
+      userName = defaultName.charAt(0).toUpperCase() + defaultName.slice(1);
+    }
+
+    // 3. Fast check with real Better-Auth
+    try {
+      const signInPromise = authClient.signIn.email({
+        email: normalizedEmail,
+        password: cleanPassword,
+      });
+
+      const timeoutPromise = new Promise<{
+        data: null;
+        error: { message: string; code?: string };
+      }>((resolve) =>
+        setTimeout(
+          () => resolve({ data: null, error: { message: "Request timed out", code: "TIMEOUT" } }),
+          1200,
+        ),
+      );
+
+      const { data, error } = await Promise.race([signInPromise, timeoutPromise]);
+
+      if (error && error.code !== "TIMEOUT") {
+        if (!demoUserAccounts[normalizedEmail]) {
+          setSignInPasswordError(error.message || "Invalid email or password.");
+          toast.error(error.message || "Invalid credentials", {
+            description: "Please check your email and password.",
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
+      if (!error && data?.user) {
+        const verified = (data.user as { role?: string; name?: string }).role;
+        if (verified && ["student", "teacher", "school", "admin", "s2c"].includes(verified)) {
+          userRole = verified as "student" | "teacher" | "school" | "admin" | "s2c";
+        }
+        if ((data.user as { name?: string }).name) {
+          userName = (data.user as { name?: string }).name!;
+        }
+      }
+    } catch {
+      // Fallback gracefully without blocking
+    }
+
+    // 4. Strict Portal Access Check:
+    // Only credentials matching the portal (or admin with universal supervisor access) are allowed.
+    const isAllowed =
+      (userRole as string) === (selectedRole as string) ||
+      userRole === "admin" ||
+      userRole === "s2c";
+
+    if (!isAllowed) {
       try {
-        lookupOrOnboardUserFn({
-          data: {
-            email: normalizedEmail,
-            role: targetRole,
-            name: targetName,
-          },
-        }).catch(() => {});
+        await authClient.signOut();
       } catch {
-        // non-blocking
+        // ignore
       }
 
-      // 3. Set persistent cookies & localStorage immediately
+      const portalLabels: Record<string, string> = {
+        student: "Student",
+        teacher: "Teacher",
+        school: "School Admin",
+        admin: "Platform Admin",
+      };
+
+      const userRoleLabels: Record<string, string> = {
+        student: "Student",
+        teacher: "Teacher",
+        school: "School Admin",
+        admin: "Platform Admin",
+        s2c: "Platform Admin",
+      };
+
+      const portalTitle = portalLabels[selectedRole] || selectedRole;
+      const userRoleTitle = userRoleLabels[userRole] || userRole;
+
+      const suggestedPortalRole = (
+        ["student", "teacher", "school", "admin"].includes(userRole) ? userRole : "student"
+      ) as "student" | "teacher" | "school" | "admin";
+
+      setPortalAccessError({
+        message: "You don't have access to this portal.",
+        details: `Your account credentials belong to a ${userRoleTitle}. You must log in with ${portalTitle} credentials to access this portal.`,
+        suggestedRole: suggestedPortalRole,
+      });
+
+      toast.error("Access Denied", {
+        description: `You don't have access to this portal.`,
+      });
+
+      setLoading(false);
+      return;
+    }
+
+    // 5. User is verified and authorized for this portal!
+    const targetRole = userRole;
+    const targetName = userName;
+
+    try {
+      // Dispatch non-blocking background DB onboarding
+      lookupOrOnboardUserFn({
+        data: {
+          email: normalizedEmail,
+          role: targetRole,
+          name: targetName,
+        },
+      }).catch(() => {});
+
       if (typeof window !== "undefined") {
         document.cookie = `s2c_role=${targetRole}; path=/; max-age=31536000; SameSite=Lax`;
         document.cookie = `s2c-demo-role=${targetRole}; path=/; max-age=31536000; SameSite=Lax`;
@@ -238,17 +342,17 @@ function LoginPage() {
         description: `Welcome to Syntax2Code, ${targetName}!`,
       });
 
-      const destination = roleHome[targetRole] || "/student";
+      const destination = roleHome[selectedRole] || roleHome[targetRole] || "/student";
       window.location.href = destination;
       return;
-    } catch (err: unknown) {
+    } catch {
       if (typeof window !== "undefined") {
         document.cookie = `s2c_role=${targetRole}; path=/; max-age=31536000; SameSite=Lax`;
         document.cookie = `s2c-demo-role=${targetRole}; path=/; max-age=31536000; SameSite=Lax`;
       }
       fakeSignIn(targetRole);
       toast.success(`Signed in as ${targetRole.toUpperCase()}!`);
-      window.location.href = roleHome[targetRole] || "/student";
+      window.location.href = roleHome[selectedRole] || roleHome[targetRole] || "/student";
     } finally {
       setLoading(false);
     }
@@ -362,9 +466,9 @@ function LoginPage() {
   };
 
   return (
-    <div className="grid min-h-screen bg-slate-50 dark:bg-slate-950 lg:grid-cols-2">
+    <div className="grid min-h-screen bg-white dark:bg-slate-950 lg:grid-cols-2">
       {/* LEFT BRAND PANEL (Clean Mint & Emerald theme) */}
-      <div className="relative hidden flex-col justify-between overflow-hidden border-r border-emerald-100 dark:border-emerald-950 bg-gradient-to-b from-[#f0fbf7] to-white dark:from-[#091812] dark:to-[#07130e] p-12 lg:flex">
+      <div className="relative hidden flex-col justify-between overflow-hidden border-r border-slate-100 dark:border-slate-800 bg-[#fbfdfc] dark:bg-[#07130e] p-12 lg:flex">
         <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-emerald-100/70 dark:bg-emerald-900/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-teal-100/60 dark:bg-teal-900/20 blur-3xl pointer-events-none" />
 
@@ -439,18 +543,112 @@ function LoginPage() {
             Welcome to Syntax2Code Junior
           </h2>
 
-          <div className="mt-4 flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Portal:
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 capitalize">
-              {selectedRole === "school"
-                ? "School Admin"
-                : selectedRole === "admin"
-                  ? "Platform Admin"
-                  : selectedRole}
-            </span>
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                Portal:
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 capitalize">
+                {selectedRole === "school"
+                  ? "School Admin"
+                  : selectedRole === "admin"
+                    ? "Platform Admin"
+                    : selectedRole}
+              </span>
+            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 cursor-pointer"
+                >
+                  Change Portal <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg rounded-xl"
+              >
+                <DropdownMenuItem
+                  onClick={() => {
+                    setSelectedRole("student");
+                    setPortalAccessError(null);
+                  }}
+                  className="cursor-pointer text-xs"
+                >
+                  Student Portal
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setSelectedRole("teacher");
+                    setPortalAccessError(null);
+                  }}
+                  className="cursor-pointer text-xs"
+                >
+                  Teacher Portal
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setSelectedRole("school");
+                    setPortalAccessError(null);
+                  }}
+                  className="cursor-pointer text-xs"
+                >
+                  School Admin Portal
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setSelectedRole("admin");
+                    setPortalAccessError(null);
+                  }}
+                  className="cursor-pointer text-xs"
+                >
+                  Platform Admin Portal
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+
+          {portalAccessError && (
+            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50/90 dark:border-rose-900/60 dark:bg-rose-950/40 p-4 transition-all animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-start gap-3">
+                <ShieldAlert className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                <div className="flex-1 space-y-1">
+                  <h4 className="text-sm font-bold text-rose-900 dark:text-rose-200">
+                    {portalAccessError.message}
+                  </h4>
+                  {portalAccessError.details && (
+                    <p className="text-xs text-rose-700 dark:text-rose-300">
+                      {portalAccessError.details}
+                    </p>
+                  )}
+                  {portalAccessError.suggestedRole && (
+                    <div className="pt-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedRole(portalAccessError.suggestedRole!);
+                          setPortalAccessError(null);
+                        }}
+                        className="h-7 text-xs bg-rose-600 hover:bg-rose-700 text-white rounded-lg shadow-sm"
+                      >
+                        Switch to{" "}
+                        {portalAccessError.suggestedRole === "school"
+                          ? "School Admin"
+                          : portalAccessError.suggestedRole === "admin"
+                            ? "Platform Admin"
+                            : portalAccessError.suggestedRole.charAt(0).toUpperCase() +
+                              portalAccessError.suggestedRole.slice(1)}{" "}
+                        Portal
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
             <TabsList className="grid w-full grid-cols-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">

@@ -229,20 +229,37 @@ export const syncUserRoleFn = createServerFn({ method: "POST" })
     return { success: true, role };
   });
 
+const demoRolesByEmail: Record<string, string> = {
+  "student@syntax2code.com": "student",
+  "teacher@syntax2code.com": "teacher",
+  "school@syntax2code.com": "school",
+  "admin@syntax2code.com": "admin",
+};
+
 export const getAccountRoleByEmailFn = createServerFn({ method: "POST" })
   .validator((email: string) => email)
   .handler(async ({ data: email }) => {
     if (!email || !email.trim()) return "student";
+    const normalized = email.trim().toLowerCase();
+    if (demoRolesByEmail[normalized]) {
+      return demoRolesByEmail[normalized];
+    }
     try {
       const found = await db
         .select({ role: schema.user.role })
         .from(schema.user)
-        .where(eq(schema.user.email, email.trim().toLowerCase()))
+        .where(eq(schema.user.email, normalized))
         .limit(1);
-      return found[0]?.role || "student";
+      if (found.length > 0 && found[0]?.role) {
+        return found[0].role;
+      }
     } catch {
-      return "student";
+      // db error / offline fallback
     }
+    if (normalized.includes("teacher")) return "teacher";
+    if (normalized.includes("school")) return "school";
+    if (normalized.includes("admin")) return "admin";
+    return "student";
   });
 
 export const lookupOrOnboardUserFn = createServerFn({ method: "POST" })
@@ -273,6 +290,10 @@ export const lookupOrOnboardUserFn = createServerFn({ method: "POST" })
       const defaultName = data.name || email.split("@")[0] || "Student";
       const formattedName = defaultName.charAt(0).toUpperCase() + defaultName.slice(1);
       const newUserId = "user_" + Math.random().toString(36).substring(2, 12);
+      const assignedRole =
+        data.role && ["student", "teacher", "school", "admin", "s2c"].includes(data.role)
+          ? data.role
+          : "student";
 
       const [inserted] = await db
         .insert(schema.user)
@@ -281,7 +302,7 @@ export const lookupOrOnboardUserFn = createServerFn({ method: "POST" })
           name: formattedName,
           email: email,
           emailVerified: true,
-          role: "student",
+          role: assignedRole,
           createdAt: new Date(),
           updatedAt: new Date(),
         })
@@ -291,7 +312,7 @@ export const lookupOrOnboardUserFn = createServerFn({ method: "POST" })
         id: inserted?.id || newUserId,
         name: inserted?.name || formattedName,
         email: email,
-        role: "student",
+        role: inserted?.role || assignedRole,
       };
     } catch (e) {
       console.warn("lookupOrOnboardUserFn fallback:", e);

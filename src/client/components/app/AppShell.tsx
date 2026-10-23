@@ -210,25 +210,20 @@ export function AppShell({ children, allow }: { children: ReactNode; allow: Role
   useEffect(() => {
     if (!ready) return;
 
-    // Seamlessly synchronize active role to visited portal
-    if (role !== allow && !(allow === "s2c" && (role === "admin" || role === "s2c"))) {
-      signIn(allow as import("@/client/lib/session").RoleId);
-      return;
-    }
-
-    const currentEffectiveRole = role || allow || "student";
+    const currentEffectiveRole: string = role || "student";
     const isAllowed =
       currentEffectiveRole === allow ||
       currentEffectiveRole === "admin" ||
-      currentEffectiveRole === "s2c";
+      currentEffectiveRole === "s2c" ||
+      (allow === "s2c" && currentEffectiveRole === "admin");
 
     if (!isAllowed) {
       toast.error("Access Restricted", {
-        description: `Your account (${roleLabels[currentEffectiveRole] || currentEffectiveRole}) cannot access ${roleLabels[allow] || allow} portals.`,
+        description: `You don't have access to this portal. Your account (${roleLabels[currentEffectiveRole] || currentEffectiveRole}) cannot access the ${roleLabels[allow] || allow} portal.`,
       });
       navigate({ to: roleHome[currentEffectiveRole] || "/login" });
     }
-  }, [ready, role, allow, navigate, signIn]);
+  }, [ready, role, allow, navigate]);
 
   const effectiveRole = allow || role || "student";
   const displayUser =

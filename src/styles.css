@@ -5,9 +5,11 @@
 
 @theme inline {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Poppins", "Outfit", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Lora", "Poppins", Georgia, serif;
   --font-outfit: "Outfit", sans-serif;
   --font-poppins: "Poppins", sans-serif;
+  --font-serif: "Lora", Georgia, serif;
+  --font-lora: "Lora", Georgia, serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

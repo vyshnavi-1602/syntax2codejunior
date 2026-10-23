@@ -100,8 +100,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<RoleId | null>(() => {
     if (typeof window !== "undefined") {
       const stored = window.localStorage.getItem(KEY);
-      // Disallow untrusted admin escalation in localStorage
-      if (stored && ["student", "teacher", "school"].includes(stored)) {
+      if (
+        stored &&
+        (["student", "teacher", "school", "admin", "s2c"] as string[]).includes(stored)
+      ) {
         return stored as RoleId;
       }
     }

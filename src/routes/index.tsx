@@ -221,9 +221,9 @@ function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
-    <div className="min-h-screen bg-[#f3faf7] dark:bg-[#07130e] text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-200">
+    <div className="min-h-screen bg-white dark:bg-[#07130e] text-slate-800 dark:text-slate-100 font-lora antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-200">
       {/* Top Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-[#091812]/80 border-b border-emerald-100/80 dark:border-emerald-900/40">
+      <header className="sticky top-0 z-50 backdrop-blur-md bg-white/95 dark:bg-[#091812]/95 border-b border-slate-100 dark:border-emerald-900/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
@@ -231,9 +231,9 @@ function LandingPage() {
               S2
             </span>
             <div className="flex items-center">
-              <span className="font-display font-extrabold text-lg tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
+              <span className="font-display font-extrabold italic text-lg tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
                 Syntax2Code
-                <span className="inline-block rounded-full bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+                <span className="inline-block rounded-full bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 not-italic">
                   Junior
                 </span>
               </span>
@@ -428,7 +428,7 @@ function LandingPage() {
             {/* Left Content Column */}
             <div className="lg:col-span-6 text-left">
               {/* Main Headline */}
-              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.08]">
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold italic tracking-tight text-slate-900 dark:text-white leading-[1.08]">
                 Little Steps.
                 <br />
                 <span className="text-emerald-600 dark:text-emerald-400">Big Ideas.</span>
@@ -551,7 +551,7 @@ function LandingPage() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="font-display text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+            <h2 className="font-display text-3xl font-black italic tracking-tight text-slate-900 dark:text-white sm:text-4xl">
               Select Your Role to Get Started
             </h2>
             <p className="mt-3 text-base text-slate-600 dark:text-slate-400 font-medium">
@@ -566,7 +566,7 @@ function LandingPage() {
               return (
                 <div
                   key={r.id}
-                  className={`group relative flex flex-col justify-between rounded-3xl border ${r.borderColor} bg-[#f9fdfb] dark:bg-slate-900/90 p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-emerald-600/10`}
+                  className={`group relative flex flex-col justify-between rounded-3xl border ${r.borderColor} bg-white dark:bg-slate-900/90 p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-emerald-600/10 shadow-sm`}
                 >
                   <div>
                     {/* Header */}
@@ -583,7 +583,7 @@ function LandingPage() {
                       </span>
                     </div>
 
-                    <h3 className="font-display text-xl font-bold text-slate-900 dark:text-white mb-2">
+                    <h3 className="font-display text-xl font-bold italic text-slate-900 dark:text-white mb-2">
                       {r.title}
                     </h3>
                     <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-5 font-medium">
@@ -620,13 +620,16 @@ function LandingPage() {
       </section>
 
       {/* CURRICULUM ROADMAP */}
-      <section id="curriculum" className="relative z-10 py-20 bg-[#edf7f3] dark:bg-[#06120d]">
+      <section
+        id="curriculum"
+        className="relative z-10 py-20 bg-slate-50/50 dark:bg-[#06120d] border-t border-slate-100 dark:border-emerald-950"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
               Progressive Learning Pathways
             </span>
-            <h2 className="font-display text-3xl sm:text-4xl font-black text-slate-900 dark:text-white mt-2">
+            <h2 className="font-display text-3xl sm:text-4xl font-black italic text-slate-900 dark:text-white mt-2">
               Structured K-12 Curriculum
             </h2>
             <p className="mt-3 text-base text-slate-600 dark:text-slate-400 font-medium">
@@ -650,7 +653,7 @@ function LandingPage() {
                       Track {idx + 1}
                     </span>
                   </div>
-                  <h3 className="font-display text-xl font-bold text-slate-900 dark:text-white mb-1">
+                  <h3 className="font-display text-xl font-bold italic text-slate-900 dark:text-white mb-1">
                     {track.title}
                   </h3>
                   <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-5">
@@ -694,7 +697,7 @@ function LandingPage() {
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
               Built For Schools
             </span>
-            <h2 className="font-display text-3xl sm:text-4xl font-black text-slate-900 dark:text-white mt-2">
+            <h2 className="font-display text-3xl sm:text-4xl font-black italic text-slate-900 dark:text-white mt-2">
               Everything Needed to Master Coding & AI
             </h2>
             <p className="mt-3 text-base text-slate-600 dark:text-slate-400 font-medium">
@@ -708,12 +711,12 @@ function LandingPage() {
               return (
                 <div
                   key={idx}
-                  className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-[#f9fdfb] dark:bg-slate-900/60 p-6 shadow-sm hover:shadow-md transition-shadow"
+                  className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className={`inline-flex p-3 rounded-2xl mb-4 ${feat.color}`}>
                     <Icon className="h-6 w-6" />
                   </div>
-                  <h3 className="font-display text-lg font-bold text-slate-900 dark:text-white mb-2">
+                  <h3 className="font-display text-lg font-bold italic text-slate-900 dark:text-white mb-2">
                     {feat.title}
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
@@ -729,14 +732,14 @@ function LandingPage() {
       {/* FAQ SECTION */}
       <section
         id="faq"
-        className="relative z-10 py-20 bg-[#edf7f3] dark:bg-[#06120d] border-t border-emerald-100 dark:border-emerald-950"
+        className="relative z-10 py-20 bg-slate-50/50 dark:bg-[#06120d] border-t border-slate-100 dark:border-emerald-950"
       >
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
               Common Inquiries
             </span>
-            <h2 className="font-display text-3xl font-black text-slate-900 dark:text-white mt-2">
+            <h2 className="font-display text-3xl font-black italic text-slate-900 dark:text-white mt-2">
               Frequently Asked Questions
             </h2>
           </div>
@@ -778,9 +781,9 @@ function LandingPage() {
                   S2
                 </span>
                 <div className="flex items-center">
-                  <span className="font-display font-extrabold text-lg tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <span className="font-display font-extrabold italic text-lg tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
                     Syntax2Code
-                    <span className="inline-block rounded-full bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+                    <span className="inline-block rounded-full bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 not-italic">
                       Junior
                     </span>
                   </span>
